@@ -22,36 +22,39 @@ def main():
     Download some example data and split it into training and test data.
     The boston data set is meant for regression modeling.
     """
-    print('Retrieving boston data from servers...', end='')
+    print("Retrieving boston data from servers...", end="")
     boston_data = sklearn.datasets.load_boston()
     sys.stdout.flush()
-    print('done')
+    print("done")
     sys.stdout.flush()
 
-    X = boston_data['data']
-    Y = boston_data['target']
+    X = boston_data["data"]
+    Y = boston_data["target"]
 
-    examples = [{'id': f'EXAMPLE_{i}',
-                 'y': y,
-                 'x': {f'f{j}': x_val for j, x_val in enumerate(x)}}
-                for i, (x, y) in enumerate(zip(X, Y))]
+    examples = [
+        {
+            "id": f"EXAMPLE_{i}",
+            "y": y,
+            "x": {f"f{j}": x_val for j, x_val in enumerate(x)},
+        }
+        for i, (x, y) in enumerate(zip(X, Y))
+    ]
 
-    examples_train, examples_test = train_test_split(examples, test_size=0.33,
-                                                     random_state=42)
+    examples_train, examples_test = train_test_split(
+        examples, test_size=0.33, random_state=42
+    )
 
-    print('Writing training and testing files...', end='')
-    for examples, suffix in [(examples_train, 'train'), (examples_test,
-                                                         'test')]:
-        boston_dir = os.path.join('boston', suffix)
+    print("Writing training and testing files...", end="")
+    for examples, suffix in [(examples_train, "train"), (examples_test, "test")]:
+        boston_dir = os.path.join("boston", suffix)
         if not os.path.exists(boston_dir):
             os.makedirs(boston_dir)
-        jsonlines_path = os.path.join(boston_dir,
-                                      'example_boston_features.jsonlines')
-        with open(jsonlines_path, 'w') as f:
+        jsonlines_path = os.path.join(boston_dir, "example_boston_features.jsonlines")
+        with open(jsonlines_path, "w") as f:
             for ex in examples:
-                f.write(f'{json.dumps(ex)}\n')
-    print('done')
+                f.write(f"{json.dumps(ex)}\n")
+    print("done")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

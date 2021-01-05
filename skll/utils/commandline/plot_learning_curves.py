@@ -39,27 +39,28 @@ def main(argv=None):
 
     # Get command line arguments
     parser = argparse.ArgumentParser(
-        description="Generates learning curve plots from the learning curve "
-                    "TSV file.",
+        description=(
+            "Generates learning curve plots from the learning curve " "TSV file."
+        ),
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        conflict_handler='resolve')
-    parser.add_argument('tsv_file',
-                        help='Learning curve TSV output file.')
-    parser.add_argument('output_dir',
-                        help='Directory to store the learning curve plots.')
-    parser.add_argument('--version', action='version',
-                        version=f'%(prog)s {__version__}')
+        conflict_handler="resolve",
+    )
+    parser.add_argument("tsv_file", help="Learning curve TSV output file.")
+    parser.add_argument(
+        "output_dir", help="Directory to store the learning curve plots."
+    )
+    parser.add_argument(
+        "--version", action="version", version=f"%(prog)s {__version__}"
+    )
     args = parser.parse_args(argv)
 
     # Make warnings from built-in warnings module get formatted more nicely
     logging.captureWarnings(True)
-    logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - '
-                               '%(message)s')
+    logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
     # make sure that the input TSV file that's being passed exists
     if not exists(args.tsv_file):
-        logging.error(f"Error: the given file {args.tsv_file} does not "
-                      "exist.")
+        logging.error(f"Error: the given file {args.tsv_file} does not exist.")
         sys.exit(1)
 
     # create the output directory if it doesn't already exist
@@ -68,10 +69,10 @@ def main(argv=None):
 
     # get the experiment name from the learning curve TSV file
     # output_file_name = experiment_name + '_summary.tsv'
-    experiment_name = basename(args.tsv_file).rstrip('_summary.tsv')
+    experiment_name = basename(args.tsv_file).rstrip("_summary.tsv")
     logging.info("Generating learning curve(s)")
     generate_learning_curve_plots(experiment_name, args.output_dir, args.tsv_file)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

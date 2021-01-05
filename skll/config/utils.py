@@ -30,8 +30,8 @@ def fix_json(json_string):
     json_string : str
         The normalized JSON string.
     """
-    json_string = json_string.replace('True', 'true')
-    json_string = json_string.replace('False', 'false')
+    json_string = json_string.replace("True", "true")
+    json_string = json_string.replace("False", "false")
     json_string = json_string.replace("'", '"')
     return json_string
 
@@ -68,9 +68,11 @@ def load_cv_folds(folds_file, ids_to_floats=False):
                 try:
                     row[0] = float(row[0])
                 except ValueError:
-                    raise ValueError('You set ids_to_floats to true, but ID '
-                                     f'{row[0]} could not be converted to '
-                                     'float')
+                    raise ValueError(
+                        "You set ids_to_floats to true, but ID "
+                        f"{row[0]} could not be converted to "
+                        "float"
+                    )
             res[row[0]] = row[1]
 
     return res
@@ -98,9 +100,10 @@ def locate_file(file_path, config_dir):
         If the file does not exist.
     """
     if not file_path:
-        return ''
-    path_to_check = file_path if isabs(file_path) else normpath(join(config_dir,
-                                                                     file_path))
+        return ""
+    path_to_check = (
+        file_path if isabs(file_path) else normpath(join(config_dir, file_path))
+    )
     ans = exists(path_to_check)
     if not ans:
         raise IOError(errno.ENOENT, "File does not exist", path_to_check)
@@ -126,7 +129,7 @@ def _munge_featureset_name(featureset):
     if isinstance(featureset, str):
         return featureset
 
-    res = '+'.join(sorted(featureset))
+    res = "+".join(sorted(featureset))
     return res
 
 
@@ -167,14 +170,15 @@ def _parse_and_validate_metrics(metrics, option_name, logger=None):
     # and parse it correctly
     metrics = yaml.safe_load(fix_json(metrics))
     if not isinstance(metrics, list):
-        raise TypeError(f"{option_name} should be a list, not a "
-                        f"{type(metrics)}.")
+        raise TypeError(f"{option_name} should be a list, not a {type(metrics)}.")
 
     # `mean_squared_error` is no longer supported.
     # It has been replaced by `neg_mean_squared_error`
-    if 'mean_squared_error' in metrics:
-        raise ValueError("The metric \"mean_squared_error\" is no longer "
-                         "supported. please use the metric "
-                         "\"neg_mean_squared_error\" instead.")
+    if "mean_squared_error" in metrics:
+        raise ValueError(
+            'The metric "mean_squared_error" is no longer '
+            "supported. please use the metric "
+            '"neg_mean_squared_error" instead.'
+        )
 
     return metrics

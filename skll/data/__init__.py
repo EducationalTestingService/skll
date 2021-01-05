@@ -23,12 +23,30 @@ from .readers import (
 from .writers import ARFFWriter, CSVWriter, LibSVMWriter, NDJWriter, TSVWriter, Writer
 
 # Register dialect for handling ARFF files
-csv.register_dialect('arff', delimiter=',', quotechar="'",
-                     escapechar='\\', doublequote=False,
-                     lineterminator='\n', skipinitialspace=True)
+csv.register_dialect(
+    "arff",
+    delimiter=",",
+    quotechar="'",
+    escapechar="\\",
+    doublequote=False,
+    lineterminator="\n",
+    skipinitialspace=True,
+)
 
 
-__all__ = ['Reader', 'safe_float', 'FeatureSet', 'ARFFReader',
-           'CSVReader', 'LibSVMReader', 'NDJReader',
-           'TSVReader', 'ARFFWriter', 'LibSVMWriter', 'TSVWriter',
-           'CSVWriter', 'NDJWriter', 'Writer']
+__all__ = [
+    "Reader",
+    "safe_float",
+    "FeatureSet",
+    "ARFFReader",
+    "CSVReader",
+    "LibSVMReader",
+    "NDJReader",
+    "TSVReader",
+    "ARFFWriter",
+    "LibSVMWriter",
+    "TSVWriter",
+    "CSVWriter",
+    "NDJWriter",
+    "Writer",
+]

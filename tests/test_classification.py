@@ -70,37 +70,42 @@ def setup():
 
 def tearDown():
 
-    for path in [join(train_dir, 'train_single_file.jsonlines'),
-                 join(train_dir, 'pos_label_str_train.jsonlines'),
-                 join(test_dir, 'test_single_file.jsonlines'),
-                 join(output_dir, 'rare_class_predictions.tsv'),
-                 join(output_dir, 'float_class_predictions.tsv')]:
+    for path in [
+        join(train_dir, "train_single_file.jsonlines"),
+        join(train_dir, "pos_label_str_train.jsonlines"),
+        join(test_dir, "test_single_file.jsonlines"),
+        join(output_dir, "rare_class_predictions.tsv"),
+        join(output_dir, "float_class_predictions.tsv"),
+    ]:
         unlink(path)
 
-    for glob_pattern in [join(output_dir, 'train_test_single_file_*'),
-                         join(output_dir, 'clf_metric_value_*'),
-                         join(output_dir, 'pos_label_str_via_config*'),
-                         join(output_dir, 'clf_metrics_objective_overlap*'),
-                         join(output_dir, 'test_multinomialnb_loading*'),
-                         join(output_dir, 'test_predict_return_and_write_predictions*')]:
+    for glob_pattern in [
+        join(output_dir, "train_test_single_file_*"),
+        join(output_dir, "clf_metric_value_*"),
+        join(output_dir, "pos_label_str_via_config*"),
+        join(output_dir, "clf_metrics_objective_overlap*"),
+        join(output_dir, "test_multinomialnb_loading*"),
+        join(output_dir, "test_predict_return_and_write_predictions*"),
+    ]:
         for path in glob(glob_pattern):
             unlink(path)
 
-    config_files = [join(config_dir,
-                         cfgname) for cfgname in ['test_single_file.cfg',
-                                                  'test_single_file_saved_subset.cfg']]
-    config_files.extend(glob(join(config_dir,
-                                  'test_metric_values_for_classification_*.cfg')))
-    config_files.extend(glob(join(config_dir,
-                                  'test_fancy_pos_label_str*.cfg')))
-    config_files.extend(glob(join(config_dir,
-                                  'test_fancy_metrics_objective_overlap*.cfg')))
+    config_files = [
+        join(config_dir, cfgname)
+        for cfgname in ["test_single_file.cfg", "test_single_file_saved_subset.cfg"]
+    ]
+    config_files.extend(
+        glob(join(config_dir, "test_metric_values_for_classification_*.cfg"))
+    )
+    config_files.extend(glob(join(config_dir, "test_fancy_pos_label_str*.cfg")))
+    config_files.extend(
+        glob(join(config_dir, "test_fancy_metrics_objective_overlap*.cfg"))
+    )
 
     for config_file in config_files:
         unlink(config_file)
 
-    for file_name in ["metric_values_test.jsonlines",
-                      "metric_values_train.jsonlines"]:
+    for file_name in ["metric_values_test.jsonlines", "metric_values_train.jsonlines"]:
         unlink(Path(train_dir) / file_name)
 
 
@@ -121,8 +126,8 @@ def test_contiguous_int_or_float_labels():
     eq_(contiguous_ints_or_floats([3, 6, 11]), False)
     eq_(contiguous_ints_or_floats([-2.0, -1.0, 1.0, 2.0]), False)
     eq_(contiguous_ints_or_floats([1.0, 1.1, 1.2]), False)
-    assert_raises(TypeError, contiguous_ints_or_floats, ['a', 'b', 'c'])
-    assert_raises(TypeError, contiguous_ints_or_floats, np.array([1, 2, 3, 'a']))
+    assert_raises(TypeError, contiguous_ints_or_floats, ["a", "b", "c"])
+    assert_raises(TypeError, contiguous_ints_or_floats, np.array([1, 2, 3, "a"]))
     assert_raises(ValueError, contiguous_ints_or_floats, [])
     assert_raises(ValueError, contiguous_ints_or_floats, np.array([]))
 
@@ -133,26 +138,33 @@ def test_label_index_order():
     """
     train_fs, _ = make_classification_data()
     prng = np.random.RandomState(123456789)
-    for (unique_label_list,
-         correct_order) in zip([['B', 'C', 'A'],
-                                [3, 1, 2],
-                                [1.0, 2.5, 1.4],
-                                [4, 5, 6],
-                                [1.0, 3.0, 2.0, 4.0],
-                                [1, 2, 3, 4.0]],
-                               [['A', 'B', 'C'],
-                                [1, 2, 3],
-                                [1.0, 1.4, 2.5],
-                                [4, 5, 6],
-                                [1.0, 2.0, 3.0, 4.0],
-                                [1.0, 2.0, 3.0, 4.0]]):
+    for (unique_label_list, correct_order) in zip(
+        [
+            ["B", "C", "A"],
+            [3, 1, 2],
+            [1.0, 2.5, 1.4],
+            [4, 5, 6],
+            [1.0, 3.0, 2.0, 4.0],
+            [1, 2, 3, 4.0],
+        ],
+        [
+            ["A", "B", "C"],
+            [1, 2, 3],
+            [1.0, 1.4, 2.5],
+            [4, 5, 6],
+            [1.0, 2.0, 3.0, 4.0],
+            [1.0, 2.0, 3.0, 4.0],
+        ],
+    ):
         labels = prng.choice(unique_label_list, size=len(train_fs))
         train_fs.labels = labels
 
-        clf = Learner('LogisticRegression')
+        clf = Learner("LogisticRegression")
         clf.train(train_fs, grid_search=False)
         reverse_label_dict = {y: x for x, y in clf.label_dict.items()}
-        label_order_from_dict = [reverse_label_dict[x] for x in range(len(unique_label_list))]
+        label_order_from_dict = [
+            reverse_label_dict[x] for x in range(len(unique_label_list))
+        ]
 
         eq_(clf.label_list, correct_order)
         eq_(label_order_from_dict, correct_order)
@@ -166,63 +178,73 @@ def check_label_index_order_with_pos_label_str(use_api=True):
     """
     train_fs, _ = make_classification_data()
     prng = np.random.RandomState(123456789)
-    for (unique_label_list,
-         pos_label_str,
-         correct_order) in zip([['B', 'C'],
-                                ['B', 'A', 'C'],
-                                [1, 2],
-                                [3, 1, 2],
-                                [1.0, 3.0, 2.0, 4.0],
-                                [1.0, 2.0],
-                                ['FRAG', 'NONE']],
-                               ['B', 'A', 2, 1, 3.0, 1.0, 'FRAG'],
-                               [['C', 'B'],
-                                ['A', 'B', 'C'],
-                                [1, 2],
-                                [1, 2, 3],
-                                [1.0, 2.0, 3.0, 4.0],
-                                [2.0, 1.0],
-                                ['NONE', 'FRAG']]):
+    for (unique_label_list, pos_label_str, correct_order) in zip(
+        [
+            ["B", "C"],
+            ["B", "A", "C"],
+            [1, 2],
+            [3, 1, 2],
+            [1.0, 3.0, 2.0, 4.0],
+            [1.0, 2.0],
+            ["FRAG", "NONE"],
+        ],
+        ["B", "A", 2, 1, 3.0, 1.0, "FRAG"],
+        [
+            ["C", "B"],
+            ["A", "B", "C"],
+            [1, 2],
+            [1, 2, 3],
+            [1.0, 2.0, 3.0, 4.0],
+            [2.0, 1.0],
+            ["NONE", "FRAG"],
+        ],
+    ):
         labels = prng.choice(unique_label_list, size=len(train_fs))
         train_fs.labels = labels
 
         # if we are using the API, create a learner instance directly
         # otherwise run a configuration file to train a learner
         if use_api:
-            clf = Learner('LogisticRegression', pos_label_str=pos_label_str)
+            clf = Learner("LogisticRegression", pos_label_str=pos_label_str)
             clf.train(train_fs, grid_search=False)
         else:
 
-            train_file = join(train_dir, 'pos_label_str_train.jsonlines')
+            train_file = join(train_dir, "pos_label_str_train.jsonlines")
 
             # write out the feature set we made to a file for use in config
             writer = NDJWriter.for_path(train_file, train_fs)
             writer.write()
 
             # get the config template
-            config_template_path = join(config_dir, 'test_fancy.template.cfg')
+            config_template_path = join(config_dir, "test_fancy.template.cfg")
 
-            values_to_fill_dict = {'experiment_name': 'pos_label_str_via_config',
-                                   'task': 'train',
-                                   'learners': '["LogisticRegression"]',
-                                   'train_file': train_file,
-                                   'grid_search': 'false',
-                                   'pos_label_str': str(pos_label_str),
-                                   'log': output_dir,
-                                   'models': output_dir}
+            values_to_fill_dict = {
+                "experiment_name": "pos_label_str_via_config",
+                "task": "train",
+                "learners": '["LogisticRegression"]',
+                "train_file": train_file,
+                "grid_search": "false",
+                "pos_label_str": str(pos_label_str),
+                "log": output_dir,
+                "models": output_dir,
+            }
 
-            config_path = fill_in_config_options(config_template_path,
-                                                 values_to_fill_dict,
-                                                 'pos_label_str')
+            config_path = fill_in_config_options(
+                config_template_path, values_to_fill_dict, "pos_label_str"
+            )
             _ = run_configuration(config_path, local=True, quiet=True)
             clf = Learner.from_file(
-                join(output_dir,
-                     "pos_label_str_via_config_train_pos_label_str_train."
-                     "jsonlines_LogisticRegression.model")
+                join(
+                    output_dir,
+                    "pos_label_str_via_config_train_pos_label_str_train."
+                    "jsonlines_LogisticRegression.model",
+                )
             )
 
         reverse_label_dict = {y: x for x, y in clf.label_dict.items()}
-        label_order_from_dict = [reverse_label_dict[x] for x in range(len(unique_label_list))]
+        label_order_from_dict = [
+            reverse_label_dict[x] for x in range(len(unique_label_list))
+        ]
 
         eq_(clf.label_list, correct_order)
         eq_(label_order_from_dict, correct_order)
@@ -237,10 +259,9 @@ def test_label_index_order_with_pos_label_str():
     yield check_label_index_order_with_pos_label_str, False
 
 
-def check_binary_predictions_for_pos_label_str(label_list,
-                                               use_pos_label_str=True,
-                                               probability=True,
-                                               use_api=True):
+def check_binary_predictions_for_pos_label_str(
+    label_list, use_pos_label_str=True, probability=True, use_api=True
+):
     """
     This tests whether binary predictions and probabilities
     obtained from SKLL (via the API as well as the config)
@@ -248,12 +269,12 @@ def check_binary_predictions_for_pos_label_str(label_list,
     for when `pos_label_str` is set and also when it is not set.
     """
 
-    if label_list == ['B', 'C']:
-        pos_label_str, other_label_str = 'B', 'C'
+    if label_list == ["B", "C"]:
+        pos_label_str, other_label_str = "B", "C"
     elif label_list == [1, 2]:
         pos_label_str, other_label_str = 2, 1
     else:
-        pos_label_str, other_label_str = 'FRAG', 'NONE'
+        pos_label_str, other_label_str = "FRAG", "NONE"
 
     # create the mapping from class indices to class labels
     # manually so that they match our expectations for what
@@ -274,7 +295,9 @@ def check_binary_predictions_for_pos_label_str(label_list,
     # SKLL gets trained on those labels
     train_fs, test_fs = make_classification_data(num_examples=100)
     train_class_indices = prng.choice([0, 1], size=len(train_fs))
-    train_fs.labels = np.array([index_label_dict[index] for index in train_class_indices])
+    train_fs.labels = np.array(
+        [index_label_dict[index] for index in train_class_indices]
+    )
     test_class_indices = prng.choice([0, 1], size=len(test_fs))
     test_fs.labels = np.array([index_label_dict[index] for index in test_class_indices])
 
@@ -282,10 +305,9 @@ def check_binary_predictions_for_pos_label_str(label_list,
     # with the same fixed parameters as SKLL and using
     # the class indices we generated randomly above;
     # predict class indices/probabilities for the test set
-    clf_sklearn = LogisticRegression(max_iter=1000,
-                                     multi_class='auto',
-                                     solver='liblinear',
-                                     random_state=123456789)
+    clf_sklearn = LogisticRegression(
+        max_iter=1000, multi_class="auto", solver="liblinear", random_state=123456789
+    )
     sklearn_features = train_fs.features
     clf_sklearn.fit(sklearn_features, train_class_indices)
     if probability:
@@ -298,40 +320,46 @@ def check_binary_predictions_for_pos_label_str(label_list,
     # we train+predict either using the API or using a config
     pos_label_str = pos_label_str if use_pos_label_str else None
     if use_api:
-        clf_skll = Learner('LogisticRegression',
-                           pos_label_str=pos_label_str,
-                           probability=probability)
+        clf_skll = Learner(
+            "LogisticRegression", pos_label_str=pos_label_str, probability=probability
+        )
         clf_skll.train(train_fs, grid_search=False)
     else:
-        train_file = join(train_dir, 'pos_label_str_train.jsonlines')
+        train_file = join(train_dir, "pos_label_str_train.jsonlines")
 
         # write out the feature set we made to a file for use in config
         writer = NDJWriter.for_path(train_file, train_fs)
         writer.write()
 
         # get the config template
-        config_template_path = join(config_dir, 'test_fancy.template.cfg')
+        config_template_path = join(config_dir, "test_fancy.template.cfg")
 
-        values_to_fill_dict = {'experiment_name': 'pos_label_str_predict',
-                               'task': 'train',
-                               'learners': '["LogisticRegression"]',
-                               'train_file': train_file,
-                               'grid_search': 'false',
-                               'pos_label_str': str(pos_label_str),
-                               'log': output_dir,
-                               'models': output_dir,
-                               'probability': 'true' if probability else 'false'}
+        values_to_fill_dict = {
+            "experiment_name": "pos_label_str_predict",
+            "task": "train",
+            "learners": '["LogisticRegression"]',
+            "train_file": train_file,
+            "grid_search": "false",
+            "pos_label_str": str(pos_label_str),
+            "log": output_dir,
+            "models": output_dir,
+            "probability": "true" if probability else "false",
+        }
 
-        config_path = fill_in_config_options(config_template_path,
-                                             values_to_fill_dict,
-                                             'pos_label_str_predict',
-                                             good_probability_option=True)
+        config_path = fill_in_config_options(
+            config_template_path,
+            values_to_fill_dict,
+            "pos_label_str_predict",
+            good_probability_option=True,
+        )
 
         _ = run_configuration(config_path, local=True, quiet=True)
         clf_skll = Learner.from_file(
-            join(output_dir,
-                 "pos_label_str_predict_train_pos_label_str_train.jsonlines"
-                 "_LogisticRegression.model")
+            join(
+                output_dir,
+                "pos_label_str_predict_train_pos_label_str_train.jsonlines"
+                "_LogisticRegression.model",
+            )
         )
 
     skll_predictions = clf_skll.predict(test_fs, class_labels=False)
@@ -342,21 +370,20 @@ def check_binary_predictions_for_pos_label_str(label_list,
 
 def test_binary_predictions_for_pos_label_str():
 
-    for (unique_label_list,
-         use_pos_label_str,
-         probability,
-         use_api) in product([['B', 'C'],
-                              [1, 2],
-                              ['FRAG', 'NONE']],
-                             [True, False],
-                             [True, False],
-                             [True, False]):
+    for (unique_label_list, use_pos_label_str, probability, use_api) in product(
+        [["B", "C"], [1, 2], ["FRAG", "NONE"]],
+        [True, False],
+        [True, False],
+        [True, False],
+    ):
 
-        yield (check_binary_predictions_for_pos_label_str,
-               unique_label_list,
-               use_pos_label_str,
-               probability,
-               use_api)
+        yield (
+            check_binary_predictions_for_pos_label_str,
+            unique_label_list,
+            use_pos_label_str,
+            probability,
+            use_api,
+        )
 
 
 def check_predict(model, use_feature_hashing=False):
@@ -368,20 +395,20 @@ def check_predict(model, use_feature_hashing=False):
     """
 
     # create the random data for the given model
-    if model._estimator_type == 'regressor':
-        train_fs, test_fs, _ = \
-            make_regression_data(use_feature_hashing=use_feature_hashing,
-                                 feature_bins=5)
+    if model._estimator_type == "regressor":
+        train_fs, test_fs, _ = make_regression_data(
+            use_feature_hashing=use_feature_hashing, feature_bins=5
+        )
     # feature hashing will not work for Naive Bayes since it requires
     # non-negative feature values
-    elif model.__name__ == 'MultinomialNB':
-        train_fs, test_fs = \
-            make_classification_data(use_feature_hashing=False,
-                                     non_negative=True)
+    elif model.__name__ == "MultinomialNB":
+        train_fs, test_fs = make_classification_data(
+            use_feature_hashing=False, non_negative=True
+        )
     else:
-        train_fs, test_fs = \
-            make_classification_data(use_feature_hashing=use_feature_hashing,
-                                     feature_bins=25)
+        train_fs, test_fs = make_classification_data(
+            use_feature_hashing=use_feature_hashing, feature_bins=25
+        )
 
     # create the learner with the specified model
     learner = Learner(model.__name__)
@@ -404,23 +431,22 @@ def test_default_param_grids_no_duplicates():
     """
     for learner, param_dict in KNOWN_DEFAULT_PARAM_GRIDS.items():
         for param_name, values in param_dict.items():
-            assert(len(set(values)) == len(values))
+            assert len(set(values)) == len(values)
 
 
 # the runner function for the prediction tests
 def test_predict():
-    for model, use_feature_hashing in \
-            itertools.product(_ALL_MODELS, [True, False]):
+    for model, use_feature_hashing in itertools.product(_ALL_MODELS, [True, False]):
         yield check_predict, model, use_feature_hashing
 
 
 # test predictions when both the model and the data use DictVectorizers
 def test_predict_dict_dict():
-    train_file = join(other_dir, 'examples_train.jsonlines')
-    test_file = join(other_dir, 'examples_test.jsonlines')
+    train_file = join(other_dir, "examples_train.jsonlines")
+    test_file = join(other_dir, "examples_test.jsonlines")
     train_fs = NDJReader.for_path(train_file).read()
     test_fs = NDJReader.for_path(test_file).read()
-    learner = Learner('LogisticRegression')
+    learner = Learner("LogisticRegression")
     learner.train(train_fs, grid_search=False)
     predictions = learner.predict(test_fs)
     eq_(len(predictions), test_fs.features.shape[0])
@@ -429,11 +455,13 @@ def test_predict_dict_dict():
 # test predictions when both the model and the data use FeatureHashers
 # and the same number of bins
 def test_predict_hasher_hasher_same_bins():
-    train_file = join(other_dir, 'examples_train.jsonlines')
-    test_file = join(other_dir, 'examples_test.jsonlines')
-    train_fs = NDJReader.for_path(train_file, feature_hasher=True, num_features=3).read()
+    train_file = join(other_dir, "examples_train.jsonlines")
+    test_file = join(other_dir, "examples_test.jsonlines")
+    train_fs = NDJReader.for_path(
+        train_file, feature_hasher=True, num_features=3
+    ).read()
     test_fs = NDJReader.for_path(test_file, feature_hasher=True, num_features=3).read()
-    learner = Learner('LogisticRegression')
+    learner = Learner("LogisticRegression")
     learner.train(train_fs, grid_search=False)
     predictions = learner.predict(test_fs)
     eq_(len(predictions), test_fs.features.shape[0])
@@ -443,11 +471,13 @@ def test_predict_hasher_hasher_same_bins():
 # but different number of bins
 @raises(RuntimeError)
 def test_predict_hasher_hasher_different_bins():
-    train_file = join(other_dir, 'examples_train.jsonlines')
-    test_file = join(other_dir, 'examples_test.jsonlines')
-    train_fs = NDJReader.for_path(train_file, feature_hasher=True, num_features=3).read()
+    train_file = join(other_dir, "examples_train.jsonlines")
+    test_file = join(other_dir, "examples_test.jsonlines")
+    train_fs = NDJReader.for_path(
+        train_file, feature_hasher=True, num_features=3
+    ).read()
     test_fs = NDJReader.for_path(test_file, feature_hasher=True, num_features=2).read()
-    learner = Learner('LogisticRegression')
+    learner = Learner("LogisticRegression")
     learner.train(train_fs, grid_search=False)
     _ = learner.predict(test_fs)
 
@@ -455,11 +485,13 @@ def test_predict_hasher_hasher_different_bins():
 # test predictions when model uses a FeatureHasher and data
 # uses a DictVectorizer
 def test_predict_hasher_dict():
-    train_file = join(other_dir, 'examples_train.jsonlines')
-    test_file = join(other_dir, 'examples_test.jsonlines')
-    train_fs = NDJReader.for_path(train_file, feature_hasher=True, num_features=3).read()
+    train_file = join(other_dir, "examples_train.jsonlines")
+    test_file = join(other_dir, "examples_test.jsonlines")
+    train_fs = NDJReader.for_path(
+        train_file, feature_hasher=True, num_features=3
+    ).read()
     test_fs = NDJReader.for_path(test_file).read()
-    learner = Learner('LogisticRegression')
+    learner = Learner("LogisticRegression")
     learner.train(train_fs, grid_search=False)
     predictions = learner.predict(test_fs)
     eq_(len(predictions), test_fs.features.shape[0])
@@ -469,11 +501,11 @@ def test_predict_hasher_dict():
 # uses a FeatureHasher
 @raises(RuntimeError)
 def test_predict_dict_hasher():
-    train_file = join(other_dir, 'examples_train.jsonlines')
-    test_file = join(other_dir, 'examples_test.jsonlines')
+    train_file = join(other_dir, "examples_train.jsonlines")
+    test_file = join(other_dir, "examples_test.jsonlines")
     train_fs = NDJReader.for_path(train_file).read()
     test_fs = NDJReader.for_path(test_file, feature_hasher=True, num_features=3).read()
-    learner = Learner('LogisticRegression')
+    learner = Learner("LogisticRegression")
     learner.train(train_fs, grid_search=False)
     _ = learner.predict(test_fs)
 
@@ -486,15 +518,15 @@ def make_rare_class_data():
     firing
     """
 
-    ids = [f'EXAMPLE_{n}' for n in range(1, 16)]
+    ids = [f"EXAMPLE_{n}" for n in range(1, 16)]
     y = [0] * 5 + [1] * 5 + [2] * 5
     X = np.vstack([np.identity(5), np.identity(5), np.identity(5)])
-    feature_names = [f'f{i}' for i in range(1, 6)]
+    feature_names = [f"f{i}" for i in range(1, 6)]
     features = []
     for row in X:
         features.append(dict(zip(feature_names, row)))
 
-    return FeatureSet('rare-class', ids, features=features, labels=y)
+    return FeatureSet("rare-class", ids, features=features, labels=y)
 
 
 def test_rare_class():
@@ -503,14 +535,16 @@ def test_rare_class():
     """
 
     rare_class_fs = make_rare_class_data()
-    prediction_prefix = join(output_dir, 'rare_class')
-    learner = Learner('LogisticRegression')
-    learner.cross_validate(rare_class_fs,
-                           grid_objective='unweighted_kappa',
-                           prediction_prefix=prediction_prefix)
+    prediction_prefix = join(output_dir, "rare_class")
+    learner = Learner("LogisticRegression")
+    learner.cross_validate(
+        rare_class_fs,
+        grid_objective="unweighted_kappa",
+        prediction_prefix=prediction_prefix,
+    )
 
-    with open(f'{prediction_prefix}_predictions.tsv') as f:
-        reader = csv.reader(f, dialect='excel-tab')
+    with open(f"{prediction_prefix}_predictions.tsv") as f:
+        reader = csv.reader(f, dialect="excel-tab")
         next(reader)
         pred = [row[1] for row in reader]
 
@@ -518,8 +552,7 @@ def test_rare_class():
 
 
 def check_sparse_predict(learner_name, expected_score, use_feature_hashing=False):
-    train_fs, test_fs = make_sparse_data(
-        use_feature_hashing=use_feature_hashing)
+    train_fs, test_fs = make_sparse_data(use_feature_hashing=use_feature_hashing)
 
     # train the given classifier on the training
     # data and evalute on the testing data
@@ -530,34 +563,43 @@ def check_sparse_predict(learner_name, expected_score, use_feature_hashing=False
 
 
 def test_sparse_predict():
-    for learner_name, expected_scores in zip(['LogisticRegression',
-                                              'DecisionTreeClassifier',
-                                              'RandomForestClassifier',
-                                              'AdaBoostClassifier',
-                                              'MultinomialNB',
-                                              'KNeighborsClassifier',
-                                              'RidgeClassifier',
-                                              'MLPClassifier'],
-                                             [(0.45, 0.52), (0.52, 0.5),
-                                              (0.48, 0.5), (0.49, 0.5),
-                                              (0.43, 0), (0.53, 0.57),
-                                              (0.45, 0.52), (0.5, 0.49)]):
+    for learner_name, expected_scores in zip(
+        [
+            "LogisticRegression",
+            "DecisionTreeClassifier",
+            "RandomForestClassifier",
+            "AdaBoostClassifier",
+            "MultinomialNB",
+            "KNeighborsClassifier",
+            "RidgeClassifier",
+            "MLPClassifier",
+        ],
+        [
+            (0.45, 0.52),
+            (0.52, 0.5),
+            (0.48, 0.5),
+            (0.49, 0.5),
+            (0.43, 0),
+            (0.53, 0.57),
+            (0.45, 0.52),
+            (0.5, 0.49),
+        ],
+    ):
         yield check_sparse_predict, learner_name, expected_scores[0], False
-        if learner_name != 'MultinomialNB':
+        if learner_name != "MultinomialNB":
             yield check_sparse_predict, learner_name, expected_scores[1], True
 
 
 def test_mlp_classification():
-    train_fs, test_fs = make_classification_data(num_examples=600,
-                                                 train_test_ratio=0.8,
-                                                 num_labels=3,
-                                                 num_features=5)
+    train_fs, test_fs = make_classification_data(
+        num_examples=600, train_test_ratio=0.8, num_labels=3, num_features=5
+    )
 
     # train an MLPCLassifier on the training data and evalute on the
     # testing data
-    learner = Learner('MLPClassifier')
+    learner = Learner("MLPClassifier")
     with warnings.catch_warnings():
-        warnings.filterwarnings('ignore', category=ConvergenceWarning)
+        warnings.filterwarnings("ignore", category=ConvergenceWarning)
         learner.train(train_fs, grid_search=False)
 
     # now generate the predictions on the test set
@@ -572,20 +614,18 @@ def test_mlp_classification():
 
 
 def check_sparse_predict_sampler(use_feature_hashing=False):
-    train_fs, test_fs = make_sparse_data(
-        use_feature_hashing=use_feature_hashing)
+    train_fs, test_fs = make_sparse_data(use_feature_hashing=use_feature_hashing)
 
     if use_feature_hashing:
-        sampler = 'RBFSampler'
+        sampler = "RBFSampler"
         sampler_parameters = {"gamma": 1.0, "n_components": 50}
     else:
-        sampler = 'Nystroem'
-        sampler_parameters = {"gamma": 1.0, "n_components": 50,
-                              "kernel": 'rbf'}
+        sampler = "Nystroem"
+        sampler_parameters = {"gamma": 1.0, "n_components": 50, "kernel": "rbf"}
 
-    learner = Learner('LogisticRegression',
-                      sampler=sampler,
-                      sampler_kwargs=sampler_parameters)
+    learner = Learner(
+        "LogisticRegression", sampler=sampler, sampler_kwargs=sampler_parameters
+    )
 
     learner.train(train_fs, grid_search=False)
     test_score = learner.evaluate(test_fs)[1]
@@ -597,17 +637,21 @@ def check_sparse_predict_sampler(use_feature_hashing=False):
 def check_dummy_classifier_predict(model_args, train_labels, expected_output):
 
     # create hard-coded featuresets based with known labels
-    train_fs = FeatureSet('classification_train',
-                          [f'TrainExample{i}' for i in range(20)],
-                          labels=train_labels,
-                          features=[{"feature": i} for i in range(20)])
+    train_fs = FeatureSet(
+        "classification_train",
+        [f"TrainExample{i}" for i in range(20)],
+        labels=train_labels,
+        features=[{"feature": i} for i in range(20)],
+    )
 
-    test_fs = FeatureSet('classification_test',
-                         [f'TestExample{i}' for i in range(10)],
-                         features=[{"feature": i} for i in range(20, 30)])
+    test_fs = FeatureSet(
+        "classification_test",
+        [f"TestExample{i}" for i in range(10)],
+        features=[{"feature": i} for i in range(20, 30)],
+    )
 
     # Ensure predictions are as expectedfor the given strategy
-    learner = Learner('DummyClassifier', model_kwargs=model_args)
+    learner = Learner("DummyClassifier", model_kwargs=model_args)
     learner.train(train_fs, grid_search=False)
     predictions = learner.predict(test_fs)
     eq_(np.array_equal(expected_output, predictions), True)
@@ -617,12 +661,14 @@ def test_dummy_classifier_predict():
 
     # create a known set of labels
     train_labels = ([0] * 14) + ([1] * 6)
-    for (model_args, expected_output) in zip([{"strategy": "stratified"},
-                                              {"strategy": "most_frequent"},
-                                              {"strategy": "constant", "constant": 1}],
-                                             [np.array([0, 0, 0, 1, 0, 1, 1, 0, 0, 0]),
-                                              np.zeros(10),
-                                              np.ones(10) * 1]):
+    for (model_args, expected_output) in zip(
+        [
+            {"strategy": "stratified"},
+            {"strategy": "most_frequent"},
+            {"strategy": "constant", "constant": 1},
+        ],
+        [np.array([0, 0, 0, 1, 0, 1, 1, 0, 0, 0]), np.zeros(10), np.ones(10) * 1],
+    ):
         yield check_dummy_classifier_predict, model_args, train_labels, expected_output
 
 
@@ -636,25 +682,27 @@ def make_single_file_featureset_data():
     Write a training file and a test file for tests that check whether
     specifying train_file and test_file actually works.
     """
-    train_fs, test_fs = make_classification_data(num_examples=600,
-                                                 train_test_ratio=0.8,
-                                                 num_labels=2,
-                                                 num_features=3,
-                                                 non_negative=False)
+    train_fs, test_fs = make_classification_data(
+        num_examples=600,
+        train_test_ratio=0.8,
+        num_labels=2,
+        num_features=3,
+        non_negative=False,
+    )
 
     # Write training feature set to a file
-    train_path = join(train_dir, 'train_single_file.jsonlines')
+    train_path = join(train_dir, "train_single_file.jsonlines")
     writer = NDJWriter(train_path, train_fs)
     writer.write()
 
     # Write test feature set to a file
-    test_path = join(test_dir, 'test_single_file.jsonlines')
+    test_path = join(test_dir, "test_single_file.jsonlines")
     writer = NDJWriter(test_path, test_fs)
     writer.write()
 
     # Also write another test feature set that has fewer features than the training set
-    test_fs.filter(features=['f01', 'f02'])
-    test_path = join(test_dir, 'test_single_file_subset.jsonlines')
+    test_fs.filter(features=["f01", "f02"])
+    test_path = join(test_dir, "test_single_file_subset.jsonlines")
     writer = NDJWriter(test_path, test_fs)
     writer.write()
 
@@ -667,42 +715,50 @@ def test_train_file_test_file():
     make_single_file_featureset_data()
 
     # Run experiment
-    config_path = fill_in_config_paths_for_single_file(join(config_dir,
-                                                            "test_single_file"
-                                                            ".template.cfg"),
-                                                       join(train_dir,
-                                                            'train_single_file'
-                                                            '.jsonlines'),
-                                                       join(test_dir,
-                                                            'test_single_file.'
-                                                            'jsonlines'))
+    config_path = fill_in_config_paths_for_single_file(
+        join(config_dir, "test_single_file" ".template.cfg"),
+        join(train_dir, "train_single_file" ".jsonlines"),
+        join(test_dir, "test_single_file." "jsonlines"),
+    )
     run_configuration(config_path, quiet=True)
 
     # Check results for objective functions ["accuracy", "f1", "f05"]
 
     # objective function accuracy
-    with open(join(output_dir,
-                   'train_test_single_file_train_train_single_file.jsonlines'
-                   '_test_test_single_file.jsonlines_RandomForestClassifier'
-                   '_accuracy.results.json')) as f:
+    with open(
+        join(
+            output_dir,
+            "train_test_single_file_train_train_single_file.jsonlines"
+            "_test_test_single_file.jsonlines_RandomForestClassifier"
+            "_accuracy.results.json",
+        )
+    ) as f:
         result_dict = json.load(f)[0]
-    assert_almost_equal(result_dict['score'], 0.95)
+    assert_almost_equal(result_dict["score"], 0.95)
 
     # objective function f1
-    with open(join(output_dir,
-                   'train_test_single_file_train_train_single_file.jsonlines'
-                   '_test_test_single_file.jsonlines_RandomForestClassifier'
-                   '_f1.results.json')) as f:
+    with open(
+        join(
+            output_dir,
+            "train_test_single_file_train_train_single_file.jsonlines"
+            "_test_test_single_file.jsonlines_RandomForestClassifier"
+            "_f1.results.json",
+        )
+    ) as f:
         result_dict = json.load(f)[0]
-    assert_almost_equal(result_dict['score'], 0.9491525423728813)
+    assert_almost_equal(result_dict["score"], 0.9491525423728813)
 
     # objective function f05
-    with open(join(output_dir,
-                   'train_test_single_file_train_train_single_file.jsonlines'
-                   '_test_test_single_file.jsonlines_RandomForestClassifier'
-                   '_f05.results.json')) as f:
+    with open(
+        join(
+            output_dir,
+            "train_test_single_file_train_train_single_file.jsonlines"
+            "_test_test_single_file.jsonlines_RandomForestClassifier"
+            "_f05.results.json",
+        )
+    ) as f:
         result_dict = json.load(f)[0]
-    assert_almost_equal(result_dict['score'], 0.9302325581395348)
+    assert_almost_equal(result_dict["score"], 0.9302325581395348)
 
 
 def test_predict_on_subset_with_existing_model():
@@ -713,31 +769,37 @@ def test_predict_on_subset_with_existing_model():
     make_single_file_featureset_data()
 
     # train and save a model on the training file
-    train_fs = NDJReader.for_path(join(train_dir, 'train_single_file.jsonlines')).read()
-    learner = Learner('RandomForestClassifier')
+    train_fs = NDJReader.for_path(join(train_dir, "train_single_file.jsonlines")).read()
+    learner = Learner("RandomForestClassifier")
     learner.train(train_fs, grid_search=True, grid_objective="accuracy")
-    model_filename = join(output_dir,
-                          'train_test_single_file_train_train_single_file.'
-                          'jsonlines_test_test_single_file_subset.jsonlines'
-                          '_RandomForestClassifier.model')
+    model_filename = join(
+        output_dir,
+        "train_test_single_file_train_train_single_file."
+        "jsonlines_test_test_single_file_subset.jsonlines"
+        "_RandomForestClassifier.model",
+    )
 
     learner.save(model_filename)
 
     # Run experiment
     config_path = fill_in_config_paths_for_single_file(
         join(config_dir, "test_single_file_saved_subset.template.cfg"),
-        join(train_dir, 'train_single_file.jsonlines'),
-        join(test_dir, 'test_single_file_subset.jsonlines')
+        join(train_dir, "train_single_file.jsonlines"),
+        join(test_dir, "test_single_file_subset.jsonlines"),
     )
     run_configuration(config_path, quiet=True, overwrite=False)
 
     # Check results
-    with open(join(output_dir,
-                   'train_test_single_file_train_train_single_file.jsonlines'
-                   '_test_test_single_file_subset.jsonlines_'
-                   'RandomForestClassifier.results.json')) as f:
+    with open(
+        join(
+            output_dir,
+            "train_test_single_file_train_train_single_file.jsonlines"
+            "_test_test_single_file_subset.jsonlines_"
+            "RandomForestClassifier.results.json",
+        )
+    ) as f:
         result_dict = json.load(f)[0]
-    assert_almost_equal(result_dict['accuracy'], 0.7333333)
+    assert_almost_equal(result_dict["accuracy"], 0.7333333)
 
 
 def test_train_file_test_file_ablation():
@@ -750,16 +812,15 @@ def test_train_file_test_file_ablation():
     # Run experiment
     config_path = fill_in_config_paths_for_single_file(
         join(config_dir, "test_single_file.template.cfg"),
-        join(train_dir, 'train_single_file.jsonlines'),
-        join(test_dir, 'test_single_file.jsonlines')
+        join(train_dir, "train_single_file.jsonlines"),
+        join(test_dir, "test_single_file.jsonlines"),
     )
     run_configuration(config_path, quiet=True, ablation=None)
 
     # check that we see the message that ablation was ignored in the experiment log
     # Check experiment log output
-    with open(join(output_dir, 'train_test_single_file.log')) as f:
-        cv_file_pattern = re.compile(r'Not enough featuresets for ablation. '
-                                     r'Ignoring.')
+    with open(join(output_dir, "train_test_single_file.log")) as f:
+        cv_file_pattern = re.compile(r"Not enough featuresets for ablation. Ignoring.")
         matches = re.findall(cv_file_pattern, f.read())
         eq_(len(matches), 1)
 
@@ -772,9 +833,9 @@ def test_train_file_and_train_directory():
     # Run experiment
     config_path = fill_in_config_paths_for_single_file(
         join(config_dir, "test_single_file.template.cfg"),
-        join(train_dir, 'train_single_file.jsonlines'),
-        join(test_dir, 'test_single_file.jsonlines'),
-        train_directory='foo'
+        join(train_dir, "train_single_file.jsonlines"),
+        join(test_dir, "test_single_file.jsonlines"),
+        train_directory="foo",
     )
     parse_config_file(config_path)
 
@@ -787,9 +848,9 @@ def test_test_file_and_test_directory():
     # Run experiment
     config_path = fill_in_config_paths_for_single_file(
         join(config_dir, "test_single_file.template.cfg"),
-        join(train_dir, 'train_single_file.jsonlines'),
-        join(test_dir, 'test_single_file.jsonlines'),
-        test_directory='foo'
+        join(train_dir, "train_single_file.jsonlines"),
+        join(test_dir, "test_single_file.jsonlines"),
+        test_directory="foo",
     )
     parse_config_file(config_path)
 
@@ -799,31 +860,33 @@ def check_adaboost_predict(base_estimator, algorithm, expected_score):
 
     # train an AdaBoostClassifier on the training data and evalute on the
     # testing data
-    learner = Learner('AdaBoostClassifier', model_kwargs={'base_estimator': base_estimator,
-                                                          'algorithm': algorithm})
+    learner = Learner(
+        "AdaBoostClassifier",
+        model_kwargs={"base_estimator": base_estimator, "algorithm": algorithm},
+    )
     learner.train(train_fs, grid_search=False)
     test_score = learner.evaluate(test_fs)[1]
     assert_almost_equal(test_score, expected_score)
 
 
 def test_adaboost_predict():
-    for base_estimator_name, algorithm, expected_score in zip(['MultinomialNB',
-                                                               'DecisionTreeClassifier',
-                                                               'SGDClassifier',
-                                                               'SVC'],
-                                                              ['SAMME.R', 'SAMME.R',
-                                                               'SAMME', 'SAMME'],
-                                                              [0.46, 0.52, 0.46, 0.5]):
+    for base_estimator_name, algorithm, expected_score in zip(
+        ["MultinomialNB", "DecisionTreeClassifier", "SGDClassifier", "SVC"],
+        ["SAMME.R", "SAMME.R", "SAMME", "SAMME"],
+        [0.46, 0.52, 0.46, 0.5],
+    ):
         yield check_adaboost_predict, base_estimator_name, algorithm, expected_score
 
 
 def check_results_with_unseen_labels(res, n_labels, new_label_list):
-    (confusion_matrix,
-     score,
-     result_dict,
-     model_params,
-     grid_score,
-     additional_scores) = res
+    (
+        confusion_matrix,
+        score,
+        result_dict,
+        model_params,
+        grid_score,
+        additional_scores,
+    ) = res
 
     # check that the new label is included into the results
     for output in [confusion_matrix, result_dict]:
@@ -834,7 +897,7 @@ def check_results_with_unseen_labels(res, n_labels, new_label_list):
 
     # check that all metrics for new label are 0
     for label in new_label_list:
-        for metric in ['Precision', 'Recall', 'F-measure']:
+        for metric in ["Precision", "Recall", "F-measure"]:
             eq_(result_dict[label][metric], 0)
 
 
@@ -842,12 +905,11 @@ def test_new_labels_in_test_set():
     """
     Test classification experiment with an unseen label in the test set.
     """
-    train_fs, test_fs = make_classification_data(num_labels=3,
-                                                 train_test_ratio=0.8)
+    train_fs, test_fs = make_classification_data(num_labels=3, train_test_ratio=0.8)
     # add new labels to the test set
     test_fs.labels[-3:] = 3
 
-    learner = Learner('SVC')
+    learner = Learner("SVC")
     learner.train(train_fs, grid_search=False)
     res = learner.evaluate(test_fs)
     yield check_results_with_unseen_labels, res, 4, [3]
@@ -859,15 +921,14 @@ def test_new_labels_in_test_set_change_order():
     Test classification with an unseen label in the test set when the
     new label falls between the existing labels.
     """
-    train_fs, test_fs = make_classification_data(num_labels=3,
-                                                 train_test_ratio=0.8)
+    train_fs, test_fs = make_classification_data(num_labels=3, train_test_ratio=0.8)
     # change train labels to create a gap
     train_fs.labels = train_fs.labels * 10
     # add new test labels
     test_fs.labels = test_fs.labels * 10
     test_fs.labels[-3:] = 15
 
-    learner = Learner('SVC')
+    learner = Learner("SVC")
     learner.train(train_fs, grid_search=False)
     res = learner.evaluate(test_fs)
     yield check_results_with_unseen_labels, res, 4, [15]
@@ -878,12 +939,11 @@ def test_all_new_labels_in_test():
     """
     Test classification with all labels in test set unseen
     """
-    train_fs, test_fs = make_classification_data(num_labels=3,
-                                                 train_test_ratio=0.8)
+    train_fs, test_fs = make_classification_data(num_labels=3, train_test_ratio=0.8)
     # change all test labels
     test_fs.labels = test_fs.labels + 3
 
-    learner = Learner('SVC')
+    learner = Learner("SVC")
     learner.train(train_fs, grid_search=False)
     res = learner.evaluate(test_fs)
     yield check_results_with_unseen_labels, res, 6, [3, 4, 5]
@@ -899,17 +959,17 @@ def make_float_class_data(labels_as_strings=False):
     floats to make sure they are preserved correctly
     """
 
-    ids = [f'EXAMPLE_{n}' for n in range(1, 76)]
+    ids = [f"EXAMPLE_{n}" for n in range(1, 76)]
     y = [1.2] * 25 + [1.5] * 25 + [1.8] * 25
     if labels_as_strings:
         y = list(map(str, y))
     X = np.vstack([np.identity(25), np.identity(25), np.identity(25)])
-    feature_names = [f'f{i}' for i in range(1, 6)]
+    feature_names = [f"f{i}" for i in range(1, 6)]
     features = []
     for row in X:
         features.append(dict(zip(feature_names, row)))
 
-    return FeatureSet('float-classes', ids, features=features, labels=y)
+    return FeatureSet("float-classes", ids, features=features, labels=y)
 
 
 def test_xval_float_classes_as_strings():
@@ -918,32 +978,36 @@ def test_xval_float_classes_as_strings():
     """
 
     float_class_fs = make_float_class_data(labels_as_strings=True)
-    prediction_prefix = join(output_dir, 'float_class')
-    learner = Learner('LogisticRegression')
-    learner.cross_validate(float_class_fs,
-                           grid_search=True,
-                           grid_objective='accuracy',
-                           prediction_prefix=prediction_prefix)
+    prediction_prefix = join(output_dir, "float_class")
+    learner = Learner("LogisticRegression")
+    learner.cross_validate(
+        float_class_fs,
+        grid_search=True,
+        grid_objective="accuracy",
+        prediction_prefix=prediction_prefix,
+    )
 
-    with open(f'{prediction_prefix}_predictions.tsv') as f:
-        reader = csv.reader(f, dialect='excel-tab')
+    with open(f"{prediction_prefix}_predictions.tsv") as f:
+        reader = csv.reader(f, dialect="excel-tab")
         next(reader)
         pred = [row[1] for row in reader]
         for p in pred:
-            assert p in ['1.2', '1.5', '1.8']
+            assert p in ["1.2", "1.5", "1.8"]
 
 
 @raises(ValueError)
 def check_bad_xval_float_classes(do_stratified_xval):
 
     float_class_fs = make_float_class_data()
-    prediction_prefix = join(output_dir, 'float_class')
-    learner = Learner('LogisticRegression')
-    learner.cross_validate(float_class_fs,
-                           stratified=do_stratified_xval,
-                           grid_search=True,
-                           grid_objective='accuracy',
-                           prediction_prefix=prediction_prefix)
+    prediction_prefix = join(output_dir, "float_class")
+    learner = Learner("LogisticRegression")
+    learner.cross_validate(
+        float_class_fs,
+        stratified=do_stratified_xval,
+        grid_search=True,
+        grid_objective="accuracy",
+        prediction_prefix=prediction_prefix,
+    )
 
 
 def test_bad_xval_float_classes():
@@ -958,16 +1022,17 @@ def check_train_and_score_function(model_type):
     """
 
     # create train and test data
-    (train_fs,
-     test_fs) = make_classification_data(num_examples=500,
-                                         train_test_ratio=0.7,
-                                         num_features=5,
-                                         use_feature_hashing=False,
-                                         non_negative=True)
+    (train_fs, test_fs) = make_classification_data(
+        num_examples=500,
+        train_test_ratio=0.7,
+        num_features=5,
+        use_feature_hashing=False,
+        non_negative=True,
+    )
 
     # call _train_and_score() on this data
-    estimator_name = 'LogisticRegression' if model_type == 'classifier' else 'Ridge'
-    metric = 'accuracy' if model_type == 'classifier' else 'pearson'
+    estimator_name = "LogisticRegression" if model_type == "classifier" else "Ridge"
+    metric = "accuracy" if model_type == "classifier" else "pearson"
     learner1 = Learner(estimator_name)
     train_score1, test_score1 = train_and_score(learner1, train_fs, test_fs, metric)
 
@@ -984,29 +1049,30 @@ def check_train_and_score_function(model_type):
 
 
 def test_train_and_score_function():
-    yield check_train_and_score_function, 'classifier'
-    yield check_train_and_score_function, 'regressor'
+    yield check_train_and_score_function, "classifier"
+    yield check_train_and_score_function, "regressor"
 
 
 @raises(ValueError)
-def check_learner_api_grid_search_no_objective(task='train'):
+def check_learner_api_grid_search_no_objective(task="train"):
 
-    (train_fs,
-     test_fs) = make_classification_data(num_examples=500,
-                                         train_test_ratio=0.7,
-                                         num_features=5,
-                                         use_feature_hashing=False,
-                                         non_negative=True)
-    learner = Learner('LogisticRegression')
-    if task == 'train':
+    (train_fs, test_fs) = make_classification_data(
+        num_examples=500,
+        train_test_ratio=0.7,
+        num_features=5,
+        use_feature_hashing=False,
+        non_negative=True,
+    )
+    learner = Learner("LogisticRegression")
+    if task == "train":
         _ = learner.train(train_fs)
     else:
         _ = learner.cross_validate(train_fs)
 
 
 def test_learner_api_grid_search_no_objective():
-    yield check_learner_api_grid_search_no_objective, 'train'
-    yield check_learner_api_grid_search_no_objective, 'cross_validate'
+    yield check_learner_api_grid_search_no_objective, "train"
+    yield check_learner_api_grid_search_no_objective, "cross_validate"
 
 
 def test_learner_api_load_into_existing_instance():
@@ -1015,17 +1081,15 @@ def test_learner_api_load_into_existing_instance():
     """
 
     # create a LinearSVC instance and train it on some data
-    learner1 = Learner('LinearSVC')
-    (train_fs,
-     test_fs) = make_classification_data(num_examples=200,
-                                         num_features=5,
-                                         use_feature_hashing=False,
-                                         non_negative=True)
+    learner1 = Learner("LinearSVC")
+    (train_fs, test_fs) = make_classification_data(
+        num_examples=200, num_features=5, use_feature_hashing=False, non_negative=True
+    )
     learner1.train(train_fs, grid_search=False)
 
     # now use `load()` to replace the existing instance with a
     # different saved learner
-    other_model_file = join(other_dir, 'test_load_saved_model.model')
+    other_model_file = join(other_dir, "test_load_saved_model.model")
     learner1.load(other_model_file)
 
     # now load the saved model into another instance using the class method
@@ -1040,16 +1104,15 @@ def test_learner_api_load_into_existing_instance():
 
 @raises(ValueError)
 def test_hashing_for_multinomialNB():
-    (train_fs, _) = make_classification_data(num_examples=200,
-                                             use_feature_hashing=True)
-    learner = Learner('MultinomialNB', sampler='RBFSampler')
+    (train_fs, _) = make_classification_data(num_examples=200, use_feature_hashing=True)
+    learner = Learner("MultinomialNB", sampler="RBFSampler")
     learner.train(train_fs, grid_search=False)
 
 
 @raises(ValueError)
 def test_sampling_for_multinomialNB():
     (train_fs, _) = make_classification_data(num_examples=200)
-    learner = Learner('MultinomialNB', sampler='RBFSampler')
+    learner = Learner("MultinomialNB", sampler="RBFSampler")
     learner.train(train_fs, grid_search=False)
 
 
@@ -1075,23 +1138,37 @@ def check_invalid_classification_grid_objective(learner, grid_objective, label_a
 
 def test_invalid_classification_grid_objective():
 
-    for (learner,
-         (label_array,
-          bad_objectives)) in product(['AdaBoostClassifier', 'DecisionTreeClassifier',
-                                       'GradientBoostingClassifier', 'KNeighborsClassifier',
-                                       'MLPClassifier', 'MultinomialNB',
-                                       'RandomForestClassifier', 'LogisticRegression',
-                                       'LinearSVC', 'SVC', 'SGDClassifier'],
-                                      zip([np.array(['A', 'B', 'C']),
-                                           np.array([2, 4, 6]),
-                                           np.array(['yes', 'no']),
-                                           np.array([1, 2, 4.0]),
-                                           np.array(['A', 'B', 1, 2])],
-                                          [CORRELATION_METRICS | REGRESSION_ONLY_METRICS | WEIGHTED_KAPPA_METRICS,
-                                           REGRESSION_ONLY_METRICS | WEIGHTED_KAPPA_METRICS,
-                                           CORRELATION_METRICS | REGRESSION_ONLY_METRICS | WEIGHTED_KAPPA_METRICS,
-                                           REGRESSION_ONLY_METRICS | WEIGHTED_KAPPA_METRICS,
-                                           CORRELATION_METRICS | REGRESSION_ONLY_METRICS | WEIGHTED_KAPPA_METRICS])):
+    for (learner, (label_array, bad_objectives)) in product(
+        [
+            "AdaBoostClassifier",
+            "DecisionTreeClassifier",
+            "GradientBoostingClassifier",
+            "KNeighborsClassifier",
+            "MLPClassifier",
+            "MultinomialNB",
+            "RandomForestClassifier",
+            "LogisticRegression",
+            "LinearSVC",
+            "SVC",
+            "SGDClassifier",
+        ],
+        zip(
+            [
+                np.array(["A", "B", "C"]),
+                np.array([2, 4, 6]),
+                np.array(["yes", "no"]),
+                np.array([1, 2, 4.0]),
+                np.array(["A", "B", 1, 2]),
+            ],
+            [
+                CORRELATION_METRICS | REGRESSION_ONLY_METRICS | WEIGHTED_KAPPA_METRICS,
+                REGRESSION_ONLY_METRICS | WEIGHTED_KAPPA_METRICS,
+                CORRELATION_METRICS | REGRESSION_ONLY_METRICS | WEIGHTED_KAPPA_METRICS,
+                REGRESSION_ONLY_METRICS | WEIGHTED_KAPPA_METRICS,
+                CORRELATION_METRICS | REGRESSION_ONLY_METRICS | WEIGHTED_KAPPA_METRICS,
+            ],
+        ),
+    ):
 
         # check each bad objective
         for metric in bad_objectives:
@@ -1099,10 +1176,7 @@ def test_invalid_classification_grid_objective():
 
 
 @raises(ValueError)
-def check_invalid_classification_metric(learner,
-                                        metric,
-                                        label_array,
-                                        by_itself=True):
+def check_invalid_classification_metric(learner, metric, label_array, by_itself=True):
     """
     Checks that an invalid classification metric raises an exception
     """
@@ -1120,28 +1194,42 @@ def check_invalid_classification_metric(learner,
     # instantiate a learner
     clf = Learner(learner)
     clf.train(train_fs, grid_search=False)
-    output_metrics = [metric] if by_itself else ['accuracy', metric]
+    output_metrics = [metric] if by_itself else ["accuracy", metric]
     clf.evaluate(test_fs, output_metrics=output_metrics)
 
 
 def test_invalid_classification_metric():
-    for (learner,
-         (label_array,
-          bad_objectives)) in product(['AdaBoostClassifier', 'DecisionTreeClassifier',
-                                       'GradientBoostingClassifier', 'KNeighborsClassifier',
-                                       'MLPClassifier', 'MultinomialNB',
-                                       'RandomForestClassifier', 'LogisticRegression',
-                                       'LinearSVC', 'SVC', 'SGDClassifier'],
-                                      zip([np.array(['A', 'B', 'C']),
-                                           np.array([2, 4, 6]),
-                                           np.array(['yes', 'no']),
-                                           np.array([1, 2, 4.0]),
-                                           np.array(['A', 'B', 1, 2])],
-                                          [CORRELATION_METRICS | REGRESSION_ONLY_METRICS | WEIGHTED_KAPPA_METRICS,
-                                           REGRESSION_ONLY_METRICS | WEIGHTED_KAPPA_METRICS,
-                                           CORRELATION_METRICS | REGRESSION_ONLY_METRICS | WEIGHTED_KAPPA_METRICS,
-                                           REGRESSION_ONLY_METRICS | WEIGHTED_KAPPA_METRICS,
-                                           CORRELATION_METRICS | REGRESSION_ONLY_METRICS | WEIGHTED_KAPPA_METRICS])):
+    for (learner, (label_array, bad_objectives)) in product(
+        [
+            "AdaBoostClassifier",
+            "DecisionTreeClassifier",
+            "GradientBoostingClassifier",
+            "KNeighborsClassifier",
+            "MLPClassifier",
+            "MultinomialNB",
+            "RandomForestClassifier",
+            "LogisticRegression",
+            "LinearSVC",
+            "SVC",
+            "SGDClassifier",
+        ],
+        zip(
+            [
+                np.array(["A", "B", "C"]),
+                np.array([2, 4, 6]),
+                np.array(["yes", "no"]),
+                np.array([1, 2, 4.0]),
+                np.array(["A", "B", 1, 2]),
+            ],
+            [
+                CORRELATION_METRICS | REGRESSION_ONLY_METRICS | WEIGHTED_KAPPA_METRICS,
+                REGRESSION_ONLY_METRICS | WEIGHTED_KAPPA_METRICS,
+                CORRELATION_METRICS | REGRESSION_ONLY_METRICS | WEIGHTED_KAPPA_METRICS,
+                REGRESSION_ONLY_METRICS | WEIGHTED_KAPPA_METRICS,
+                CORRELATION_METRICS | REGRESSION_ONLY_METRICS | WEIGHTED_KAPPA_METRICS,
+            ],
+        ),
+    ):
 
         # check each bad objective
         for metric in bad_objectives:
@@ -1149,9 +1237,9 @@ def test_invalid_classification_metric():
             yield check_invalid_classification_metric, learner, metric, label_array, False
 
 
-def check_objective_values_for_classification(metric_name,  # noqa: C901
-                                              label_array,
-                                              use_probabilities):
+def check_objective_values_for_classification(  # noqa: C901
+    metric_name, label_array, use_probabilities
+):
 
     # instantiate a random number generator
     prng = np.random.RandomState(123456789)
@@ -1171,25 +1259,28 @@ def check_objective_values_for_classification(metric_name,  # noqa: C901
 
     # instantiate our logistic regression learner and run grid search
     # using the folds dictionary
-    clf = Learner('LogisticRegression', probability=use_probabilities)
-    _, grid_search_results = clf.train(train_fs,
-                                       grid_objective=metric_name,
-                                       grid_search_folds=folds_dict,
-                                       grid_jobs=1,
-                                       param_grid=[{'C': [1.0, 10.0]}])
+    clf = Learner("LogisticRegression", probability=use_probabilities)
+    _, grid_search_results = clf.train(
+        train_fs,
+        grid_objective=metric_name,
+        grid_search_folds=folds_dict,
+        grid_jobs=1,
+        param_grid=[{"C": [1.0, 10.0]}],
+    )
 
     # load in the featureset to get the feature matrix (X) and the
     # labels array (y) we need to pass to scikit-learn; we also need
     # to shuffle after we load in the matrix since that's what SKLL does
-    ids, labels, features = sk_shuffle(train_fs.ids,
-                                       train_fs.labels,
-                                       train_fs.features,
-                                       random_state=123456789)
-    shuffled_fs = FeatureSet(train_fs.name,
-                             ids,
-                             labels=labels,
-                             features=features,
-                             vectorizer=train_fs.vectorizer)
+    ids, labels, features = sk_shuffle(
+        train_fs.ids, train_fs.labels, train_fs.features, random_state=123456789
+    )
+    shuffled_fs = FeatureSet(
+        train_fs.name,
+        ids,
+        labels=labels,
+        features=features,
+        vectorizer=train_fs.vectorizer,
+    )
     X = shuffled_fs.features
     y = shuffled_fs.labels
 
@@ -1197,21 +1288,27 @@ def check_objective_values_for_classification(metric_name,  # noqa: C901
     # models for each value of C that was in the SKLL grid and with the
     # same other fixed parameters that we used for SKLL
     models_with_C_values = {}
-    for param_value in grid_search_results['params']:
+    for param_value in grid_search_results["params"]:
         model_kwargs = param_value
-        model_kwargs.update({'max_iter': 1000,
-                             'solver': 'liblinear',
-                             'multi_class': 'auto',
-                             'random_state': 123456789})
+        model_kwargs.update(
+            {
+                "max_iter": 1000,
+                "solver": "liblinear",
+                "multi_class": "auto",
+                "random_state": 123456789,
+            }
+        )
         sklearn_learner = LogisticRegression(**model_kwargs)
-        models_with_C_values[param_value['C']] = sklearn_learner
+        models_with_C_values[param_value["C"]] = sklearn_learner
 
     # now let's split the featureset the same way SKLL would have
     # done using the folds file
     dummy_label = next(iter(folds_dict.values()))
     fold_groups = [folds_dict.get(curr_id, dummy_label) for curr_id in shuffled_fs.ids]
     kfold = FilteredLeaveOneGroupOut(folds_dict, shuffled_fs.ids)
-    fold_train_test_ids = list(kfold.split(shuffled_fs.features, shuffled_fs.labels, fold_groups))
+    fold_train_test_ids = list(
+        kfold.split(shuffled_fs.features, shuffled_fs.labels, fold_groups)
+    )
 
     # generate predictions on the test split of the each fold, and
     # then compute the objectives appropriately (using either the
@@ -1229,8 +1326,12 @@ def check_objective_values_for_classification(metric_name,  # noqa: C901
         X_fold_train = X[fold_train_ids, :]
         X_fold_test = X[fold_test_ids, :]
 
-        y_fold_train = y[fold_train_ids, ]
-        y_fold_test = y[fold_test_ids, ]
+        y_fold_train = y[
+            fold_train_ids,
+        ]
+        y_fold_test = y[
+            fold_test_ids,
+        ]
 
         # let's also compute the class/label indices
         # since we will need them later
@@ -1259,64 +1360,72 @@ def check_objective_values_for_classification(metric_name,  # noqa: C901
             # 1. Correlation metrics are only computed for integer
             #    or float labels; they use probability values if
             #    available only in the binary case.
-            if metric_name in ['pearson', 'spearman', 'kendall_tau']:
-                if metric_name == 'pearson':
+            if metric_name in ["pearson", "spearman", "kendall_tau"]:
+                if metric_name == "pearson":
                     corr_metric_func = pearsonr
-                elif metric_name == 'spearman':
+                elif metric_name == "spearman":
                     corr_metric_func = spearmanr
-                elif metric_name == 'kendall_tau':
+                elif metric_name == "kendall_tau":
                     corr_metric_func = kendalltau
 
                 if issubclass(label_type, (np.int32, np.int64, np.float64)):
                     if len(label_array) == 2 and use_probabilities:
-                        metric_value = corr_metric_func(y_fold_test_indices,
-                                                        sklearn_fold_test_probs[:, 1])[0]
+                        metric_value = corr_metric_func(
+                            y_fold_test_indices, sklearn_fold_test_probs[:, 1]
+                        )[0]
                     else:
-                        metric_value = corr_metric_func(y_fold_test_indices,
-                                                        sklearn_fold_test_labels)[0]
+                        metric_value = corr_metric_func(
+                            y_fold_test_indices, sklearn_fold_test_labels
+                        )[0]
             # 2. `neg_log_loss` requires probability values irrespective
             #     of label types and number of labels
-            elif metric_name == 'neg_log_loss':
+            elif metric_name == "neg_log_loss":
                 if use_probabilities:
-                    metric_value = -1 * log_loss(y_fold_test_indices,
-                                                 sklearn_fold_test_probs)
+                    metric_value = -1 * log_loss(
+                        y_fold_test_indices, sklearn_fold_test_probs
+                    )
             # 3. The other probabilistic metrics `average_precision`
             #    and `roc_auc` only work with positive class probabilities
             #    and only for the binary case
-            elif metric_name == 'average_precision':
+            elif metric_name == "average_precision":
                 if len(label_array) == 2 and use_probabilities:
-                    metric_value = average_precision_score(y_fold_test_indices,
-                                                           sklearn_fold_test_probs[:, 1])
-            elif metric_name == 'roc_auc':
+                    metric_value = average_precision_score(
+                        y_fold_test_indices, sklearn_fold_test_probs[:, 1]
+                    )
+            elif metric_name == "roc_auc":
                 if len(label_array) == 2 and use_probabilities:
-                    metric_value = roc_auc_score(y_fold_test_indices,
-                                                 sklearn_fold_test_probs[:, 1])
+                    metric_value = roc_auc_score(
+                        y_fold_test_indices, sklearn_fold_test_probs[:, 1]
+                    )
 
             # 4. Accuracy and unweighted kappas should work no matter what
             #    and use the labels; kappas are not in scikit-learn so
             #    we have to use the SKLL implementation
-            elif metric_name == 'accuracy':
-                metric_value = accuracy_score(y_fold_test_indices,
-                                              sklearn_fold_test_labels)
+            elif metric_name == "accuracy":
+                metric_value = accuracy_score(
+                    y_fold_test_indices, sklearn_fold_test_labels
+                )
             elif metric_name in UNWEIGHTED_KAPPA_METRICS:
-                metric_value = use_score_func(metric_name,
-                                              y_fold_test_indices,
-                                              sklearn_fold_test_labels)
+                metric_value = use_score_func(
+                    metric_name, y_fold_test_indices, sklearn_fold_test_labels
+                )
 
             # 5. The only ones left are the weighted kapps;
             #    these require contiguous ints or floats
             elif metric_name in WEIGHTED_KAPPA_METRICS:
                 if contiguous_ints_or_floats(label_array):
-                    metric_value = use_score_func(metric_name,
-                                                  y_fold_test_indices,
-                                                  sklearn_fold_test_labels)
+                    metric_value = use_score_func(
+                        metric_name, y_fold_test_indices, sklearn_fold_test_labels
+                    )
 
             # save computed metric value for the fold, if any
             metric_values_dict[fold_id].append(metric_value)
 
     # compare SKLL grid-search values with sklearn values for each fold
-    skll_fold_values = (grid_search_results['split0_test_score'],
-                        grid_search_results['split1_test_score'])
+    skll_fold_values = (
+        grid_search_results["split0_test_score"],
+        grid_search_results["split1_test_score"],
+    )
     sklearn_fold_values = (metric_values_dict[0], metric_values_dict[1])
     assert_array_equal(skll_fold_values[0], sklearn_fold_values[0])
     assert_array_equal(skll_fold_values[1], sklearn_fold_values[1])
@@ -1358,32 +1467,36 @@ def test_objective_values_for_classification():
     #
     # 4. We then compare values in 2 and 3 to verify that they are equal.
 
-    metrics_to_test = {'accuracy'}
-    metrics_to_test.update(CORRELATION_METRICS,
-                           PROBABILISTIC_METRICS,
-                           UNWEIGHTED_KAPPA_METRICS,
-                           WEIGHTED_KAPPA_METRICS)
+    metrics_to_test = {"accuracy"}
+    metrics_to_test.update(
+        CORRELATION_METRICS,
+        PROBABILISTIC_METRICS,
+        UNWEIGHTED_KAPPA_METRICS,
+        WEIGHTED_KAPPA_METRICS,
+    )
     metrics_to_test = sorted(metrics_to_test)
 
-    for (metric,
-         label_array,
-         use_probabilities) in product(metrics_to_test,
-                                       [np.array([1, 2, 3]),
-                                        np.array(['A', 'B', 'C']),
-                                        np.array([-2, -1, 0, 1, 2]),
-                                        np.array([2, 4, 6]),
-                                        np.array([0, 1]),
-                                        np.array([-1, 1]),
-                                        np.array(['yes', 'no']),
-                                        np.array([1.0, 2.0]),
-                                        np.array([-1.0, 1]),
-                                        np.array([1.0, 1.1, 1.2]),
-                                        np.array([3, 5, 10]),
-                                        np.array([1.0, 2.0, 3.0]),
-                                        np.array([1, 2, 3, 4.0]),
-                                        np.array([4, 5, 6]),
-                                        np.array(['A', 'B', 'C', 1, 2, 3])],
-                                       [True, False]):
+    for (metric, label_array, use_probabilities) in product(
+        metrics_to_test,
+        [
+            np.array([1, 2, 3]),
+            np.array(["A", "B", "C"]),
+            np.array([-2, -1, 0, 1, 2]),
+            np.array([2, 4, 6]),
+            np.array([0, 1]),
+            np.array([-1, 1]),
+            np.array(["yes", "no"]),
+            np.array([1.0, 2.0]),
+            np.array([-1.0, 1]),
+            np.array([1.0, 1.1, 1.2]),
+            np.array([3, 5, 10]),
+            np.array([1.0, 2.0, 3.0]),
+            np.array([1, 2, 3, 4.0]),
+            np.array([4, 5, 6]),
+            np.array(["A", "B", "C", 1, 2, 3]),
+        ],
+        [True, False],
+    ):
 
         # skip following configurations that would raise an exception
         # during grid search either from SKLL or from sklearn:
@@ -1391,32 +1504,34 @@ def test_objective_values_for_classification():
         # (b) correlation/weighted kappa metrics and non-integer labels
         # (c) weighted kappa metrics and non-contiguous integer/float labels
         # (d) probabilistic metrics and no probabilities
-        skipped_conditions = ((metric in ['average_precision', 'roc_auc'] and
-                               len(label_array) != 2) or
-                              ((metric in WEIGHTED_KAPPA_METRICS or
-                                metric in CORRELATION_METRICS) and
-                               issubclass(label_array.dtype.type, str)) or
-                              (metric in WEIGHTED_KAPPA_METRICS and
-                               not contiguous_ints_or_floats(label_array)) or
-                              (metric in PROBABILISTIC_METRICS and
-                               not use_probabilities))
+        skipped_conditions = (
+            (metric in ["average_precision", "roc_auc"] and len(label_array) != 2)
+            or (
+                (metric in WEIGHTED_KAPPA_METRICS or metric in CORRELATION_METRICS)
+                and issubclass(label_array.dtype.type, str)
+            )
+            or (
+                metric in WEIGHTED_KAPPA_METRICS
+                and not contiguous_ints_or_floats(label_array)
+            )
+            or (metric in PROBABILISTIC_METRICS and not use_probabilities)
+        )
         if skipped_conditions:
             continue
         else:
-            yield (check_objective_values_for_classification,
-                   metric,
-                   label_array,
-                   use_probabilities)
+            yield (
+                check_objective_values_for_classification,
+                metric,
+                label_array,
+                use_probabilities,
+            )
 
 
-def check_metric_values_for_classification(metric_name,
-                                           label_array,
-                                           use_probabilities):
+def check_metric_values_for_classification(metric_name, label_array, use_probabilities):
 
     # get the config template
     config_template_path = join(
-        config_dir,
-        'test_metric_values_for_classification.template.cfg'
+        config_dir, "test_metric_values_for_classification.template.cfg"
     )
 
     # instantiate a random number generator
@@ -1434,42 +1549,46 @@ def check_metric_values_for_classification(metric_name,
 
     # write out the train and test sets to disk so that we can use them
     # when we run the configuration file
-    train_file = join(train_dir, 'metric_values_train.jsonlines')
-    test_file = join(train_dir, 'metric_values_test.jsonlines')
+    train_file = join(train_dir, "metric_values_train.jsonlines")
+    test_file = join(train_dir, "metric_values_test.jsonlines")
     NDJWriter.for_path(train_file, train_fs).write()
     NDJWriter.for_path(test_file, test_fs).write()
 
     experiment_name = (
-        f'clf_metric_value_{use_probabilities}_{len(label_array)}_'
-        f'{label_type.__name__}_{metric_name}'
+        f"clf_metric_value_{use_probabilities}_{len(label_array)}_"
+        f"{label_type.__name__}_{metric_name}"
     )
 
-    values_to_fill_dict = {'experiment_name': experiment_name,
-                           'train_file': train_file,
-                           'test_file': test_file,
-                           'log': output_dir,
-                           'models': output_dir,
-                           'results': output_dir,
-                           'predictions': output_dir,
-                           'probability': 'true' if use_probabilities else 'false',
-                           'metrics': f"['{metric_name}']"}
+    values_to_fill_dict = {
+        "experiment_name": experiment_name,
+        "train_file": train_file,
+        "test_file": test_file,
+        "log": output_dir,
+        "models": output_dir,
+        "results": output_dir,
+        "predictions": output_dir,
+        "probability": "true" if use_probabilities else "false",
+        "metrics": f"['{metric_name}']",
+    }
 
-    config_path = fill_in_config_options(config_template_path,
-                                         values_to_fill_dict,
-                                         f'{metric_name}_{use_probabilities}',
-                                         good_probability_option=True)
+    config_path = fill_in_config_options(
+        config_template_path,
+        values_to_fill_dict,
+        f"{metric_name}_{use_probabilities}",
+        good_probability_option=True,
+    )
 
     # run this experiment and load the results_json and the SKLL model
     results_json_path = run_configuration(config_path, local=True, quiet=True)[0]
     with open(results_json_path) as results_json_file:
         results_obj = json.load(results_json_file)[0]
     model_file_path = join(
-        output_dir,
-        f'{experiment_name}_metric_{results_obj["learner_name"]}.model')
+        output_dir, f'{experiment_name}_metric_{results_obj["learner_name"]}.model'
+    )
     clf = Learner.from_file(model_file_path)
 
     # get the value of the metric from SKLL
-    skll_metric_value = results_obj['additional_scores'][metric_name]
+    skll_metric_value = results_obj["additional_scores"][metric_name]
 
     # get the feature matrix (X) and the labels array (y) for both
     # the training and test set to pass to scikit-learn; note that
@@ -1482,10 +1601,12 @@ def check_metric_values_for_classification(metric_name,
 
     # instantiate a LogisticRegression models with the default
     # parameters that are used in SKLL
-    model_kwargs = {'max_iter': 1000,
-                    'solver': 'liblinear',
-                    'multi_class': 'auto',
-                    'random_state': 123456789}
+    model_kwargs = {
+        "max_iter": 1000,
+        "solver": "liblinear",
+        "multi_class": "auto",
+        "random_state": 123456789,
+    }
 
     sklearn_learner = LogisticRegression(**model_kwargs)
 
@@ -1508,59 +1629,55 @@ def check_metric_values_for_classification(metric_name,
     # 1. Correlation metrics are only computed for integer
     #    or float labels; they use probability values if
     #    available only in the binary case.
-    if metric_name in ['pearson', 'spearman', 'kendall_tau']:
-        if metric_name == 'pearson':
+    if metric_name in ["pearson", "spearman", "kendall_tau"]:
+        if metric_name == "pearson":
             corr_metric_func = pearsonr
-        elif metric_name == 'spearman':
+        elif metric_name == "spearman":
             corr_metric_func = spearmanr
-        elif metric_name == 'kendall_tau':
+        elif metric_name == "kendall_tau":
             corr_metric_func = kendalltau
 
         if issubclass(label_type, (np.int32, np.int64, np.float64)):
             if len(label_array) == 2 and use_probabilities:
-                sklearn_metric_value = corr_metric_func(y_test,
-                                                        sklearn_test_probs[:, 1])[0]
+                sklearn_metric_value = corr_metric_func(
+                    y_test, sklearn_test_probs[:, 1]
+                )[0]
             else:
-                sklearn_metric_value = corr_metric_func(y_test,
-                                                        sklearn_test_labels)[0]
+                sklearn_metric_value = corr_metric_func(y_test, sklearn_test_labels)[0]
 
     # 2. `neg_log_loss` requires probability values irrespective
     #     of label types and number of labels
-    elif metric_name == 'neg_log_loss':
+    elif metric_name == "neg_log_loss":
         if use_probabilities:
-            sklearn_metric_value = -1 * log_loss(y_test,
-                                                 sklearn_test_probs)
+            sklearn_metric_value = -1 * log_loss(y_test, sklearn_test_probs)
     # 3. The other probabilistic metrics `average_precision`
     #    and `roc_auc` only work with positive class probabilities
     #    and only for the binary case
-    elif metric_name == 'average_precision':
+    elif metric_name == "average_precision":
         if len(label_array) == 2 and use_probabilities:
-            sklearn_metric_value = average_precision_score(y_test,
-                                                           sklearn_test_probs[:, 1])
-    elif metric_name == 'roc_auc':
+            sklearn_metric_value = average_precision_score(
+                y_test, sklearn_test_probs[:, 1]
+            )
+    elif metric_name == "roc_auc":
         if len(label_array) == 2 and use_probabilities:
-            sklearn_metric_value = roc_auc_score(y_test,
-                                                 sklearn_test_probs[:, 1])
+            sklearn_metric_value = roc_auc_score(y_test, sklearn_test_probs[:, 1])
 
     # 4. Accuracy and unweighted kappas should work no matter what
     #    and use the labels; kappas are not in scikit-learn so
     #    we have to use the SKLL implementation
-    elif metric_name == 'accuracy':
-        sklearn_metric_value = accuracy_score(y_test,
-                                              sklearn_test_labels)
+    elif metric_name == "accuracy":
+        sklearn_metric_value = accuracy_score(y_test, sklearn_test_labels)
     elif metric_name in UNWEIGHTED_KAPPA_METRICS:
-        sklearn_metric_value = use_score_func(metric_name,
-                                              y_test,
-                                              sklearn_test_labels)
+        sklearn_metric_value = use_score_func(metric_name, y_test, sklearn_test_labels)
 
     # 5. The only ones left are the weighted kappas and they are not in sklearn
     #    so we are forced to use the SKLL implementations; both types
     #    require integer labels
     elif metric_name in WEIGHTED_KAPPA_METRICS:
         if contiguous_ints_or_floats(label_array):
-            sklearn_metric_value = use_score_func(metric_name,
-                                                  y_test,
-                                                  sklearn_test_labels)
+            sklearn_metric_value = use_score_func(
+                metric_name, y_test, sklearn_test_labels
+            )
 
     eq_(skll_metric_value, sklearn_metric_value)
 
@@ -1600,32 +1717,36 @@ def test_metric_values_for_classification():
     #
     # 4. We then compare values in 2 and 3 to verify that they are equal.
 
-    metrics_to_test = {'accuracy'}
-    metrics_to_test.update(CORRELATION_METRICS,
-                           PROBABILISTIC_METRICS,
-                           UNWEIGHTED_KAPPA_METRICS,
-                           WEIGHTED_KAPPA_METRICS)
+    metrics_to_test = {"accuracy"}
+    metrics_to_test.update(
+        CORRELATION_METRICS,
+        PROBABILISTIC_METRICS,
+        UNWEIGHTED_KAPPA_METRICS,
+        WEIGHTED_KAPPA_METRICS,
+    )
     metrics_to_test = sorted(metrics_to_test)
 
-    for (metric,
-         label_array,
-         use_probabilities) in product(metrics_to_test,
-                                       [np.array([1, 2, 3]),
-                                        np.array(['A', 'B', 'C']),
-                                        np.array([-2, -1, 0, 1, 2]),
-                                        np.array([2, 4, 6]),
-                                        np.array([0, 1]),
-                                        np.array([-1, 1]),
-                                        np.array(['yes', 'no']),
-                                        np.array([1.0, 2.0]),
-                                        np.array([-1.0, 1]),
-                                        np.array([1.0, 1.1, 1.2]),
-                                        np.array([3, 5, 10]),
-                                        np.array([1.0, 2.0, 3.0]),
-                                        np.array([1, 2, 3, 4.0]),
-                                        np.array([4, 5, 6]),
-                                        np.array(['A', 'B', 'C', 1, 2, 3])],
-                                       [True, False]):
+    for (metric, label_array, use_probabilities) in product(
+        metrics_to_test,
+        [
+            np.array([1, 2, 3]),
+            np.array(["A", "B", "C"]),
+            np.array([-2, -1, 0, 1, 2]),
+            np.array([2, 4, 6]),
+            np.array([0, 1]),
+            np.array([-1, 1]),
+            np.array(["yes", "no"]),
+            np.array([1.0, 2.0]),
+            np.array([-1.0, 1]),
+            np.array([1.0, 1.1, 1.2]),
+            np.array([3, 5, 10]),
+            np.array([1.0, 2.0, 3.0]),
+            np.array([1, 2, 3, 4.0]),
+            np.array([4, 5, 6]),
+            np.array(["A", "B", "C", 1, 2, 3]),
+        ],
+        [True, False],
+    ):
 
         # skip following configurations that would raise an exception
         # during grid search either from SKLL or from sklearn:
@@ -1633,54 +1754,63 @@ def test_metric_values_for_classification():
         # (b) correlation/weighted kappa metrics and non-integer labels
         # (c) weighted kappa metrics and non-contiguous integer/float labels
         # (d) probabilistic metrics and no probabilities
-        skipped_conditions = ((metric in ['average_precision', 'roc_auc'] and
-                               len(label_array) != 2) or
-                              ((metric in WEIGHTED_KAPPA_METRICS or
-                                metric in CORRELATION_METRICS) and
-                               issubclass(label_array.dtype.type, str)) or
-                              (metric in WEIGHTED_KAPPA_METRICS and
-                               not contiguous_ints_or_floats(label_array)) or
-                              (metric in PROBABILISTIC_METRICS and
-                               not use_probabilities))
+        skipped_conditions = (
+            (metric in ["average_precision", "roc_auc"] and len(label_array) != 2)
+            or (
+                (metric in WEIGHTED_KAPPA_METRICS or metric in CORRELATION_METRICS)
+                and issubclass(label_array.dtype.type, str)
+            )
+            or (
+                metric in WEIGHTED_KAPPA_METRICS
+                and not contiguous_ints_or_floats(label_array)
+            )
+            or (metric in PROBABILISTIC_METRICS and not use_probabilities)
+        )
         if skipped_conditions:
             continue
         else:
-            yield (check_metric_values_for_classification,
-                   metric,
-                   label_array,
-                   use_probabilities)
+            yield (
+                check_metric_values_for_classification,
+                metric,
+                label_array,
+                use_probabilities,
+            )
 
 
 def check_metrics_and_objectives_overlap(task, metrics, objectives):
 
-    train_file = join(train_dir, 'metric_values_train.jsonlines')
-    test_file = join(train_dir, 'metric_values_test.jsonlines')
+    train_file = join(train_dir, "metric_values_train.jsonlines")
+    test_file = join(train_dir, "metric_values_test.jsonlines")
 
     # make a simple config file
-    values_to_fill_dict = {'experiment_name': 'clf_metrics_objective_overlap',
-                           'task': task,
-                           'train_file': train_file,
-                           'learners': "['LogisticRegression']",
-                           'log': output_dir,
-                           'probability': 'false',
-                           'results': output_dir,
-                           'predictions': output_dir,
-                           'metrics': str(metrics)}
+    values_to_fill_dict = {
+        "experiment_name": "clf_metrics_objective_overlap",
+        "task": task,
+        "train_file": train_file,
+        "learners": "['LogisticRegression']",
+        "log": output_dir,
+        "probability": "false",
+        "results": output_dir,
+        "predictions": output_dir,
+        "metrics": str(metrics),
+    }
 
-    if task == 'evaluate':
-        values_to_fill_dict['test_file'] = test_file
+    if task == "evaluate":
+        values_to_fill_dict["test_file"] = test_file
 
     if objectives:
-        values_to_fill_dict['objectives'] = str(objectives)
+        values_to_fill_dict["objectives"] = str(objectives)
     else:
-        values_to_fill_dict['grid_search'] = 'false'
+        values_to_fill_dict["grid_search"] = "false"
 
-    config_template_path = join(config_dir, 'test_fancy.template.cfg')
+    config_template_path = join(config_dir, "test_fancy.template.cfg")
 
-    config_path = fill_in_config_options(config_template_path,
-                                         values_to_fill_dict,
-                                         'metrics_objective_overlap',
-                                         good_probability_option=True)
+    config_path = fill_in_config_options(
+        config_template_path,
+        values_to_fill_dict,
+        "metrics_objective_overlap",
+        good_probability_option=True,
+    )
 
     # run this configuration file and get the output JSON
     # files for each experiment
@@ -1701,16 +1831,18 @@ def check_metrics_and_objectives_overlap(task, metrics, objectives):
             pruned_metrics = [metric for metric in metrics if metric != objective]
         with open(results_json_path) as results_json_file:
             results_obj = json.load(results_json_file)[0]
-        eq_(results_obj['grid_objective'], objective)
-        eq_(set(results_obj['additional_scores'].keys()), set(pruned_metrics))
-        ok_(objective not in results_obj['additional_scores'])
+        eq_(results_obj["grid_objective"], objective)
+        eq_(set(results_obj["additional_scores"].keys()), set(pruned_metrics))
+        ok_(objective not in results_obj["additional_scores"])
 
 
 def test_metrics_and_objectives_overlap():
 
-    for task, metrics, objectives in product(["evaluate", "cross_validate"],
-                                             [["f1_score_weighted", "unweighted_kappa", "accuracy"]],
-                                             [[], ["accuracy"], ["accuracy", "unweighted_kappa"]]):
+    for task, metrics, objectives in product(
+        ["evaluate", "cross_validate"],
+        [["f1_score_weighted", "unweighted_kappa", "accuracy"]],
+        [[], ["accuracy"], ["accuracy", "unweighted_kappa"]],
+    ):
         yield check_metrics_and_objectives_overlap, task, metrics, objectives
 
 
@@ -1719,10 +1851,10 @@ def test_multinomialnb_loading():
     Make sure we can load MultnomialNB models from disk
     """
 
-    learner = Learner('MultinomialNB')
+    learner = Learner("MultinomialNB")
     train_fs, test_fs = make_classification_data(num_examples=100, non_negative=True)
     learner.train(train_fs, grid_search=False)
-    model_file = join(output_dir, 'test_multinomialnb_loading.model')
+    model_file = join(output_dir, "test_multinomialnb_loading.model")
     learner.save(model_file)
     predictions1 = learner.predict(test_fs)
     del learner
@@ -1746,22 +1878,24 @@ def test_load_old_skll_model():
         warnings.simplefilter("ignore")
         assert_raises_regex(
             ValueError,
-            r"created with v2.1 of SKLL, which is incompatible with the "
-            r"current",
+            r"created with v2.1 of SKLL, which is incompatible with the current",
             Learner.from_file,
-            model_path
+            model_path,
         )
 
 
 def check_predict_return_and_write(learner, test_fs, class_labels):
 
-    returned_predictions = learner.predict(test_fs,
-                                           class_labels=class_labels,
-                                           prediction_prefix=f"{output_dir}/test_predict_return_and_write")
+    returned_predictions = learner.predict(
+        test_fs,
+        class_labels=class_labels,
+        prediction_prefix=f"{output_dir}/test_predict_return_and_write",
+    )
 
     # open and read the predictions file
-    with open(join(output_dir,
-                   "test_predict_return_and_write_predictions.tsv")) as predictfh:
+    with open(
+        join(output_dir, "test_predict_return_and_write_predictions.tsv")
+    ) as predictfh:
         reader = csv.DictReader(predictfh, dialect=csv.excel_tab)
         written_predictions = list(reader)
 
@@ -1769,54 +1903,55 @@ def check_predict_return_and_write(learner, test_fs, class_labels):
     # and return class labels
     if class_labels:
         eq_(returned_predictions.shape, (250,))
-        assert(set(returned_predictions).issubset({'a', 'b', 'c'}))
+        assert set(returned_predictions).issubset({"a", "b", "c"})
         header = written_predictions[0]
-        eq_(sorted(header.keys()), ['id', 'prediction'])
+        eq_(sorted(header.keys()), ["id", "prediction"])
         for row in written_predictions[1:]:
-            assert(row['prediction'] in ['a', 'b', 'c'])
+            assert row["prediction"] in ["a", "b", "c"]
     else:
         # if `class_labels` is `False` but the learner is probabilistic,
         # then we both print out and return class probabilities
         if learner.probability:
             eq_(returned_predictions.shape, (250, 3))
             header = written_predictions[0]
-            eq_(sorted(header.keys()), ['a', 'b', 'c', 'id'])
+            eq_(sorted(header.keys()), ["a", "b", "c", "id"])
             for row in written_predictions[1:]:
-                assert('a' in row)
-                assert('b' in row)
-                assert('c' in row)
-                assert(0 <= float(row['a']) <= 1)
-                assert(0 <= float(row['b']) <= 1)
-                assert(0 <= float(row['c']) <= 1)
+                assert "a" in row
+                assert "b" in row
+                assert "c" in row
+                assert 0 <= float(row["a"]) <= 1
+                assert 0 <= float(row["b"]) <= 1
+                assert 0 <= float(row["c"]) <= 1
         # if `class_labels` is `False` and the learner is non-probabilistic,
         # then we print out class labels but return class indices
         else:
             eq_(returned_predictions.shape, (250,))
-            assert(set(returned_predictions).issubset({0, 1, 2}))
+            assert set(returned_predictions).issubset({0, 1, 2})
             header = written_predictions[0]
-            eq_(sorted(header.keys()), ['id', 'prediction'])
+            eq_(sorted(header.keys()), ["id", "prediction"])
             for row in written_predictions[1:]:
-                assert(row['prediction'] in ['a', 'b', 'c'])
+                assert row["prediction"] in ["a", "b", "c"]
 
 
 def test_predict_return_and_write():
     """
     Test the predictions are returned and written out correctly
     """
-    train_fs, test_fs = make_classification_data(num_examples=500,
-                                                 non_negative=True,
-                                                 num_labels=3,
-                                                 string_label_list=['a', 'b', 'c'])
+    train_fs, test_fs = make_classification_data(
+        num_examples=500,
+        non_negative=True,
+        num_labels=3,
+        string_label_list=["a", "b", "c"],
+    )
 
     # create a non-probabilistic and a probabilistic learner
-    learner1 = Learner('SGDClassifier', probability=False)
-    learner2 = Learner('SGDClassifier', probability=True)
+    learner1 = Learner("SGDClassifier", probability=False)
+    learner2 = Learner("SGDClassifier", probability=True)
 
     # train both the learners
     learner1.train(train_fs, grid_search=False)
     learner2.train(train_fs, grid_search=False)
 
     # run the various tests
-    for (learner, class_labels) in product([learner1, learner2],
-                                           [False, True]):
+    for (learner, class_labels) in product([learner1, learner2], [False, True]):
         yield check_predict_return_and_write, learner, test_fs, class_labels

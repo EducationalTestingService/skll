@@ -18,20 +18,20 @@ from nose.tools import assert_almost_equal, eq_
 from skll.experiments import run_configuration
 from tests import examples_dir, other_dir
 
-_old_titanic_dir = join(examples_dir, 'titanic')
-_old_boston_dir = join(examples_dir, 'boston')
-_old_iris_dir = join(examples_dir, 'iris')
+_old_titanic_dir = join(examples_dir, "titanic")
+_old_boston_dir = join(examples_dir, "boston")
+_old_iris_dir = join(examples_dir, "iris")
 
-_new_titanic_dir = join(other_dir, 'titanic')
-_new_boston_dir = join(other_dir, 'boston')
-_new_iris_dir = join(other_dir, 'iris')
+_new_titanic_dir = join(other_dir, "titanic")
+_new_boston_dir = join(other_dir, "boston")
+_new_iris_dir = join(other_dir, "iris")
 
 # if we are running the tests without activating the conda
 # environment (as we do when testing the conda and TestPyPI
 # packages), then we will usually pass in a BINDIR environment
 # variable that points to where the environment's `bin` directory
 # is located
-_binary_dir = environ.get('BINDIR', '')
+_binary_dir = environ.get("BINDIR", "")
 
 
 def setup():
@@ -56,28 +56,28 @@ def setup():
     copytree(_old_titanic_dir, _new_titanic_dir)
 
     # Create all of the data sets we need
-    python_binary = join(_binary_dir, 'python') if _binary_dir else 'python'
+    python_binary = join(_binary_dir, "python") if _binary_dir else "python"
     subprocess.run(
-        [python_binary, join(examples_dir, 'make_titanic_example_data.py')],
-        cwd=dirname(_new_titanic_dir)
+        [python_binary, join(examples_dir, "make_titanic_example_data.py")],
+        cwd=dirname(_new_titanic_dir),
     )
     subprocess.run(
-        [python_binary, join(examples_dir, 'make_boston_example_data.py')],
-        cwd=dirname(_new_boston_dir)
+        [python_binary, join(examples_dir, "make_boston_example_data.py")],
+        cwd=dirname(_new_boston_dir),
     )
     subprocess.run(
-        [python_binary, join(examples_dir, 'make_iris_example_data.py')],
-        cwd=dirname(_new_iris_dir)
+        [python_binary, join(examples_dir, "make_iris_example_data.py")],
+        cwd=dirname(_new_iris_dir),
     )
 
     # Move all the configuration files to our new directories
-    for cfg_file in glob(join(_old_titanic_dir, '**.cfg')):
+    for cfg_file in glob(join(_old_titanic_dir, "**.cfg")):
         copyfile(cfg_file, join(_new_titanic_dir, basename(cfg_file)))
 
-    for cfg_file in glob(join(_old_boston_dir, '**.cfg')):
+    for cfg_file in glob(join(_old_boston_dir, "**.cfg")):
         copyfile(cfg_file, join(_new_boston_dir, basename(cfg_file)))
 
-    for cfg_file in glob(join(_old_iris_dir, '**.cfg')):
+    for cfg_file in glob(join(_old_iris_dir, "**.cfg")):
         copyfile(cfg_file, join(_new_iris_dir, basename(cfg_file)))
 
 
@@ -101,11 +101,7 @@ def run_configuration_and_check_outputs(config_path):
     # if the results path exists, check the output
     if exists(results_json_path):
 
-        results_json_exp_path = join(
-            other_dir,
-            'expected',
-            basename(results_json_path)
-        )
+        results_json_exp_path = join(other_dir, "expected", basename(results_json_path))
         with open(results_json_path) as results_json_file:
             results_obj = json.load(results_json_file)[0]
         with open(results_json_exp_path) as results_json_exp_file:
@@ -113,10 +109,18 @@ def run_configuration_and_check_outputs(config_path):
 
         # we check a subset of the values, just to make sure
         # that nothing weird is going on with our output
-        for key in ["train_set_size", "test_set_size",
-                    "learner_name", "cv_folds", "feature_scaling",
-                    "grid_score", "grid_objective",
-                    "accuracy", "score", "pearson"]:
+        for key in [
+            "train_set_size",
+            "test_set_size",
+            "learner_name",
+            "cv_folds",
+            "feature_scaling",
+            "grid_score",
+            "grid_objective",
+            "accuracy",
+            "score",
+            "pearson",
+        ]:
 
             # we obviously want to skip any keys that we aren't expecting
             if key in results_exp_obj:
@@ -136,7 +140,7 @@ def test_titanic_configs():
     """
     Run all of the configuration files for the titanic example
     """
-    for config_path in glob(join(_new_titanic_dir, '*.cfg')):
+    for config_path in glob(join(_new_titanic_dir, "*.cfg")):
         run_configuration_and_check_outputs(config_path)
 
 
@@ -144,7 +148,7 @@ def test_boston_configs():
     """
     Run all of the configuration files for the boston example
     """
-    for config_path in glob(join(_new_boston_dir, '*.cfg')):
+    for config_path in glob(join(_new_boston_dir, "*.cfg")):
         run_configuration_and_check_outputs(config_path)
 
 
@@ -152,5 +156,5 @@ def test_iris_configs():
     """
     Run all of the configuration files for the iris example
     """
-    for config_path in glob(join(_new_iris_dir, '*.cfg')):
+    for config_path in glob(join(_new_iris_dir, "*.cfg")):
         run_configuration_and_check_outputs(config_path)

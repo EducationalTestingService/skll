@@ -80,11 +80,14 @@ class DictVectorizer(OldDictVectorizer):
     sklearn.preprocessing.OneHotEncoder : handles nominal/categorical features
       encoded as columns of integers.
     """
+
     def __eq__(self, other):
         """
         Check whether two vectorizers are the same, assuming
         we are actually comparing to a vectorizer
         """
-        return (isinstance(other, OldDictVectorizer) and
-                self.dtype == other.dtype and
-                self.vocabulary_ == other.vocabulary_)
+        return (
+            isinstance(other, OldDictVectorizer)
+            and self.dtype == other.dtype
+            and self.vocabulary_ == other.vocabulary_
+        )

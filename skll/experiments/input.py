@@ -12,17 +12,19 @@ from os.path import isfile, join
 from skll.data.readers import Reader
 
 
-def load_featureset(dir_path,
-                    feat_files,
-                    suffix,
-                    id_col='id',
-                    label_col='y',
-                    ids_to_floats=False,
-                    quiet=False,
-                    class_map=None,
-                    feature_hasher=False,
-                    num_features=None,
-                    logger=None):
+def load_featureset(
+    dir_path,
+    feat_files,
+    suffix,
+    id_col="id",
+    label_col="y",
+    ids_to_floats=False,
+    quiet=False,
+    class_map=None,
+    feature_hasher=False,
+    num_features=None,
+    logger=None,
+):
     """
     Load a list of feature files and merge them.
 
@@ -79,32 +81,39 @@ def load_featureset(dir_path,
     # if the training file is specified via train_file, then dir_path
     # actually contains the entire file name
     if isfile(dir_path):
-        return Reader.for_path(dir_path,
-                               label_col=label_col,
-                               id_col=id_col,
-                               ids_to_floats=ids_to_floats,
-                               quiet=quiet,
-                               class_map=class_map,
-                               feature_hasher=feature_hasher,
-                               num_features=num_features,
-                               logger=logger).read()
+        return Reader.for_path(
+            dir_path,
+            label_col=label_col,
+            id_col=id_col,
+            ids_to_floats=ids_to_floats,
+            quiet=quiet,
+            class_map=class_map,
+            feature_hasher=feature_hasher,
+            num_features=num_features,
+            logger=logger,
+        ).read()
     else:
         if len(feat_files) > 1 and feature_hasher:
-            logger.warning("Since there are multiple feature files, "
-                           "feature hashing applies to each specified "
-                           "feature file separately.")
+            logger.warning(
+                "Since there are multiple feature files, "
+                "feature hashing applies to each specified "
+                "feature file separately."
+            )
         merged_set = None
-        for file_name in sorted(join(dir_path, featfile + suffix) for
-                                featfile in feat_files):
-            fs = Reader.for_path(file_name,
-                                 label_col=label_col,
-                                 id_col=id_col,
-                                 ids_to_floats=ids_to_floats,
-                                 quiet=quiet,
-                                 class_map=class_map,
-                                 feature_hasher=feature_hasher,
-                                 num_features=num_features,
-                                 logger=logger).read()
+        for file_name in sorted(
+            join(dir_path, featfile + suffix) for featfile in feat_files
+        ):
+            fs = Reader.for_path(
+                file_name,
+                label_col=label_col,
+                id_col=id_col,
+                ids_to_floats=ids_to_floats,
+                quiet=quiet,
+                class_map=class_map,
+                feature_hasher=feature_hasher,
+                num_features=num_features,
+                logger=logger,
+            ).read()
             if merged_set is None:
                 merged_set = fs
             else:

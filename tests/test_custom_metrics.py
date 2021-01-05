@@ -45,14 +45,16 @@ def tearDown():
     Clean up after all tests are run.
     """
 
-    for glob_pattern in [join(config_dir, "*custom_metrics.cfg"),
-                         join(config_dir, "*custom_metrics_kappa.cfg"),
-                         join(config_dir, "*custom_metrics_bad.cfg"),
-                         join(config_dir, "*custom_metrics_kwargs1.cfg"),
-                         join(config_dir, "*custom_metrics_kwargs2.cfg"),
-                         join(config_dir, "*custom_metrics_kwargs3.cfg"),
-                         join(config_dir, "*custom_metrics_kwargs4.cfg"),
-                         join(output_dir, "test_custom_metrics*")]:
+    for glob_pattern in [
+        join(config_dir, "*custom_metrics.cfg"),
+        join(config_dir, "*custom_metrics_kappa.cfg"),
+        join(config_dir, "*custom_metrics_bad.cfg"),
+        join(config_dir, "*custom_metrics_kwargs1.cfg"),
+        join(config_dir, "*custom_metrics_kwargs2.cfg"),
+        join(config_dir, "*custom_metrics_kwargs3.cfg"),
+        join(config_dir, "*custom_metrics_kwargs4.cfg"),
+        join(output_dir, "test_custom_metrics*"),
+    ]:
         for f in glob(glob_pattern):
             unlink(f)
 
@@ -60,13 +62,15 @@ def tearDown():
 def _cleanup_custom_metrics():
     """A helper function to clean up any custom metrics"""
 
-    for metric_name in ['f06_micro',
-                        'f075_macro',
-                        'fake_prob_metric',
-                        'fake_prob_metric_multiclass',
-                        'one_minus_f1_macro',
-                        'one_minus_precision',
-                        'ratio_of_ones']:
+    for metric_name in [
+        "f06_micro",
+        "f075_macro",
+        "fake_prob_metric",
+        "fake_prob_metric_multiclass",
+        "one_minus_f1_macro",
+        "one_minus_precision",
+        "ratio_of_ones",
+    ]:
 
         try:
             delattr(skll.experiments, metric_name)
@@ -83,20 +87,24 @@ def _cleanup_custom_metrics():
         except KeyError:
             pass
 
-    for module_name in ['custom_metrics', 'custom_metrics2']:
+    for module_name in ["custom_metrics", "custom_metrics2"]:
         try:
             del sys.modules[module_name]
         except KeyError:
             pass
 
     # remove any metric functions from _CUSTOM_METRICS
-    _CUSTOM_METRICS.difference_update(["f075_macro",
-                                       "ratio_of_ones",
-                                       "f06_micro",
-                                       "one_minus_precision",
-                                       "one_minus_f1_macro",
-                                       "fake_prob_meltric",
-                                       "fake_prob_metric_multiclass"])
+    _CUSTOM_METRICS.difference_update(
+        [
+            "f075_macro",
+            "ratio_of_ones",
+            "f06_micro",
+            "one_minus_precision",
+            "one_minus_f1_macro",
+            "fake_prob_meltric",
+            "fake_prob_metric_multiclass",
+        ]
+    )
 
 
 @with_setup(setup_func)
@@ -242,7 +250,7 @@ def test_register_custom_metric_values():
     y_true = [1, 1, 1, 0, 2, 1, 2, 0, 1]
     y_pred = [0, 1, 1, 0, 1, 2, 0, 1, 2]
     skll_value = use_score_func("f075_macro", y_true, y_pred)
-    sklearn_value = fbeta_score(y_true, y_pred, beta=0.75, average='macro')
+    sklearn_value = fbeta_score(y_true, y_pred, beta=0.75, average="macro")
     eq_(skll_value, sklearn_value)
 
     y_true = [1, 1, 1, 0]
@@ -275,9 +283,11 @@ def test_custom_metric_api_experiment():
     # and evaluate it using the other one
     learner = Learner("LogisticRegression")
     _ = learner.train(train_fs, grid_objective="f075_macro")
-    results = learner.evaluate(test_fs,
-                               grid_objective="f075_macro",
-                               output_metrics=["balanced_accuracy", "f06_micro"])
+    results = learner.evaluate(
+        test_fs,
+        grid_objective="f075_macro",
+        output_metrics=["balanced_accuracy", "f06_micro"],
+    )
     test_objective_value = results[-2]
     test_output_metrics_dict = results[-1]
     test_accuracy_value = test_output_metrics_dict["balanced_accuracy"]
@@ -297,22 +307,24 @@ def test_custom_metric_config_experiment():
     train_file = join(other_dir, "examples_train.jsonlines")
     test_file = join(other_dir, "examples_test.jsonlines")
     config_path = fill_in_config_paths_for_single_file(
-        join(config_dir, "test_custom_metrics.template.cfg"),
-        train_file,
-        test_file
+        join(config_dir, "test_custom_metrics.template.cfg"), train_file, test_file
     )
     run_configuration(config_path, local=True, quiet=True)
 
     # Check results for objective functions and output metrics
 
     # objective function f075_macro
-    with open(join(output_dir,
-                   'test_custom_metrics_train_examples_train.jsonlines_test_'
-                   'examples_test.jsonlines_LogisticRegression.results.json')) as f:
+    with open(
+        join(
+            output_dir,
+            "test_custom_metrics_train_examples_train.jsonlines_test_"
+            "examples_test.jsonlines_LogisticRegression.results.json",
+        )
+    ) as f:
         result_dict = json.load(f)[0]
 
-    test_objective_value = result_dict['score']
-    test_output_metrics_dict = result_dict['additional_scores']
+    test_objective_value = result_dict["score"]
+    test_output_metrics_dict = result_dict["additional_scores"]
     test_accuracy_value = test_output_metrics_dict["balanced_accuracy"]
     test_ratio_of_ones_value = test_output_metrics_dict["ratio_of_ones"]
 
@@ -344,10 +356,11 @@ def test_custom_metric_api_experiment_with_kappa_filename():
     # the two "kappa" names
     learner = Learner("LogisticRegression")
     _ = learner.train(train_fs, grid_objective="unweighted_kappa")
-    results = learner.evaluate(test_fs,
-                               grid_objective="unweighted_kappa",
-                               output_metrics=["balanced_accuracy",
-                                               "dummy_metric"])
+    results = learner.evaluate(
+        test_fs,
+        grid_objective="unweighted_kappa",
+        output_metrics=["balanced_accuracy", "dummy_metric"],
+    )
     test_objective_value = results[-2]
     test_output_metrics_dict = results[-1]
     test_accuracy_value = test_output_metrics_dict["balanced_accuracy"]
@@ -369,21 +382,25 @@ def test_custom_metric_config_experiment_with_kappa_filename():
     config_path = fill_in_config_paths_for_single_file(
         join(config_dir, "test_custom_metrics_kappa.template.cfg"),
         train_file,
-        test_file
+        test_file,
     )
     run_configuration(config_path, local=True, quiet=True)
 
     # Check results for objective functions and output metrics
 
     # objective function f075_macro
-    with open(join(output_dir,
-                   'test_custom_metrics_kappa_train_examples_train.jsonlines'
-                   '_test_examples_test.jsonlines_LogisticRegression.results'
-                   '.json')) as f:
+    with open(
+        join(
+            output_dir,
+            "test_custom_metrics_kappa_train_examples_train.jsonlines"
+            "_test_examples_test.jsonlines_LogisticRegression.results"
+            ".json",
+        )
+    ) as f:
         result_dict = json.load(f)[0]
 
-    test_objective_value = result_dict['score']
-    test_output_metrics_dict = result_dict['additional_scores']
+    test_objective_value = result_dict["score"]
+    test_output_metrics_dict = result_dict["additional_scores"]
     test_accuracy_value = test_output_metrics_dict["balanced_accuracy"]
     test_dummy_metric_value = test_output_metrics_dict["dummy_metric"]
 
@@ -401,15 +418,18 @@ def test_custom_metric_config_with_invalid_custom_metric():
     train_file = join(other_dir, "examples_train.jsonlines")
     test_file = join(other_dir, "examples_test.jsonlines")
     config_path = fill_in_config_paths_for_single_file(
-        join(config_dir, "test_custom_metrics_bad.template.cfg"),
-        train_file,
-        test_file
+        join(config_dir, "test_custom_metrics_bad.template.cfg"), train_file, test_file
     )
     # since this configuration file consists of an invalid
     # metric, this should raise an error
-    assert_raises_regex(ValueError,
-                        r"invalid metrics specified:.*missing_metric",
-                        run_configuration, config_path, local=True, quiet=True)
+    assert_raises_regex(
+        ValueError,
+        r"invalid metrics specified:.*missing_metric",
+        run_configuration,
+        config_path,
+        local=True,
+        quiet=True,
+    )
 
 
 @with_setup(setup_func)
@@ -422,37 +442,40 @@ def test_api_with_inverted_custom_metric():
     register_custom_metric(custom_metrics_file1, "one_minus_precision")
 
     # create some classification data
-    train_fs, _ = make_classification_data(num_examples=1000,
-                                           num_features=10,
-                                           num_labels=2)
+    train_fs, _ = make_classification_data(
+        num_examples=1000, num_features=10, num_labels=2
+    )
 
     # set up a learner to tune using the lower-is-better custom metric
     learner1 = Learner("LogisticRegression")
-    (grid_score1,
-     grid_results_dict1) = learner1.train(train_fs,
-                                          grid_objective="one_minus_precision")
+    (grid_score1, grid_results_dict1) = learner1.train(
+        train_fs, grid_objective="one_minus_precision"
+    )
 
     # now setup another learner that uses the complementary version
     # of our custom metric (regular precision) for grid search
     learner2 = Learner("LogisticRegression")
-    (grid_score2,
-     grid_results_dict2) = learner2.train(train_fs,
-                                          grid_objective="precision")
+    (grid_score2, grid_results_dict2) = learner2.train(
+        train_fs, grid_objective="precision"
+    )
 
     # for both learners the ranking of the C hyperparameter should be
     # should be the identical since when we defined one_minus_precision
     # we set the `greater_is_better` keyword argument to `False`
-    assert_array_equal(grid_results_dict1['rank_test_score'],
-                       grid_results_dict2['rank_test_score'])
+    assert_array_equal(
+        grid_results_dict1["rank_test_score"], grid_results_dict2["rank_test_score"]
+    )
 
     # furthermore, the final grid score and the mean scores for each
     # C hyperparameter value should follow the same 1-X relationship
     # except that our custom metric should be negated due to the
     # keyword argument that we set when we defined it
     assert_almost_equal(1 - grid_score2, -1 * grid_score1, places=6)
-    assert_array_almost_equal(1 - grid_results_dict2['mean_test_score'],
-                              -1 * grid_results_dict1['mean_test_score'],
-                              decimal=6)
+    assert_array_almost_equal(
+        1 - grid_results_dict2["mean_test_score"],
+        -1 * grid_results_dict1["mean_test_score"],
+        decimal=6,
+    )
 
 
 @with_setup(setup_func)
@@ -466,49 +489,60 @@ def test_config_with_inverted_custom_metric():
     config_path1 = fill_in_config_paths_for_single_file(
         join(config_dir, "test_custom_metrics_kwargs1.template.cfg"),
         train_file,
-        test_file
+        test_file,
     )
     run_configuration(config_path1, local=True, quiet=True)
 
     # laod the results
-    with open(join(output_dir,
-                   'test_custom_metrics_kwargs1_train_examples_train.jsonlines'
-                   '_LogisticRegression.results.json')) as f:
+    with open(
+        join(
+            output_dir,
+            "test_custom_metrics_kwargs1_train_examples_train.jsonlines"
+            "_LogisticRegression.results.json",
+        )
+    ) as f:
         result_dict1 = json.load(f)
-        grid_score1 = result_dict1['grid_score']
-        grid_results_dict1 = result_dict1['grid_search_cv_results']
+        grid_score1 = result_dict1["grid_score"]
+        grid_results_dict1 = result_dict1["grid_search_cv_results"]
 
     # now run the second experiment that is identical except that
     # that it uses the regular macro-averaged F1 score for grid search
     config_path2 = fill_in_config_paths_for_single_file(
         join(config_dir, "test_custom_metrics_kwargs2.template.cfg"),
         train_file,
-        test_file
+        test_file,
     )
     run_configuration(config_path2, local=True, quiet=True)
 
     # laod the results
-    with open(join(output_dir,
-                   'test_custom_metrics_kwargs2_train_examples_train.jsonlines'
-                   '_LogisticRegression.results.json')) as f:
+    with open(
+        join(
+            output_dir,
+            "test_custom_metrics_kwargs2_train_examples_train.jsonlines"
+            "_LogisticRegression.results.json",
+        )
+    ) as f:
         result_dict2 = json.load(f)
-        grid_score2 = result_dict2['grid_score']
-        grid_results_dict2 = result_dict2['grid_search_cv_results']
+        grid_score2 = result_dict2["grid_score"]
+        grid_results_dict2 = result_dict2["grid_search_cv_results"]
 
     # for both experiments the ranking of the C hyperparameter should be
     # should be the identical since when we defined one_minus_precision
     # we set the `greater_is_better` keyword argument to `False`
-    assert_array_equal(grid_results_dict1['rank_test_score'],
-                       grid_results_dict2['rank_test_score'])
+    assert_array_equal(
+        grid_results_dict1["rank_test_score"], grid_results_dict2["rank_test_score"]
+    )
 
     # furthermore, the final grid score and the mean scores for each
     # C hyperparameter value should follow the same 1-X relationship
     # except that our custom metric should be negated due to the
     # keyword argument that we set when we defined it
     assert_almost_equal(1 - grid_score2, -1 * grid_score1, places=6)
-    assert_array_almost_equal(1 - np.array(grid_results_dict2['mean_test_score']),
-                              -1 * np.array(grid_results_dict1['mean_test_score']),
-                              decimal=6)
+    assert_array_almost_equal(
+        1 - np.array(grid_results_dict2["mean_test_score"]),
+        -1 * np.array(grid_results_dict1["mean_test_score"]),
+        decimal=6,
+    )
 
 
 @with_setup(setup_func)
@@ -520,16 +554,20 @@ def test_api_with_custom_prob_metric():
     register_custom_metric(custom_metrics_file, "fake_prob_metric")
 
     # create some classification data
-    train_fs, _ = make_classification_data(num_examples=1000,
-                                           num_features=10,
-                                           num_labels=2)
+    train_fs, _ = make_classification_data(
+        num_examples=1000, num_features=10, num_labels=2
+    )
 
     # set up a learner to tune using this probabilistic metric
     # this should fail since LinearSVC doesn't support probabilities
     learner1 = Learner("LinearSVC")
-    assert_raises_regex(AttributeError,
-                        r"has no attribute 'predict_proba'",
-                        learner1.train, train_fs, grid_objective="fake_prob_metric")
+    assert_raises_regex(
+        AttributeError,
+        r"has no attribute 'predict_proba'",
+        learner1.train,
+        train_fs,
+        grid_objective="fake_prob_metric",
+    )
 
     # set up another learner with explicit probability support
     # this should work just fine with our custom metric
@@ -549,29 +587,38 @@ def test_config_with_custom_prob_metric():
     config_path = fill_in_config_paths_for_single_file(
         join(config_dir, "test_custom_metrics_kwargs3.template.cfg"),
         train_file,
-        test_file
+        test_file,
     )
 
     # this should fail as expected
-    assert_raises_regex(AttributeError,
-                        r"has no attribute 'predict_proba'",
-                        run_configuration, config_path, local=True, quiet=True)
+    assert_raises_regex(
+        AttributeError,
+        r"has no attribute 'predict_proba'",
+        run_configuration,
+        config_path,
+        local=True,
+        quiet=True,
+    )
 
     # now run the second experiment that is identical except that
     # the learner now produces probabilities
     config_path = fill_in_config_paths_for_single_file(
         join(config_dir, "test_custom_metrics_kwargs4.template.cfg"),
         train_file,
-        test_file
+        test_file,
     )
     # this should succeed and produce results
     run_configuration(config_path, local=True, quiet=True)
 
     # laod the results and verify them
-    with open(join(output_dir,
-                   'test_custom_metrics_kwargs4_train_examples_train.jsonlines'
-                   '_SVC.results.json')) as f:
+    with open(
+        join(
+            output_dir,
+            "test_custom_metrics_kwargs4_train_examples_train.jsonlines"
+            "_SVC.results.json",
+        )
+    ) as f:
         result_dict = json.load(f)
-        grid_score = result_dict['grid_score']
+        grid_score = result_dict["grid_score"]
 
     ok_(grid_score > 0.95)

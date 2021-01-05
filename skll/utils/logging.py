@@ -15,8 +15,9 @@ orig_showwarning = warnings.showwarning
 SKLEARN_WARNINGS_RE = re.compile(re.escape(f"{sep}sklearn{sep}"))
 
 
-def send_sklearn_warnings_to_logger(logger, message, category, filename,
-                                    lineno, file=None, line=None):
+def send_sklearn_warnings_to_logger(
+    logger, message, category, filename, lineno, file=None, line=None
+):
     """
     Return method that sends `sklearn`-specific warnings to a logger
     that can be used to replace warnings.showwarning (via `partial`,
@@ -24,10 +25,9 @@ def send_sklearn_warnings_to_logger(logger, message, category, filename,
     """
 
     if SKLEARN_WARNINGS_RE.search(filename):
-        logger.warning(f'{filename}:{lineno}: {category.__name__}:{message}')
+        logger.warning(f"{filename}:{lineno}: {category.__name__}:{message}")
     else:
-        orig_showwarning(message, category, filename, lineno,
-                         file=file, line=line)
+        orig_showwarning(message, category, filename, lineno, file=file, line=line)
 
 
 def get_skll_logger(name, filepath=None, log_level=logging.INFO):
@@ -64,13 +64,21 @@ def get_skll_logger(name, filepath=None, log_level=logging.INFO):
     # if we are given a file path and this existing logger doesn't already
     # have a file handler for this file, then add one.
     if filepath:
+
         def is_file_handler(handler):
-            return isinstance(handler, logging.FileHandler) and handler.stream.name == filepath
-        need_file_handler = not any([is_file_handler(handler) for handler in logger.handlers])
+            return (
+                isinstance(handler, logging.FileHandler)
+                and handler.stream.name == filepath
+            )
+
+        need_file_handler = not any(
+            [is_file_handler(handler) for handler in logger.handlers]
+        )
         if need_file_handler:
-            formatter = logging.Formatter('%(asctime)s - %(levelname)s - '
-                                          '%(message)s')
-            file_handler = logging.FileHandler(filepath, mode='w')
+            formatter = logging.Formatter(
+                "%(asctime)s - %(levelname)s - " "%(message)s"
+            )
+            file_handler = logging.FileHandler(filepath, mode="w")
             file_handler.setFormatter(formatter)
             file_handler.setLevel(log_level)
             logger.addHandler(file_handler)

@@ -25,8 +25,7 @@ def trigger_sklearn_warning():
     This should trigger an ``UndefinedMetricWarning``.
     """
 
-    roc_curve([1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-              [0, 1, 0, 1, 0, 1, 0, 1, 0, 1])
+    roc_curve([1, 1, 1, 1, 1, 1, 1, 1, 1, 1], [0, 1, 0, 1, 0, 1, 0, 1, 0, 1])
 
 
 def tearDown():
@@ -79,8 +78,9 @@ def test_get_skll_logger_with_warning():
     temp_file.close()
     TEMP_FILES.append(temp_file)
     TEMP_FILE_PATHS.append(temp_file.name)
-    logger = get_skll_logger("test_get_skll_logger_with_warning",
-                             filepath=temp_file.name)
+    logger = get_skll_logger(
+        "test_get_skll_logger_with_warning", filepath=temp_file.name
+    )
     LOGGERS.append(logger)
 
     # Send a regular log message
@@ -132,8 +132,7 @@ def test_close_and_remove_logger_handlers():
     temp_file.close()
     TEMP_FILES.append(temp_file)
     TEMP_FILE_PATHS.append(temp_file.name)
-    logger = get_skll_logger("test_close_and_remove_logger_handlers",
-                             temp_file.name)
+    logger = get_skll_logger("test_close_and_remove_logger_handlers", temp_file.name)
     LOGGERS.append(logger)
     close_and_remove_logger_handlers(logger)
     assert not logger.handlers
