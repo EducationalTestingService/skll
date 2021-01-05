@@ -11,8 +11,7 @@ config file.
 
 
 import logging
-
-from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
+from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser
 
 from skll.experiments import run_configuration
 from skll.version import __version__

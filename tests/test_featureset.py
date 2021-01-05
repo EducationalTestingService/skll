@@ -19,28 +19,27 @@ from shutil import rmtree
 
 import numpy as np
 import pandas as pd
-from nose.tools import eq_, raises, assert_not_equal
+from nose.tools import assert_not_equal, eq_, raises
 from numpy.testing import assert_array_equal
-from sklearn.feature_extraction import DictVectorizer, FeatureHasher
 from sklearn.datasets import make_classification
+from sklearn.feature_extraction import DictVectorizer, FeatureHasher
 
 import skll
-from skll.data import (CSVReader,
-                       FeatureSet,
-                       NDJReader,
-                       NDJWriter,
-                       Reader,
-                       TSVReader,
-                       Writer)
-
+from skll.data import (
+    CSVReader,
+    FeatureSet,
+    NDJReader,
+    NDJWriter,
+    Reader,
+    TSVReader,
+    Writer,
+)
 from skll.data.readers import DictListReader
 from skll.experiments import load_featureset
 from skll.utils.commandline import skll_convert
 from skll.utils.constants import KNOWN_DEFAULT_PARAM_GRIDS
-
-from tests import train_dir, test_dir, other_dir, output_dir
+from tests import other_dir, output_dir, test_dir, train_dir
 from tests.utils import make_classification_data, make_regression_data, unlink
-
 
 _ALL_MODELS = list(KNOWN_DEFAULT_PARAM_GRIDS.keys())
 

@@ -14,11 +14,10 @@ import logging
 import os
 import re
 import sys
-import pandas as pd
-
 from csv import DictWriter
 from decimal import Decimal
 
+import pandas as pd
 from scipy.sparse import issparse
 from sklearn.feature_extraction import FeatureHasher
 
@@ -699,6 +698,7 @@ class LibSVMWriter(Writer):
         name : str
             The class names with unicode equivalent replacements.
         """
+
         if isinstance(name, str):
             for orig, replacement in LibSVMWriter.LIBSVM_REPLACE_DICT.items():
                 name = name.replace(orig, replacement)
@@ -719,6 +719,7 @@ class LibSVMWriter(Writer):
         output_file : file buffer
             The file being written to.
         """
+
         field_values = sorted([(self.feat_set.vectorizer.vocabulary_[field] +
                                 1, value) for field, value in
                                feat_dict.items() if Decimal(value) != 0])

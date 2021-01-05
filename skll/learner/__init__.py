@@ -11,78 +11,83 @@ An easy-to-use class that wraps scikit-learn estimators.
 import copy
 import logging
 import os
-
-from math import floor, log10
 from importlib import import_module
 from itertools import combinations
+from math import floor, log10
 from multiprocessing import cpu_count
 
 import joblib
 import numpy as np
 import scipy.sparse as sp
-from sklearn.model_selection import GridSearchCV
-from sklearn.dummy import DummyClassifier, DummyRegressor
-from sklearn.ensemble import (AdaBoostClassifier,
-                              AdaBoostRegressor,
-                              GradientBoostingClassifier,
-                              GradientBoostingRegressor,
-                              RandomForestClassifier,
-                              RandomForestRegressor)
-from sklearn.feature_extraction import FeatureHasher
+from sklearn.dummy import DummyClassifier, DummyRegressor  # noqa: F401
+from sklearn.ensemble import (
+    AdaBoostClassifier,
+    AdaBoostRegressor,
+    GradientBoostingClassifier,
+    GradientBoostingRegressor,
+    RandomForestClassifier,
+    RandomForestRegressor,
+)
 from sklearn.feature_extraction import DictVectorizer as OldDictVectorizer
-from sklearn.metrics import make_scorer
-from sklearn.pipeline import Pipeline
-from sklearn.utils.multiclass import type_of_target
-from sklearn.kernel_approximation import (Nystroem,
-                                          RBFSampler,
-                                          SkewedChi2Sampler)
-from sklearn.linear_model import (BayesianRidge,
-                                  ElasticNet,
-                                  HuberRegressor,
-                                  Lars,
-                                  Lasso,
-                                  LinearRegression,
-                                  LogisticRegression,
-                                  RANSACRegressor,
-                                  Ridge,
-                                  RidgeClassifier,
-                                  SGDClassifier,
-                                  SGDRegressor,
-                                  TheilSenRegressor)
+from sklearn.feature_extraction import FeatureHasher
+from sklearn.kernel_approximation import Nystroem, RBFSampler, SkewedChi2Sampler
+from sklearn.linear_model import (
+    BayesianRidge,
+    ElasticNet,
+    HuberRegressor,
+    Lars,
+    Lasso,
+    LinearRegression,
+    LogisticRegression,
+    RANSACRegressor,
+    Ridge,
+    RidgeClassifier,
+    SGDClassifier,
+    SGDRegressor,
+    TheilSenRegressor,
+)
 from sklearn.linear_model._base import LinearModel
+from sklearn.metrics import make_scorer
+from sklearn.model_selection import GridSearchCV
 from sklearn.naive_bayes import MultinomialNB
-from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
+from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor  # noqa: F401
 from sklearn.neural_network import MLPClassifier, MLPRegressor
+from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
-from sklearn.svm import LinearSVC, SVC, LinearSVR, SVR
+from sklearn.svm import SVC, SVR, LinearSVC, LinearSVR
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 from sklearn.utils import shuffle as sk_shuffle
+from sklearn.utils.multiclass import type_of_target
 
 from skll.data import FeatureSet
 from skll.data.dict_vectorizer import DictVectorizer
 from skll.data.readers import safe_float
 from skll.metrics import SCORERS
-from skll.utils.constants import (CORRELATION_METRICS,
-                                  KNOWN_REQUIRES_DENSE,
-                                  KNOWN_DEFAULT_PARAM_GRIDS,
-                                  MAX_CONCURRENT_PROCESSES)
+from skll.utils.constants import (
+    CORRELATION_METRICS,
+    KNOWN_DEFAULT_PARAM_GRIDS,
+    KNOWN_REQUIRES_DENSE,
+    MAX_CONCURRENT_PROCESSES,
+)
 from skll.version import VERSION
 
-from .utils import (add_unseen_labels,
-                    get_predictions,
-                    compute_evaluation_metrics,
-                    compute_num_folds_from_example_counts,
-                    Densifier,
-                    FilteredLeaveOneGroupOut,
-                    get_acceptable_classification_metrics,
-                    get_acceptable_regression_metrics,
-                    load_custom_learner,
-                    rescaled,
-                    SelectByMinCount,
-                    setup_cv_fold_iterator,
-                    setup_cv_split_iterator,
-                    train_and_score,
-                    write_predictions)
+from .utils import (
+    Densifier,
+    FilteredLeaveOneGroupOut,
+    SelectByMinCount,
+    add_unseen_labels,
+    compute_evaluation_metrics,
+    compute_num_folds_from_example_counts,
+    get_acceptable_classification_metrics,
+    get_acceptable_regression_metrics,
+    get_predictions,
+    load_custom_learner,
+    rescaled,
+    setup_cv_fold_iterator,
+    setup_cv_split_iterator,
+    train_and_score,
+    write_predictions,
+)
 
 # we need a list of learners requiring dense input and a dictionary of
 # default parameter grids that we can dynamically update in case we
@@ -160,7 +165,7 @@ class Learner(object):
         Defaults to ``None``.
     """
 
-    def __init__(self,
+    def __init__(self,  # noqa: C901
                  model_type,
                  probability=False,
                  pipeline=False,
@@ -754,7 +759,7 @@ class Learner(object):
                                          with_mean=False,
                                          with_std=False)
 
-    def train(self,
+    def train(self,  # noqa: C901
               examples,
               param_grid=None,
               grid_search_folds=3,
@@ -1183,7 +1188,7 @@ class Learner(object):
                objective_score, metric_scores)
         return res
 
-    def predict(self,
+    def predict(self,  # noqa: C901
                 examples,
                 prediction_prefix=None,
                 append=False,
@@ -1756,6 +1761,7 @@ class Learner(object):
         out = np.asarray(out).transpose((2, 1, 0))
 
         return list(out[0]), list(out[1]), list(train_sizes_abs)
+
 
 # Rescaled regressors
 @rescaled

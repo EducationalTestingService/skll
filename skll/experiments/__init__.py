@@ -11,35 +11,30 @@ Functions for running and interacting with SKLL experiments.
 import datetime
 import json
 import logging
+from itertools import combinations
+from os.path import exists, getsize, join
 
 import matplotlib.pyplot as plt
 import numpy as np
-
-from itertools import combinations
-from os.path import exists, join, getsize
-
 from sklearn import __version__ as SCIKIT_VERSION
 from sklearn.metrics import SCORERS
 
 from skll.config import parse_config_file
 from skll.config.utils import _munge_featureset_name
-from skll.learner import (Learner,
-                          load_custom_learner,
-                          MAX_CONCURRENT_PROCESSES)
+from skll.learner import MAX_CONCURRENT_PROCESSES, Learner, load_custom_learner
 from skll.metrics import _CUSTOM_METRICS, register_custom_metric
-from skll.utils.logging import (close_and_remove_logger_handlers,
-                                get_skll_logger)
+from skll.utils.logging import close_and_remove_logger_handlers, get_skll_logger
 from skll.version import __version__
 
 from .input import load_featureset
-from .output import (generate_learning_curve_plots,
-                     _print_fancy_output,
-                     _write_learning_curve_file,
-                     _write_skll_folds,
-                     _write_summary_file)
-from .utils import (_check_job_results,
-                    _create_learner_result_dicts,
-                    NumpyTypeEncoder)
+from .output import (
+    _print_fancy_output,
+    _write_learning_curve_file,
+    _write_skll_folds,
+    _write_summary_file,
+    generate_learning_curve_plots,
+)
+from .utils import NumpyTypeEncoder, _check_job_results, _create_learner_result_dicts
 
 # Check if gridmap is available
 try:
@@ -58,7 +53,7 @@ __all__ = ['generate_learning_curve_plots',
            'run_configuration']
 
 
-def _classify_featureset(args):
+def _classify_featureset(args):  # noqa: C901
     """
     Classification job to be submitted to grid.
 
@@ -484,7 +479,7 @@ def _classify_featureset(args):
     return res
 
 
-def run_configuration(config_file, local=False, overwrite=True, queue='all.q',
+def run_configuration(config_file, local=False, overwrite=True, queue='all.q',  # noqa: C901
                       hosts=None, write_summary=True, quiet=False,
                       ablation=0, resume=False, log_level=logging.INFO):
     """

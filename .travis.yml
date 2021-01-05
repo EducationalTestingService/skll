@@ -35,4 +35,3 @@ script:
 # Calculate coverage
 after_success:
   - codecov
-

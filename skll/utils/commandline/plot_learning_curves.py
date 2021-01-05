@@ -19,7 +19,6 @@ then be used to generate the plots later.
 import argparse
 import logging
 import sys
-
 from os import makedirs
 from os.path import basename, exists
 

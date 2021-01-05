@@ -10,29 +10,26 @@ Tests for SKLL inputs, mainly configuration files.
 
 import re
 import tempfile
-
 from glob import glob
 from itertools import product
 from os.path import exists, join, normcase, normpath
-from shutil import rmtree
 from pathlib import Path
+from shutil import rmtree
 
 import numpy as np
-
 from nose.tools import eq_, ok_, raises
 
-from skll.config import locate_file, load_cv_folds, parse_config_file
+from skll.config import load_cv_folds, locate_file, parse_config_file
 from skll.data.readers import safe_float
 from skll.experiments import load_featureset
-from skll.utils.logging import (close_and_remove_logger_handlers,
-                                get_skll_logger)
-
-from tests import (_my_dir, config_dir, other_dir, output_dir, train_dir,
-                   test_dir)
-from tests.utils import (create_jsonlines_feature_files,
-                         fill_in_config_options,
-                         remove_jsonlines_feature_files,
-                         unlink)
+from skll.utils.logging import close_and_remove_logger_handlers, get_skll_logger
+from tests import _my_dir, config_dir, other_dir, output_dir, test_dir, train_dir
+from tests.utils import (
+    create_jsonlines_feature_files,
+    fill_in_config_options,
+    remove_jsonlines_feature_files,
+    unlink,
+)
 
 
 def setup():

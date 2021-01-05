@@ -13,7 +13,6 @@ import itertools
 import json
 import re
 import warnings
-
 from glob import glob
 from itertools import product
 from os.path import join
@@ -22,40 +21,44 @@ from pathlib import Path
 import numpy as np
 from nose.tools import assert_almost_equal, assert_raises, eq_, ok_, raises
 from numpy.testing import assert_array_equal, assert_raises_regex
-
 from scipy.stats import kendalltau, pearsonr, spearmanr
-
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import (accuracy_score,
-                             average_precision_score,
-                             log_loss,
-                             roc_auc_score)
+from sklearn.metrics import (
+    accuracy_score,
+    average_precision_score,
+    log_loss,
+    roc_auc_score,
+)
 from sklearn.utils import shuffle as sk_shuffle
 
 from skll import run_configuration
 from skll.config import parse_config_file
 from skll.data import FeatureSet, NDJReader, NDJWriter
 from skll.learner import Learner
-from skll.learner.utils import (contiguous_ints_or_floats,
-                                FilteredLeaveOneGroupOut,
-                                train_and_score)
-from skll.utils.constants import (CORRELATION_METRICS,
-                                  KNOWN_DEFAULT_PARAM_GRIDS,
-                                  PROBABILISTIC_METRICS,
-                                  REGRESSION_ONLY_METRICS,
-                                  UNWEIGHTED_KAPPA_METRICS,
-                                  WEIGHTED_KAPPA_METRICS)
+from skll.learner.utils import (
+    FilteredLeaveOneGroupOut,
+    contiguous_ints_or_floats,
+    train_and_score,
+)
 from skll.metrics import use_score_func
-
+from skll.utils.constants import (
+    CORRELATION_METRICS,
+    KNOWN_DEFAULT_PARAM_GRIDS,
+    PROBABILISTIC_METRICS,
+    REGRESSION_ONLY_METRICS,
+    UNWEIGHTED_KAPPA_METRICS,
+    WEIGHTED_KAPPA_METRICS,
+)
 from tests import config_dir, other_dir, output_dir, test_dir, train_dir
-from tests.utils import (make_classification_data,
-                         make_regression_data,
-                         make_sparse_data,
-                         fill_in_config_options,
-                         fill_in_config_paths_for_single_file,
-                         unlink)
-
+from tests.utils import (
+    fill_in_config_options,
+    fill_in_config_paths_for_single_file,
+    make_classification_data,
+    make_regression_data,
+    make_sparse_data,
+    unlink,
+)
 
 _ALL_MODELS = list(KNOWN_DEFAULT_PARAM_GRIDS.keys())
 
@@ -1146,7 +1149,7 @@ def test_invalid_classification_metric():
             yield check_invalid_classification_metric, learner, metric, label_array, False
 
 
-def check_objective_values_for_classification(metric_name,
+def check_objective_values_for_classification(metric_name,  # noqa: C901
                                               label_array,
                                               use_probabilities):
 

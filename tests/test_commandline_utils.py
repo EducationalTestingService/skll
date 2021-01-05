@@ -12,14 +12,14 @@ import itertools
 import sys
 from collections import defaultdict
 from glob import glob
+from io import StringIO
 from itertools import combinations, product
 from os.path import exists, join
-from io import StringIO
 from pathlib import Path
 
-import scipy as sp
 import numpy as np
 import pandas as pd
+import scipy as sp
 
 try:
     from unittest.mock import create_autospec, patch
@@ -27,42 +27,35 @@ except ImportError:
     from mock import create_autospec, patch
 
 from nose.plugins.logcapture import LogCapture
-from nose.tools import eq_, assert_almost_equal, raises
-from numpy.testing import assert_allclose, assert_array_almost_equal
+from nose.tools import assert_almost_equal, eq_, raises
 from numpy import concatenate
-
+from numpy.testing import assert_allclose, assert_array_almost_equal
 from pandas.testing import assert_frame_equal
 from sklearn.feature_extraction import FeatureHasher
 from sklearn.linear_model import SGDClassifier, SGDRegressor
 
 import skll
 import skll.utils.commandline.compute_eval_from_predictions as cefp
-from skll.utils.commandline.compute_eval_from_predictions import get_prediction_from_probabilities
 import skll.utils.commandline.filter_features as ff
 import skll.utils.commandline.generate_predictions as gp
+import skll.utils.commandline.join_features as jf
+import skll.utils.commandline.plot_learning_curves as plc
 import skll.utils.commandline.print_model_weights as pmw
 import skll.utils.commandline.run_experiment as rex
 import skll.utils.commandline.skll_convert as sk
 import skll.utils.commandline.summarize_results as sr
-import skll.utils.commandline.join_features as jf
-import skll.utils.commandline.plot_learning_curves as plc
-
-from skll.data import (FeatureSet,
-                       NDJWriter,
-                       LibSVMWriter,
-                       LibSVMReader,
-                       safe_float)
+from skll.data import FeatureSet, LibSVMReader, LibSVMWriter, NDJWriter, safe_float
 from skll.data.readers import EXT_TO_READER
 from skll.data.writers import EXT_TO_WRITER
-from skll.experiments import (generate_learning_curve_plots,
-                              run_configuration)
+from skll.experiments import generate_learning_curve_plots, run_configuration
 from skll.experiments.output import _write_summary_file
 from skll.learner import Learner
+from skll.utils.commandline.compute_eval_from_predictions import (
+    get_prediction_from_probabilities,
+)
 from skll.utils.constants import KNOWN_DEFAULT_PARAM_GRIDS
-
 from tests import other_dir, output_dir, test_dir, train_dir
 from tests.utils import make_classification_data, make_regression_data, unlink
-
 
 _ALL_MODELS = list(KNOWN_DEFAULT_PARAM_GRIDS.keys())
 
@@ -306,7 +299,7 @@ def _run_generate_predictions_and_capture_output(generate_cmd, output_file):
     return output_lines
 
 
-def check_generate_predictions(use_regression=False,
+def check_generate_predictions(use_regression=False,  # noqa: C901
                                string_labels=False,
                                num_labels=2,
                                use_probability=False,
@@ -863,7 +856,7 @@ def test_skll_convert_no_labels_with_label_col():
     sk.main(argv=skll_convert_cmd)
 
 
-def check_print_model_weights(task='classification', sort_by_labels=False):
+def check_print_model_weights(task='classification', sort_by_labels=False):  # noqa: C901
 
     # create some simple classification or regression data
     if task in ['classification', 'classification_no_intercept']:
@@ -953,7 +946,7 @@ def check_print_model_weights(task='classification', sort_by_labels=False):
     # now parse the output of the print_model_weight command
     # and get the intercept and the feature values
     if task in ['classification', 'classification_with_hashing']:
-        lines_to_parse = [l for l in out.split('\n')[1:] if l]
+        lines_to_parse = [l for l in out.split('\n')[1:] if l]  # noqa: E741
         intercept = safe_float(lines_to_parse[0].split('\t')[0])
         feature_values = []
         for ltp in lines_to_parse[1:]:
@@ -967,7 +960,7 @@ def check_print_model_weights(task='classification', sort_by_labels=False):
         # for multiple classes we get an intercept for each class
         # as well as a list of weights for each class
 
-        lines_to_parse = [l for l in out.split('\n')[1:] if l]
+        lines_to_parse = [l for l in out.split('\n')[1:] if l]  # noqa: E741
         intercept = []
         for intercept_string in lines_to_parse[0:3]:
             intercept.append(safe_float(intercept_string.split('\t')[0]))
@@ -1009,7 +1002,7 @@ def check_print_model_weights(task='classification', sort_by_labels=False):
 
         # save the computed intercept values in a dictionary
         # with the class oair label as the key
-        lines_to_parse = [l for l in out.split('\n')[1:] if l]
+        lines_to_parse = [l for l in out.split('\n')[1:] if l]  # noqa: E741
         parsed_intercepts_dict = {}
         for intercept_string in lines_to_parse[0:3]:
             fields = intercept_string.split('\t')
@@ -1073,7 +1066,7 @@ def check_print_model_weights(task='classification', sort_by_labels=False):
             assert_almost_equal(computed_intercept, expected_intercept)
 
     elif task == 'classification_no_intercept':
-        lines_to_parse = [l for l in out.split('\n')[0:] if l]
+        lines_to_parse = [l for l in out.split('\n')[0:] if l]  # noqa: E741
         intercept = safe_float(lines_to_parse[0].split('=')[1])
         computed_coefficients = []
         for ltp in lines_to_parse[1:]:
@@ -1084,7 +1077,7 @@ def check_print_model_weights(task='classification', sort_by_labels=False):
         expected_coefficients = learner.model.coef_[0]
         assert_allclose(expected_coefficients, computed_coefficients)
     elif task in ['regression', 'regression_with_hashing']:
-        lines_to_parse = [l for l in out.split('\n') if l]
+        lines_to_parse = [l for l in out.split('\n') if l]  # noqa: E741
         intercept = safe_float(lines_to_parse[0].split('=')[1])
         computed_coefficients = []
         for ltp in lines_to_parse[1:]:
@@ -1094,7 +1087,7 @@ def check_print_model_weights(task='classification', sort_by_labels=False):
         assert_almost_equal(intercept, learner.model.intercept_)
         assert_allclose(learner.model.coef_, computed_coefficients)
     else:
-        lines_to_parse = [l for l in out.split('\n') if l]
+        lines_to_parse = [l for l in out.split('\n') if l]  # noqa: E741
 
         intercept_list = ast.literal_eval(lines_to_parse[0].split('=')[1].strip())
         intercept = safe_float(intercept_list)
@@ -1496,7 +1489,7 @@ def check_filter_features_arff_argparse(filter_type, label_col='y',
     with patch.object(FeatureSet, 'filter', autospec=True) as filter_mock, \
             patch.object(writer_class, '__init__', autospec=True,
                          return_value=None) as write_init_mock, \
-            patch.object(writer_class, 'write', autospec=True) as write_mock:
+            patch.object(writer_class, 'write', autospec=True):
 
         ff.main(argv=ff_cmd_args)
 
@@ -1646,7 +1639,7 @@ def check_join_features_argparse(extension, label_col='y', id_col='id',
     with patch.object(FeatureSet, '__add__', autospec=True) as add_mock, \
             patch.object(writer_class, '__init__', autospec=True,
                          return_value=None) as write_init_mock, \
-            patch.object(writer_class, 'write', autospec=True) as write_mock:
+            patch.object(writer_class, 'write', autospec=True):
 
         jf.main(argv=jf_cmd_args)
 

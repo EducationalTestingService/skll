@@ -37,7 +37,7 @@ The main Python code for the SKLL package lives inside the ``skll`` sub-director
 -  `metrics.py <https://github.com/EducationalTestingService/skll/blob/main/skll/metrics.py>`__ : Code for any custom metrics that are not in
    ``sklearn.metrics``, e.g., ``kappa``, ``kendall_tau``,
    ``spearman``, etc.
--  `utils/ <https://github.com/EducationalTestingService/skll/tree/main/skll/utils>`__ : Code for a different utility functions and classes used throughout SKLL. 
+-  `utils/ <https://github.com/EducationalTestingService/skll/tree/main/skll/utils>`__ : Code for a different utility functions and classes used throughout SKLL.
 -  `version.py <https://github.com/EducationalTestingService/skll/blob/main/skll/version.py>`__ : Code to define the SKLL version. Only changed for
    new releases.
 -  `data/ <https://github.com/EducationalTestingService/skll/tree/main/skll/data>`__
