@@ -768,7 +768,7 @@ def parse_config_file(config_path, log_level=logging.INFO):  # noqa: C901
         logger.warning(
             'Note that "grid_search" is set to True and "fixed_parameters" is also '
             "specified. If there is a conflict between the grid search parameter space"
-            "and the fixed parameter values, the fixed parameter values will take "
+            " and the fixed parameter values, the fixed parameter values will take "
             "precedence."
         )
 

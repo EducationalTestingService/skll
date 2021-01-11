@@ -377,7 +377,7 @@ def test_folds_file_logging_grid_search():
     with open(join(output_dir, "test_folds_file_logging.log")) as f:
         cv_file_pattern = re.compile(
             r'Specifying "folds_file" overrides both explicit and default '
-            r'"num_cv_folds".\n(.+)The specified "folds_file" will not be used for "'
+            r'"num_cv_folds".\n(.+)The specified "folds_file" will not be used for '
             r"inner grid search."
         )
         matches = re.findall(cv_file_pattern, f.read())
