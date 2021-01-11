@@ -95,9 +95,8 @@ def load_featureset(
     else:
         if len(feat_files) > 1 and feature_hasher:
             logger.warning(
-                "Since there are multiple feature files, "
-                "feature hashing applies to each specified "
-                "feature file separately."
+                "Since there are multiple feature files, feature hashing applies to "
+                "each specified feature file separately."
             )
         merged_set = None
         for file_name in sorted(

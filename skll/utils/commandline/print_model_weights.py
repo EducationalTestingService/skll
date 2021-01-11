@@ -33,7 +33,7 @@ def main(argv=None):
     """
 
     parser = argparse.ArgumentParser(
-        description="Prints out the weights of a" " given model.",
+        description="Prints out the weights of a given model.",
         conflict_handler="resolve",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )

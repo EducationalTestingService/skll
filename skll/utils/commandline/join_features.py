@@ -43,8 +43,8 @@ def main(argv=None):
         "-i",
         "--id_col",
         help=(
-            "Name of the column which contains the instance "
-            " IDs in ARFF, CSV, or TSV files."
+            "Name of the column which contains the instance  IDs in ARFF, CSV, or TSV "
+            "files."
         ),
         default="id",
     )
@@ -52,10 +52,9 @@ def main(argv=None):
         "-l",
         "--label_col",
         help=(
-            "Name of the column which contains the class "
-            "labels in ARFF, CSV, or TSV files. For ARFF "
-            "files, this must be the final column to count "
-            "as the label."
+            "Name of the column which contains the class labels in ARFF, CSV, or TSV "
+            "files. For ARFF files, this must be the final column to count as the "
+            "label."
         ),
         default="y",
     )
@@ -91,15 +90,15 @@ def main(argv=None):
 
     if input_extension not in valid_extensions:
         logger.error(
-            "Input files must be in either .arff, .csv, .jsonlines, "
-            f".ndj, or .tsv format. You specified: {input_extension}"
+            "Input files must be in either .arff, .csv, .jsonlines, .ndj, or .tsv "
+            f"format. You specified: {input_extension}"
         )
         sys.exit(1)
 
     if output_extension != input_extension:
         logger.error(
-            "Output file must be in the same format as the input "
-            f"file.  You specified: {output_extension}"
+            "Output file must be in the same format as the input file.  You specified:"
+            f" {output_extension}"
         )
         sys.exit(1)
 

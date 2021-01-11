@@ -79,8 +79,8 @@ class FeatureSet(object):
             num_ids = self.ids.shape[0]
             if num_feats != num_ids:
                 raise ValueError(
-                    f"Number of IDs ({num_ids}) does not equal "
-                    f"number of feature rows ({num_feats})"
+                    f"Number of IDs ({num_ids}) does not equal number of feature rows "
+                    f"({num_feats})"
                 )
             if self.labels is None:
                 self.labels = np.empty(num_feats)
@@ -88,8 +88,8 @@ class FeatureSet(object):
             num_labels = self.labels.shape[0]
             if num_feats != num_labels:
                 raise ValueError(
-                    f"Number of labels ({num_labels}) does not "
-                    f"equal number of feature rows ({num_feats})"
+                    f"Number of labels ({num_labels}) does not equal number of feature"
+                    f" rows ({num_feats})"
                 )
 
     def __contains__(self, value):
@@ -137,9 +137,8 @@ class FeatureSet(object):
         if self.features is not None:
             if not isinstance(self.vectorizer, DictVectorizer):
                 raise ValueError(
-                    "FeatureSets can only be iterated through if "
-                    "they use a DictVectorizer for their feature "
-                    "vectorizer."
+                    "FeatureSets can only be iterated through if they use a "
+                    "DictVectorizer for their feature vectorizer."
                 )
             for id_, label_, feats in zip(self.ids, self.labels, self.features):
 
@@ -198,18 +197,15 @@ class FeatureSet(object):
         # Combine feature matrices and vectorizers.
         if not isinstance(self.vectorizer, type(other.vectorizer)):
             raise ValueError(
-                "Cannot combine FeatureSets because they are "
-                "not both using the same type of feature "
-                "vectorizer (e.g., DictVectorizer, "
-                "FeatureHasher)"
+                "Cannot combine FeatureSets because they are not both using the same "
+                "type of feature vectorizer (e.g., DictVectorizer, FeatureHasher)"
             )
         uses_feature_hasher = isinstance(self.vectorizer, FeatureHasher)
         if uses_feature_hasher:
             if self.vectorizer.n_features != other.vectorizer.n_features:
                 raise ValueError(
-                    "Cannot combine FeatureSets that uses "
-                    "FeatureHashers with different values of "
-                    "n_features setting."
+                    "Cannot combine FeatureSets that uses FeatureHashers with "
+                    "different values of n_features setting."
                 )
         else:
             # Check for duplicate feature names.
@@ -217,8 +213,8 @@ class FeatureSet(object):
                 other.vectorizer.feature_names_
             ):
                 raise ValueError(
-                    "Cannot combine FeatureSets because they "
-                    "have duplicate feature names."
+                    "Cannot combine FeatureSets because they have duplicate feature "
+                    "names."
                 )
         num_feats = self.features.shape[1]
 
@@ -239,8 +235,8 @@ class FeatureSet(object):
                 self.labels == other.labels[relative_order]
             ):
                 raise ValueError(
-                    "Feature sets have conflicting labels for "
-                    "examples with the same ID."
+                    "Feature sets have conflicting labels for examples with the same "
+                    "ID."
                 )
             new_set.labels = deepcopy(self.labels)
         else:
@@ -304,8 +300,8 @@ class FeatureSet(object):
         if features is not None:
             if isinstance(self.vectorizer, FeatureHasher):
                 raise ValueError(
-                    "FeatureSets with FeatureHasher vectorizers"
-                    " cannot be filtered by feature."
+                    "FeatureSets with FeatureHasher vectorizers cannot be filtered by "
+                    "feature."
                 )
             columns = np.array(
                 sorted(
@@ -375,9 +371,8 @@ class FeatureSet(object):
             self.vectorizer, DictVectorizer
         ):
             raise ValueError(
-                "FeatureSets can only be iterated through if they"
-                " use a DictVectorizer for their feature "
-                "vectorizer."
+                "FeatureSets can only be iterated through if they use a DictVectorizer"
+                " for their feature vectorizer."
             )
 
         for id_, label_, feats in zip(self.ids, self.labels, self.features):

@@ -237,8 +237,8 @@ class SKLLConfigParser(configparser.ConfigParser):
         invalid_options = self._find_invalid_options()
         if invalid_options:
             raise KeyError(
-                "Configuration file contains the following "
-                f"unrecognized options: {list(invalid_options)}"
+                "Configuration file contains the following unrecognized options: "
+                f"{list(invalid_options)}"
             )
 
         (
@@ -252,8 +252,8 @@ class SKLLConfigParser(configparser.ConfigParser):
             )
         if incorrectly_specified_options:
             raise KeyError(
-                "The following are not defined in the appropriate "
-                f"sections: {[t[0] for t in incorrectly_specified_options]}"
+                "The following are not defined in the appropriate sections: "
+                f"{[t[0] for t in incorrectly_specified_options]}"
             )
 
 
@@ -405,8 +405,8 @@ def parse_config_file(config_path, log_level=logging.INFO):  # noqa: C901
         experiment_name = config.get("General", "experiment_name")
     else:
         raise ValueError(
-            "Configuration file does not contain experiment_name "
-            "in the [General] section."
+            "Configuration file does not contain experiment_name in the [General] "
+            "section."
         )
 
     # next, get the log path before anything else since we need to
@@ -436,8 +436,8 @@ def parse_config_file(config_path, log_level=logging.INFO):  # noqa: C901
         )
     if task not in VALID_TASKS:
         raise ValueError(
-            f"An invalid task was specified: {task}.  Valid "
-            f"tasks are: {', '.join(VALID_TASKS)}"
+            f"An invalid task was specified: {task}.  Valid tasks are: "
+            f"{', '.join(VALID_TASKS)}"
         )
 
     ####################
@@ -446,8 +446,8 @@ def parse_config_file(config_path, log_level=logging.INFO):  # noqa: C901
     sampler = config.get("Input", "sampler")
     if sampler not in VALID_SAMPLERS:
         raise ValueError(
-            f"An invalid sampler was specified: {sampler}.  Valid"
-            f' samplers are: {", ".join(VALID_SAMPLERS)}'
+            f"An invalid sampler was specified: {sampler}.  Valid samplers are: "
+            f'{", ".join(VALID_SAMPLERS)}'
         )
 
     # produce warnings if feature_hasher is set but hasher_features
@@ -457,40 +457,37 @@ def parse_config_file(config_path, log_level=logging.INFO):  # noqa: C901
     if feature_hasher:
         if hasher_features <= 0:
             raise ValueError(
-                "Configuration file must specify a non-zero value "
-                "for the option hasher_features when "
-                "feature_hasher is True."
+                "Configuration file must specify a non-zero value for the option "
+                "hasher_features when feature_hasher is True."
             )
 
     # produce warnings if hasher_features is set but feature_hasher
     # is not set correctly
     elif hasher_features > 0:
         logger.warning(
-            "Ignoring hasher_features since feature_hasher is either"
-            " missing or set to False."
+            "Ignoring hasher_features since feature_hasher is either missing or set to"
+            " False."
         )
 
     if config.has_option("Input", "learners"):
         learners_string = config.get("Input", "learners")
     else:
         raise ValueError(
-            "Configuration file does not contain list of learners "
-            "in [Input] section."
+            "Configuration file does not contain list of learners in [Input] section."
         )
     learners = yaml.safe_load(fix_json(learners_string))
 
     if len(learners) == 0:
         raise ValueError(
-            "Configuration file contains an empty list of learners"
-            " in the [Input] section."
+            "Configuration file contains an empty list of learners in the [Input] "
+            "section."
         )
 
     elif len(set(learners)) < len(learners):
         raise ValueError(
-            "Configuration file contains the same learner multiple"
-            " times, which is not currently supported.  Please use"
-            " param_grids with tuning to find the optimal settings"
-            " for the learner."
+            "Configuration file contains the same learner multiple times, which is not"
+            " currently supported.  Please use param_grids with tuning to find the "
+            "optimal settings for the learner."
         )
     custom_learner_path = locate_file(
         config.get("Input", "custom_learner_path"), config_dir
@@ -511,9 +508,8 @@ def parse_config_file(config_path, log_level=logging.INFO):  # noqa: C901
         isinstance(fs, list) for fs in featuresets
     ):
         raise ValueError(
-            "The featuresets parameter should be a list of "
-            "features or a list of lists of features. You "
-            f"specified: {featuresets}"
+            "The featuresets parameter should be a list of features or a list of lists"
+            f" of features. You specified: {featuresets}"
         )
 
     featureset_names = yaml.safe_load(fix_json(config.get("Input", "featureset_names")))
@@ -524,8 +520,8 @@ def parse_config_file(config_path, log_level=logging.INFO):  # noqa: C901
             [isinstance(fs, str) for fs in featureset_names]
         ):
             raise ValueError(
-                "The featureset_names parameter should be a list "
-                f"of strings. You specified: {featureset_names}"
+                "The featureset_names parameter should be a list of strings. You "
+                f"specified: {featureset_names}"
             )
 
     # get the value for learning_curve_cv_folds and ensure
@@ -547,9 +543,8 @@ def parse_config_file(config_path, log_level=logging.INFO):  # noqa: C901
             or not len(learning_curve_cv_folds_list) == len(learners)
         ):
             raise ValueError(
-                "The learning_curve_cv_folds parameter should "
-                "be a list of integers of the same length as "
-                "the number of learners. You specified: "
+                "The learning_curve_cv_folds parameter should be a list of integers of"
+                " the same length as the number of learners. You specified: "
                 f"{learning_curve_cv_folds_list}"
             )
 
@@ -573,9 +568,8 @@ def parse_config_file(config_path, log_level=logging.INFO):  # noqa: C901
             ]
         ):
             raise ValueError(
-                "The learning_curve_train_sizes parameter should "
-                "be a list of integers or floats. You specified: "
-                f"{learning_curve_train_sizes}"
+                "The learning_curve_train_sizes parameter should be a list of integers"
+                f" or floats. You specified: {learning_curve_train_sizes}"
             )
 
     # do we need to shuffle the training data
@@ -656,17 +650,15 @@ def parse_config_file(config_path, log_level=logging.INFO):  # noqa: C901
     # Either train_file or train_path must be specified.
     if train_file and train_path:
         raise ValueError(
-            'Invalid [Input] parameters: only either "train_file"'
-            ' or "train_directory" can be specified in the '
-            "configuration file, not both."
+            'Invalid [Input] parameters: only either "train_file" or "train_directory"'
+            " can be specified in the configuration file, not both."
         )
 
     # Cannot specify both test_file and test_path
     if test_file and test_path:
         raise ValueError(
-            'Invalid [Input] parameters: only either "test_file" '
-            'or "test_directory" can be specified in the '
-            "configuration file, not both."
+            'Invalid [Input] parameters: only either "test_file" or "test_directory" '
+            "can be specified in the configuration file, not both."
         )
 
     # if train_file is specified, then assign its value to train_path
@@ -758,15 +750,14 @@ def parse_config_file(config_path, log_level=logging.INFO):  # noqa: C901
     if task == "learning_curve" and do_grid_search:
         do_grid_search = False
         logger.warning(
-            "Grid search is not supported during "
-            "learning curve generation. Disabling."
+            "Grid search is not supported during learning curve generation. Disabling."
         )
 
     # Check if `param_grids` is specified, but `do_grid_search` is False
     if param_grid_list and not do_grid_search:
         logger.warning(
-            'Since "grid_search" is set to False, the specified'
-            ' "param_grids" will be ignored.'
+            'Since "grid_search" is set to False, the specified "param_grids" will be '
+            "ignored."
         )
 
     # Warn user about potential conflicts between parameter values
@@ -775,11 +766,10 @@ def parse_config_file(config_path, log_level=logging.INFO):  # noqa: C901
     # `do_grid_search` is True
     if do_grid_search and fixed_parameter_list:
         logger.warning(
-            'Note that "grid_search" is set to True and '
-            '"fixed_parameters" is also specified. If there '
-            "is a conflict between the grid search parameter"
-            " space and the fixed parameter values, the "
-            "fixed parameter values will take precedence."
+            'Note that "grid_search" is set to True and "fixed_parameters" is also '
+            "specified. If there is a conflict between the grid search parameter space"
+            "and the fixed parameter values, the fixed parameter values will take "
+            "precedence."
         )
 
     # minimum number of examples a feature must be nonzero in to be included
@@ -805,22 +795,21 @@ def parse_config_file(config_path, log_level=logging.INFO):  # noqa: C901
     if task in ["cross_validate", "evaluate", "train"]:
         if do_grid_search and len(grid_objectives) == 0:
             raise ValueError(
-                "Grid search is on. Either specify a list of tuning "
-                "objectives or set `grid_search` to `false` in the "
-                "Tuning section."
+                "Grid search is on. Either specify a list of tuning objectives or set "
+                "`grid_search` to `false` in the Tuning section."
             )
         if not do_grid_search and len(grid_objectives) > 0:
             logger.warning(
-                'Since "grid_search" is set to False, any specified'
-                ' "objectives" will be ignored.'
+                'Since "grid_search" is set to False, any specified "objectives" will '
+                "be ignored."
             )
             grid_objectives = []
     if task in ["cross_validate", "train", "learning_curve"] and test_path:
         raise ValueError(f"The test set should not be set when task is {task}.")
     if task in ["train", "predict"] and results_path and not do_grid_search:
         raise ValueError(
-            "The results path should not be set when task is "
-            f'{task} and "grid_search" is set to False.'
+            f"The results path should not be set when task is {task} and "
+            '"grid_search" is set to False.'
         )
     if task == "train" and not model_path:
         raise ValueError("The model path should be set when task is train.")
@@ -833,10 +822,9 @@ def parse_config_file(config_path, log_level=logging.INFO):  # noqa: C901
     if task == "learning_curve":
         if len(grid_objectives) > 0:
             raise ValueError(
-                'The "objectives" option is no longer supported'
-                ' for the "learning_curve" task. Please use the'
-                ' "metrics" option in the [Output] section '
-                "instead."
+                'The "objectives" option is no longer supported for the '
+                '"learning_curve" task. Please use the "metrics" option in the '
+                "[Output] section instead."
             )
         if len(output_metrics) == 0:
             raise ValueError(
@@ -850,8 +838,7 @@ def parse_config_file(config_path, log_level=logging.INFO):  # noqa: C901
     )
     if specified_probabilistic_metrics and not probability:
         raise ValueError(
-            "The 'probability' option must be 'true' "
-            " to compute the following: "
+            "The 'probability' option must be 'true' to compute the following: "
             f"{list(specified_probabilistic_metrics)}."
         )
 
@@ -869,8 +856,8 @@ def parse_config_file(config_path, log_level=logging.INFO):  # noqa: C901
         # only print out the warning if the user actually wants to do grid search
         if do_grid_search:
             logger.warning(
-                'Specifying "folds_file" overrides both '
-                'explicit and default "grid_search_folds".'
+                'Specifying "folds_file" overrides both explicit and default '
+                '"grid_search_folds".'
             )
     if task == "cross_validate":
         cv_folds = (
@@ -878,8 +865,8 @@ def parse_config_file(config_path, log_level=logging.INFO):  # noqa: C901
         )
         if specified_folds_mapping:
             logger.warning(
-                'Specifying "folds_file" overrides both '
-                'explicit and default "num_cv_folds".'
+                'Specifying "folds_file" overrides both explicit and default '
+                '"num_cv_folds".'
             )
             if use_folds_file_for_grid_search:
                 grid_search_folds = cv_folds
@@ -887,13 +874,13 @@ def parse_config_file(config_path, log_level=logging.INFO):  # noqa: C901
                 # only print out the warning if the user wants to do grid search
                 if do_grid_search:
                     logger.warning(
-                        'The specified "folds_file" will '
-                        "not be used for inner grid search."
+                        'The specified "folds_file" will not be used for inner grid '
+                        "search."
                     )
         if save_cv_models is True and not model_path:
             raise ValueError(
-                "Output directory for models must be set if "
-                '"save_cv_models" is set to true.'
+                'Output directory for models must be set if "save_cv_models" is set to'
+                " true."
             )
 
     # Create feature set names if unspecified
@@ -901,9 +888,8 @@ def parse_config_file(config_path, log_level=logging.INFO):  # noqa: C901
         featureset_names = [_munge_featureset_name(x) for x in featuresets]
     if len(featureset_names) != len(featuresets):
         raise ValueError(
-            "Number of feature set names "
-            f"({len(featureset_names)}) does not match number of"
-            f" feature sets ({len(featuresets)})."
+            f"Number of feature set names ({len(featureset_names)}) does not match "
+            f"number of feature sets ({len(featuresets)})."
         )
 
     # store training/test set names for later use

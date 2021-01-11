@@ -35,8 +35,8 @@ def main(argv=None):
     # Get command line arguments
     parser = argparse.ArgumentParser(
         description=(
-            "Loads a trained model and outputs predictions based "
-            "on input feature files."
+            "Loads a trained model and outputs predictions based on input feature "
+            "files."
         ),
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         conflict_handler="resolve",
@@ -47,9 +47,8 @@ def main(argv=None):
     parser.add_argument(
         "input_files",
         help=(
-            "A space-separated list of CSV, TSV, or "
-            "jsonlines files (with or without the label "
-            "column), with the appropriate suffix."
+            "A space-separated list of CSV, TSV, or jsonlines files (with or without "
+            "the label column), with the appropriate suffix."
         ),
         nargs="+",
     )
@@ -57,8 +56,8 @@ def main(argv=None):
         "-i",
         "--id_col",
         help=(
-            "Name of the column which contains the instance "
-            "IDs in ARFF, CSV, or TSV files."
+            "Name of the column which contains the instance IDs in ARFF, CSV, or TSV "
+            "files."
         ),
         default="id",
     )
@@ -66,10 +65,8 @@ def main(argv=None):
         "-l",
         "--label_col",
         help=(
-            "Name of the column which contains the labels "
-            "in ARFF, CSV, or TSV files. For ARFF files, "
-            "this must be the final column to count as the "
-            "label."
+            "Name of the column which contains the labels in ARFF, CSV, or TSV files. "
+            "For ARFF files, this must be the final column to count as the label."
         ),
         default="y",
     )
@@ -78,10 +75,8 @@ def main(argv=None):
         "-p",
         "--predict_labels",
         help=(
-            "If the model is doing probabilistic "
-            "classification, output the class label with the "
-            "highest probability instead of the class "
-            "probabilities."
+            "If the model is doing probabilistic classification, output the class "
+            "label with the highest probability instead of the class probabilities."
         ),
         action="store_true",
         default=False,
@@ -90,11 +85,9 @@ def main(argv=None):
         "-t",
         "--threshold",
         help=(
-            "If the model we're using is doing probabilistic "
-            "binary classification, output the positive class"
-            " label if its probability meets/exceeds this "
-            "threshold and output the negative class label "
-            "otherwise."
+            "If the model we're using is doing probabilistic binary classification, "
+            "output the positive class label if its probability meets/exceeds this "
+            "threshold and output the negative class label otherwise."
         ),
         type=float,
     )
@@ -108,11 +101,9 @@ def main(argv=None):
         "-o",
         "--output_file",
         help=(
-            "Path to output tsv file. If not specified, "
-            "predictions will be printed to stdout. For "
-            "probabilistic binary classification, the "
-            "probability of the positive class will always "
-            "be in the last column."
+            "Path to output tsv file. If not specified, predictions will be printed to"
+            " stdout. For probabilistic binary classification, the probability of the "
+            "positive class will always be in the last column."
         ),
     )
     parser.add_argument(
@@ -161,10 +152,9 @@ def main(argv=None):
         not is_probabilistic_classifier or len(learner.label_list) != 2
     ):
         error_msg = (
-            "Cannot threshold probabilities to predict positive "
-            f"class since given {learner._model_type.__name__} "
-            "learner is either multi-class, non-probabilistic, or "
-            "was not trained with probability=True."
+            "Cannot threshold probabilities to predict positive class since given "
+            f"{learner._model_type.__name__} learner is either multi-class, "
+            "non-probabilistic, or was not trained with probability=True."
         )
         logger.error(error_msg)
         raise ValueError(error_msg)
@@ -173,10 +163,9 @@ def main(argv=None):
     # make sure that the learner is probabilistic
     if args.predict_labels and not is_probabilistic_classifier:
         error_msg = (
-            "Cannot predict most likely labels from probabilities "
-            f"since given {learner._model_type.__name__} learner is "
-            "either non-probabilistic or was not trained with "
-            "probability=True."
+            "Cannot predict most likely labels from probabilities since given "
+            f"{learner._model_type.__name__} learner is either non-probabilistic or "
+            "was not trained with probability=True."
         )
         logger.error(error_msg)
         raise ValueError(error_msg)
@@ -188,9 +177,8 @@ def main(argv=None):
         input_extension = os.path.splitext(input_file)[1].lower()
         if input_extension not in EXT_TO_READER:
             logger.error(
-                f"Input file must be in either .arff, .csv, "
-                f".jsonlines, .libsvm, .ndj, or .tsv format. "
-                f" Skipping file {input_file}"
+                "Input file must be in either .arff, .csv, .jsonlines, .libsvm, .ndj, "
+                f"or .tsv format.  Skipping file {input_file}"
             )
             continue
         else:

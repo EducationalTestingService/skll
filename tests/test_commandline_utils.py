@@ -166,9 +166,9 @@ def test_warning_when_prediction_method_and_no_probabilities():
         sys.stderr = old_stderr
 
     log_msg = (
-        "skll.utils.commandline.compute_eval_from_predictions: WARNING: A "
-        "prediction method was provided, but the predictions file doesn't "
-        "contain probabilities. Ignoring prediction method 'highest'."
+        "skll.utils.commandline.compute_eval_from_predictions: WARNING: A prediction "
+        "method was provided, but the predictions file doesn't contain probabilities. "
+        "Ignoring prediction method 'highest'."
     )
 
     eq_(lc.handler.buffer[-1], log_msg)
@@ -596,9 +596,9 @@ def test_generate_predictions_console_bad_input_ext():
     _ = _run_generate_predictions_and_capture_output(generate_cmd, "stdout")
 
     expected_log_mssg = (
-        "skll.utils.commandline.generate_predictions: ERROR: Input file must "
-        "be in either .arff, .csv, .jsonlines, .libsvm, .ndj, or .tsv format."
-        "  Skipping file fake_input_file.txt"
+        "skll.utils.commandline.generate_predictions: ERROR: Input file must be in "
+        "either .arff, .csv, .jsonlines, .libsvm, .ndj, or .tsv format.  Skipping file"
+        " fake_input_file.txt"
     )
 
     eq_(lc.handler.buffer[-1], expected_log_mssg)

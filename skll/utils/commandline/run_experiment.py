@@ -31,10 +31,8 @@ def main(argv=None):
     # Get command line arguments
     parser = ArgumentParser(
         description=(
-            "Runs the scikit-learn experiments "
-            "in a given config file. If Grid Map "
-            "is installed, jobs will automatically"
-            " be created and run on a "
+            "Runs the scikit-learn experiments in a given config file. If Grid Map is "
+            "installed, jobs will automatically be created and run on a "
             "DRMAA-compatible cluster."
         ),
         formatter_class=ArgumentDefaultsHelpFormatter,
@@ -47,10 +45,9 @@ def main(argv=None):
         "-a",
         "--ablation",
         help=(
-            "Runs an ablation study where repeated "
-            "experiments are conducted where the specified "
-            "number of features in each featureset in the "
-            "configuration file are held out."
+            "Runs an ablation study where repeated experiments are conducted where the"
+            " specified number of features in each featureset in the configuration "
+            "file are held out."
         ),
         type=int,
         default=0,
@@ -60,11 +57,9 @@ def main(argv=None):
         "-A",
         "--ablation_all",
         help=(
-            "Runs an ablation study where repeated "
-            "experiments are conducted with all combinations "
-            "of features in each featureset in the "
-            "configuration file. Overrides --ablation "
-            "setting."
+            "Runs an ablation study where repeated experiments are conducted with all "
+            "combinations of features in each featureset in the configuration file. "
+            "Overrides --ablation setting."
         ),
         action="store_true",
     )
@@ -72,8 +67,8 @@ def main(argv=None):
         "-k",
         "--keep_models",
         help=(
-            "If trained models already exists, re-use them "
-            "instead of overwriting them."
+            "If trained models already exists, re-use them instead of overwriting "
+            "them."
         ),
         action="store_true",
     )
@@ -81,9 +76,8 @@ def main(argv=None):
         "-l",
         "--local",
         help=(
-            "Do not use the Grid Engine for running jobs and"
-            " just run everything sequentially on the local "
-            "machine. "
+            "Do not use the Grid Engine for running jobs and just run everything "
+            "sequentially on the local machine. "
         ),
         action="store_true",
     )
@@ -91,11 +85,9 @@ def main(argv=None):
         "-m",
         "--machines",
         help=(
-            "comma-separated list of machines to add to the "
-            "gridmap whitelist (if not specified, all "
-            "available machines are used). Note that full "
-            "names must be specified, e.g., "
-            '"nlp.research.ets.org"'
+            "comma-separated list of machines to add to the gridmap whitelist (if not "
+            "specified, all available machines are used). Note that full names must be"
+            ' specified, e.g., "nlp.research.ets.org"'
         ),
         default=None,
     )
@@ -106,10 +98,9 @@ def main(argv=None):
         "-r",
         "--resume",
         help=(
-            "If result files already exist for an experiment"
-            " do not overwrite them. This is very useful "
-            "when doing a large ablation experiment and part"
-            " of it crashes."
+            "If result files already exist for an experiment do not overwrite them. "
+            "This is very useful when doing a large ablation experiment and part of it"
+            " crashes."
         ),
         action="store_true",
     )

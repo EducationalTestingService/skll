@@ -712,8 +712,8 @@ def test_multiple_featuresets_and_featurehasher_throws_warning():
     )
     with open(logfile_path) as f:
         warning_pattern = re.compile(
-            r"Since there are multiple feature files, feature hashing applies"
-            r" to each specified feature file separately."
+            r"Since there are multiple feature files, feature hashing applies to each "
+            r"specified feature file separately."
         )
         matches = re.findall(warning_pattern, f.read())
         eq_(len(matches), 1)
@@ -1031,9 +1031,9 @@ def test_learning_curve_min_examples_check_override():
     with open(log_file_path) as tf:
         log_text = tf.read()
         learning_curve_warning_re = re.compile(
-            r"Because the number of training examples provided - \d+ - is "
-            r"less than the ideal minimum - \d+ - learning curve generation "
-            r"is unreliable and might break"
+            r"Because the number of training examples provided - \d+ - is less than "
+            r"the ideal minimum - \d+ - learning curve generation is unreliable and "
+            r"might break"
         )
         assert learning_curve_warning_re.search(log_text)
 
@@ -1417,9 +1417,8 @@ def test_send_warnings_to_log():
     ) as f:
         log_content = f.read()
         convergence_sklearn_warning_re = re.compile(
-            r"WARNING - [^\n]+sklearn.svm._base\.py:\d+: ConvergenceWarning:"
-            r"Liblinear failed to converge, increase the number of iterations"
-            r"\."
+            r"WARNING - [^\n]+sklearn.svm._base\.py:\d+: ConvergenceWarning:Liblinear "
+            r"failed to converge, increase the number of iterations\."
         )
         assert convergence_sklearn_warning_re.search(log_content) is not None
 

@@ -69,9 +69,8 @@ def load_cv_folds(folds_file, ids_to_floats=False):
                     row[0] = float(row[0])
                 except ValueError:
                     raise ValueError(
-                        "You set ids_to_floats to true, but ID "
-                        f"{row[0]} could not be converted to "
-                        "float"
+                        f"You set ids_to_floats to true, but ID {row[0]} could not be "
+                        "converted to float"
                     )
             res[row[0]] = row[1]
 
@@ -176,9 +175,8 @@ def _parse_and_validate_metrics(metrics, option_name, logger=None):
     # It has been replaced by `neg_mean_squared_error`
     if "mean_squared_error" in metrics:
         raise ValueError(
-            'The metric "mean_squared_error" is no longer '
-            "supported. please use the metric "
-            '"neg_mean_squared_error" instead.'
+            'The metric "mean_squared_error" is no longer supported. please use the '
+            'metric "neg_mean_squared_error" instead.'
         )
 
     return metrics

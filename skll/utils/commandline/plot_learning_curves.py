@@ -40,7 +40,7 @@ def main(argv=None):
     # Get command line arguments
     parser = argparse.ArgumentParser(
         description=(
-            "Generates learning curve plots from the learning curve " "TSV file."
+            "Generates learning curve plots from the learning curve TSV file."
         ),
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         conflict_handler="resolve",

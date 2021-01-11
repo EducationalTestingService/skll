@@ -255,8 +255,7 @@ def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
         )
     if lrd["task"] in ["evaluate", "cross_validate"] and lrd["additional_scores"]:
         print(
-            "Additional Evaluation Metrics: "
-            f'{list(lrd["additional_scores"].keys())}',
+            f'Additional Evaluation Metrics: {list(lrd["additional_scores"].keys())}',
             file=output_file,
         )
     print(f'Scikit-learn Version: {lrd["scikit_learn_version"]}', file=output_file)
@@ -281,8 +280,8 @@ def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
                 actual = lrd["descriptive"]["actual"][desc_stat]
                 predicted = lrd["descriptive"]["predicted"][desc_stat]
                 print(
-                    f" {desc_stat.title()} = {actual:.4f} (actual), "
-                    f"{predicted:.4f} (predicted)",
+                    f" {desc_stat.title()} = {actual:.4f} (actual), {predicted:.4f} "
+                    "(predicted)",
                     file=output_file,
                 )
             print(f'Pearson = {lrd["pearson"]:f}', file=output_file)
@@ -322,9 +321,8 @@ def _write_learning_curve_file(result_json_paths, output_file):
     for json_path in result_json_paths:
         if not exists(json_path):
             logger.error(
-                f"JSON results file {json_path} not found. Skipping "
-                "summary creation. You can manually create the "
-                "summary file after the fact by using the "
+                f"JSON results file {json_path} not found. Skipping summary creation. "
+                "You can manually create the summary file after the fact by using the "
                 "summarize_results script."
             )
             return
@@ -433,9 +431,8 @@ def _write_summary_file(result_json_paths, output_file, ablation=0):
     for json_path in result_json_paths:
         if not exists(json_path):
             logger.error(
-                f"JSON results file {json_path} not found. Skipping "
-                "summary creation. You can manually create the "
-                "summary file after the fact by using the "
+                f"JSON results file {json_path} not found. Skipping summary creation. "
+                "You can manually create the summary file after the fact by using the "
                 "summarize_results script."
             )
             return

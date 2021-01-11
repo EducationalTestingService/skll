@@ -98,9 +98,9 @@ def test_get_skll_logger_with_warning():
         log_lines = temp_file.readlines()
         assert log_lines[0].endswith(f"INFO - {msg1}\n")
         sklearn_warning_re = re.compile(
-            r"WARNING - [^\n]+sklearn.metrics._ranking.py:\d+: "
-            r"UndefinedMetricWarning:No negative samples in y_true, false "
-            r"positive value should be meaningless"
+            r"WARNING - [^\n]+sklearn.metrics._ranking.py:\d+: UndefinedMetricWarning:"
+            r"No negative samples in y_true, false positive value should be "
+            r"meaningless"
         )
         assert sklearn_warning_re.search("".join(log_lines[1]))
         assert log_lines[-1].endswith(f"INFO - {msg2}\n")

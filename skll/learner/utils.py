@@ -117,8 +117,8 @@ class FilteredLeaveOneGroupOut(LeaveOneGroupOut):
                 train_len != len(train_index) or test_len != len(test_index)
             ):
                 self.logger.warning(
-                    "Feature set contains IDs that are not "
-                    "in folds dictionary. Skipping those IDs."
+                    "Feature set contains IDs that are not in folds dictionary. "
+                    "Skipping those IDs."
                 )
                 self._warned = True
 
@@ -280,11 +280,9 @@ def compute_evaluation_metrics(
     # warn if grid objective was also specified in metrics
     if len(metrics) > 0 and grid_objective in metrics:
         logger.warning(
-            f"The grid objective '{grid_objective}' is also "
-            "specified as an evaluation metric. Since its value "
-            "is already included in the results as the objective "
-            "score, it will not be printed again in the list of "
-            "metrics."
+            f"The grid objective '{grid_objective}' is also specified as an evaluation"
+            " metric. Since its value is already included in the results as the "
+            "objective score, it will not be printed again in the list of metrics."
         )
         metrics = [metric for metric in metrics if metric != grid_objective]
 
@@ -336,8 +334,8 @@ def compute_evaluation_metrics(
                 and metric != grid_objective
             ):
                 logger.info(
-                    "using probabilities for the positive class to "
-                    f"compute '{metric}' for evaluation."
+                    f"using probabilities for the positive class to compute '{metric}'"
+                    " for evaluation."
                 )
                 preds_for_metric = class_probs[:, 1]
             elif metric == "neg_log_loss":
@@ -447,14 +445,12 @@ def compute_num_folds_from_example_counts(cv_folds, labels, model_type, logger=N
     min_examples_per_label = min(Counter(labels).values())
     if min_examples_per_label <= 1:
         raise ValueError(
-            f"The training set has only {min_examples_per_label}"
-            " example for a label."
+            f"The training set has only {min_examples_per_label} example for a label."
         )
     if min_examples_per_label < cv_folds:
         logger.warning(
-            "The minimum number of examples per label was "
-            f"{min_examples_per_label}. Setting the number of "
-            "cross-validation folds to that value."
+            f"The minimum number of examples per label was {min_examples_per_label}. "
+            "Setting the number of cross-validation folds to that value."
         )
         cv_folds = min_examples_per_label
     return cv_folds
@@ -620,8 +616,8 @@ def load_custom_learner(custom_learner_path, custom_learner_name):
     """
     if not custom_learner_path:
         raise ValueError(
-            "custom_learner_path was not set and learner "
-            f"{custom_learner_name} was not found."
+            f"custom_learner_path was not set and learner {custom_learner_name} was "
+            "not found."
         )
 
     if not custom_learner_path.endswith(".py"):
@@ -844,9 +840,9 @@ def rescaled(cls):
                 if parameter.kind == parameter.VAR_POSITIONAL:
                     raise RuntimeError(
                         "scikit-learn estimators should always specify their "
-                        "parameters in the signature of their __init__ (no "
-                        f"varargs). {cls} with constructor {init_signature} "
-                        "doesn't follow this convention."
+                        "parameters in the signature of their __init__ (no varargs). "
+                        f"{cls} with constructor {init_signature} doesn't follow this "
+                        "convention."
                     )
                 else:
                     args.append(parameter.name)

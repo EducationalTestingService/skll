@@ -50,32 +50,31 @@ def main(argv=None):
     # Get command line arguments
     parser = argparse.ArgumentParser(
         description=(
-            "Takes an input feature file and converts it to another "
-            "format. Formats are determined automatically from file "
-            "extensions."
+            "Takes an input feature file and converts it to another format. Formats "
+            "are determined automatically from file extensions."
         ),
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument(
         "infile",
         help=(
-            "input feature file (ends in .arff, .csv, "
-            ".jsonlines, .libsvm, .ndj, or .tsv)"
+            "input feature file (ends in .arff, .csv, .jsonlines, .libsvm, .ndj, or "
+            ".tsv)"
         ),
     )
     parser.add_argument(
         "outfile",
         help=(
-            "output feature file (ends in .arff, .csv, "
-            ".jsonlines, .libsvm, .ndj, or .tsv)"
+            "output feature file (ends in .arff, .csv, .jsonlines, .libsvm, .ndj, or "
+            ".tsv)"
         ),
     )
     parser.add_argument(
         "-i",
         "--id_col",
         help=(
-            "Name of the column which contains the instance "
-            "IDs in ARFF, CSV, or TSV files."
+            "Name of the column which contains the instance IDs in ARFF, CSV, or TSV "
+            "files."
         ),
         default="id",
     )
@@ -84,10 +83,9 @@ def main(argv=None):
         "-l",
         "--label_col",
         help=(
-            "Name of the column which contains the "
-            "class labels in ARFF, CSV, or TSV files. "
-            "For ARFF files, this must be the final "
-            "column to count as the label."
+            "Name of the column which contains the class labels in ARFF, CSV, or TSV "
+            "files. For ARFF files, this must be the final column to count as the "
+            "label."
         ),
         default="y",
     )
@@ -116,11 +114,9 @@ def main(argv=None):
     parser.add_argument(
         "--reuse_libsvm_map",
         help=(
-            "If you want to output multiple files that use "
-            "the same mapping from labels and features to "
-            "numbers when writing libsvm files, you can "
-            "specify an existing .libsvm file to reuse the "
-            "mapping from."
+            "If you want to output multiple files that use the same mapping from "
+            "labels and features to numbers when writing libsvm files, you can "
+            "specify an existing .libsvm file to reuse the mapping from."
         ),
         type=argparse.FileType("rb"),
     )
@@ -140,9 +136,8 @@ def main(argv=None):
 
     if input_extension not in EXT_TO_READER:
         logger.error(
-            "Input file must be in either .arff, .csv, .jsonlines, "
-            ".libsvm, .ndj, or .tsv format. You specified: "
-            f"{input_extension}"
+            "Input file must be in either .arff, .csv, .jsonlines, .libsvm, .ndj, or "
+            f".tsv format. You specified: {input_extension}"
         )
         sys.exit(1)
 
@@ -154,9 +149,8 @@ def main(argv=None):
             line = UnicodeDammit(line, ["utf-8", "windows-1252"]).unicode_markup
             if "#" not in line:
                 logger.error(
-                    "The LibSVM file you want to reuse the map from "
-                    "was not created by SKLL and does not actually "
-                    "contain the necessary mapping info."
+                    "The LibSVM file you want to reuse the map from was not created by"
+                    " SKLL and does not actually contain the necessary mapping info."
                 )
                 sys.exit(1)
             comments = line.split("#")[1]

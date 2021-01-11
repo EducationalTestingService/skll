@@ -120,8 +120,7 @@ class Writer(object):
         """
         if isinstance(self.feat_set.vectorizer, FeatureHasher):
             raise ValueError(
-                "Writer cannot write sets that use a "
-                "FeatureHasher for vectorization."
+                "Writer cannot write sets that use a FeatureHasher for vectorization."
             )
 
         # Write one feature file if we weren't given a dict of subsets
@@ -391,8 +390,8 @@ class Writer(object):
         if feature_set.has_labels:
             if self.label_col in df_features:
                 raise ValueError(
-                    f'Class column name "{self.label_col}" '
-                    "already used as feature name."
+                    f'Class column name "{self.label_col}" already used as feature '
+                    "name."
                 )
             df_features[self.label_col] = feature_set.labels
 

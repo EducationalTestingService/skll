@@ -153,9 +153,7 @@ def _create_learner_result_dicts(
             result_table = tabulate(
                 rows, headers=headers, stralign="right", floatfmt=".3f", tablefmt="grid"
             )
-            result_table_str = (
-                f"{result_table}\n(row = reference; column = " "predicted)"
-            )
+            result_table_str = f"{result_table}\n(row = reference; column = predicted)"
             learner_result_dict["result_table"] = result_table_str
             learner_result_dict["accuracy"] = fold_accuracy
             accuracy_sum += fold_accuracy

@@ -95,9 +95,8 @@ def kappa(y_true, y_pred, weights=None, allow_off_by_one=False):
         y_pred = [int(np.round(float(y))) for y in y_pred]
     except ValueError:
         raise ValueError(
-            "For kappa, the labels should be integers or strings"
-            " that can be converted to ints (E.g., '4.0' or "
-            "'3')."
+            "For kappa, the labels should be integers or strings that can be converted"
+            " to ints (E.g., '4.0' or '3')."
         )
 
     # Figure out normalized expected values
@@ -251,8 +250,8 @@ def register_custom_metric(custom_metric_path, custom_metric_name):
     """
     if not custom_metric_path:
         raise ValueError(
-            f"custom metric path was not set and "
-            f"metric {custom_metric_name} was not found."
+            f"custom metric path was not set and metric {custom_metric_name} was not "
+            "found."
         )
 
     if not exists(custom_metric_path):
@@ -260,8 +259,7 @@ def register_custom_metric(custom_metric_path, custom_metric_name):
 
     if not custom_metric_path.endswith(".py"):
         raise ValueError(
-            f"custom metric path must end in .py, you specified "
-            f"{custom_metric_path}"
+            f"custom metric path must end in .py, you specified {custom_metric_path}"
         )
 
     # get the name of the module containing the custom metric
@@ -271,9 +269,8 @@ def register_custom_metric(custom_metric_path, custom_metric_name):
     # that the metric function name is also okay
     if custom_metric_name in SCORERS:
         raise NameError(
-            f"a metric called '{custom_metric_name}' already "
-            f"exists in SKLL; rename the metric function "
-            f"in {custom_metric_module_name}.py and try again."
+            f"a metric called '{custom_metric_name}' already exists in SKLL; rename "
+            f"the metric function in {custom_metric_module_name}.py and try again."
         )
 
     # dynamically import the module unless we have already done it

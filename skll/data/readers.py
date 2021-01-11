@@ -172,9 +172,8 @@ class Reader(object):
             ext = "." + path_or_list.rsplit(".", 1)[-1].lower()
             if ext not in EXT_TO_READER:
                 raise ValueError(
-                    "Example files must be in either .arff, "
-                    ".csv, .jsonlines, .ndj, or .tsv format. You"
-                    f"specified: {path_or_list}"
+                    "Example files must be in either .arff, .csv, .jsonlines, .ndj, or"
+                    f" .tsv format. You specified: {path_or_list}"
                 )
         return EXT_TO_READER[ext](path_or_list, **kwargs)
 
@@ -266,9 +265,8 @@ class Reader(object):
                         id_ = float(id_)
                     except ValueError:
                         raise ValueError(
-                            "You set ids_to_floats to true, but "
-                            f"ID {id_} could not be converted to"
-                            f" float in {self.path_or_list}"
+                            f"You set ids_to_floats to true, but ID {id_} could not be"
+                            f" converted to float in {self.path_or_list}"
                         )
                 ids.append(id_)
                 labels.append(class_)
@@ -349,16 +347,15 @@ class Reader(object):
 
         if drop_blanks and replace_blanks_with is not None:
             raise ValueError(
-                "You cannot both drop blanks and replace them. "
-                "'replace_blanks_with' can only have a value when "
-                "'drop_blanks' is `False`."
+                "You cannot both drop blanks and replace them. 'replace_blanks_with' "
+                "can only have a value when 'drop_blanks' is `False`."
             )
 
         # should we replace blank values with something?
         if replace_blanks_with is not None:
             self.logger.info(
-                "Blank values in all rows/lines will be replaced with "
-                "user-specified value(s)."
+                "Blank values in all rows/lines will be replaced with user-specified "
+                "value(s)."
             )
             df = df.fillna(replace_blanks_with)
 
@@ -488,9 +485,8 @@ class DictListReader(Reader):
                     curr_id = float(curr_id)
                 except ValueError:
                     raise ValueError(
-                        "You set ids_to_floats to true, but ID "
-                        f"{curr_id} could not be converted to "
-                        f"float in {example}"
+                        f"You set ids_to_floats to true, but ID {curr_id} could not be"
+                        f" converted to float in {example}"
                     )
             class_name = (
                 safe_float(example["y"], replace_dict=self.class_map)
@@ -505,9 +501,8 @@ class DictListReader(Reader):
                     curr_id = float(curr_id)
                 except ValueError:
                     raise ValueError(
-                        "You set ids_to_floats to true, but ID "
-                        f"{curr_id} could not be converted to "
-                        f"float in {self.path_or_list}"
+                        f"You set ids_to_floats to true, but ID {curr_id} could not be"
+                        f" converted to float in {self.path_or_list}"
                     )
             ids.append(curr_id)
             labels.append(class_name)
@@ -590,9 +585,8 @@ class NDJReader(Reader):
                     curr_id = float(curr_id)
                 except ValueError:
                     raise ValueError(
-                        "You set ids_to_floats to true, but ID "
-                        f"{curr_id} could not be converted to "
-                        "float"
+                        f"You set ids_to_floats to true, but ID {curr_id} could not be"
+                        " converted to float"
                     )
 
             yield curr_id, class_name, example
@@ -1093,8 +1087,8 @@ def safe_float(text, replace_dict=None, logger=None):
             text = replace_dict[text]
         else:
             logger.warning(
-                "Encountered value that was not in replacement "
-                f"dictionary (e.g., class_map): {text}"
+                "Encountered value that was not in replacement dictionary (e.g., "
+                f"class_map): {text}"
             )
     try:
         return int(text)

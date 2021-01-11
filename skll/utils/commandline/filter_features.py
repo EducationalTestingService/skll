@@ -32,8 +32,8 @@ def main(argv=None):
     # Get command line arguments
     parser = argparse.ArgumentParser(
         description=(
-            "Takes an input feature file and removes any instances or"
-            " features that do not match the specified patterns."
+            "Takes an input feature file and removes any instances or features that do"
+            " not match the specified patterns."
         ),
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
@@ -49,8 +49,8 @@ def main(argv=None):
         "-f",
         "--feature",
         help=(
-            "A feature in the feature file you would like to "
-            "keep.  If unspecified, no features are removed."
+            "A feature in the feature file you would like to keep.  If unspecified, no"
+            " features are removed."
         ),
         nargs="*",
     )
@@ -58,17 +58,16 @@ def main(argv=None):
         "-I",
         "--id",
         help=(
-            "An instance ID in the feature file you would "
-            "like to keep.  If unspecified, no instances are"
-            " removed based on their IDs."
+            "An instance ID in the feature file you would like to keep.  If "
+            "unspecified, no instances are removed based on their IDs."
         ),
         nargs="*",
     )
     parser.add_argument(
         "--id_col",
         help=(
-            "Name of the column which contains the instance "
-            "IDs in ARFF, CSV, or TSV files."
+            "Name of the column which contains the instance IDs in ARFF, CSV, or TSV "
+            "files."
         ),
         default="id",
     )
@@ -82,9 +81,8 @@ def main(argv=None):
         "-L",
         "--label",
         help=(
-            "A label in the feature file you would like to "
-            "keep.  If unspecified, no instances are removed"
-            " based on their labels."
+            "A label in the feature file you would like to keep.  If unspecified, no "
+            "instances are removed based on their labels."
         ),
         nargs="*",
     )
@@ -92,10 +90,9 @@ def main(argv=None):
         "-l",
         "--label_col",
         help=(
-            "Name of the column which contains the class "
-            "labels in ARFF, CSV, or TSV files. For ARFF "
-            "files, this must be the final column to count "
-            "as the label."
+            "Name of the column which contains the class labels in ARFF, CSV, or TSV "
+            "files. For ARFF files, this must be the final column to count as the "
+            "label."
         ),
         default="y",
     )
@@ -103,10 +100,9 @@ def main(argv=None):
         "-rb",
         "--replace_blanks_with",
         help=(
-            "Specifies a new value with which to replace "
-            "blank values in all columns in the file. To "
-            "replace blanks differently in each column, use "
-            "the SKLL Reader API directly."
+            "Specifies a new value with which to replace blank values in all columns "
+            "in the file. To replace blanks differently in each column, use the SKLL "
+            "Reader API directly."
         ),
         default=None,
     )
@@ -142,23 +138,22 @@ def main(argv=None):
 
     if input_extension == ".libsvm":
         logger.error(
-            "Cannot filter LibSVM files.  Please use skll_convert to"
-            " convert to a different datatype first."
+            "Cannot filter LibSVM files.  Please use skll_convert to convert to a "
+            "different datatype first."
         )
         sys.exit(1)
 
     if input_extension not in valid_extensions:
         logger.error(
-            "Input file must be in either .arff, .csv, .jsonlines, "
-            ".ndj, or .tsv format. You specified: "
-            f"{input_extension}"
+            "Input file must be in either .arff, .csv, .jsonlines, .ndj, or .tsv "
+            f"format. You specified: {input_extension}"
         )
         sys.exit(1)
 
     if output_extension != input_extension:
         logger.error(
-            "Output file must be in the same format as the input "
-            f"file.  You specified: {output_extension}"
+            "Output file must be in the same format as the input file.  You specified:"
+            f" {output_extension}"
         )
         sys.exit(1)
 
@@ -167,9 +162,8 @@ def main(argv=None):
         drop_blanks = args.drop_blanks
         if drop_blanks and replace_blanks_with is not None:
             raise ValueError(
-                "You cannot both drop blanks and replace them. "
-                "'replace_blanks_with' can only have a value "
-                "when 'drop_blanks' is `False`."
+                "You cannot both drop blanks and replace them. 'replace_blanks_with' "
+                "can only have a value when 'drop_blanks' is `False`."
             )
         replace_blanks_with = (
             None if replace_blanks_with is None else safe_float(replace_blanks_with)

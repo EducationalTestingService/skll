@@ -188,9 +188,8 @@ def _classify_featureset(args):  # noqa: C901
         # raise an error if we have any invalid metrics
         if invalid_metric_names:
             raise ValueError(
-                f"invalid metrics specified: {invalid_metric_names}. "
-                f"If these are custom metrics, check the function "
-                f"names."
+                f"invalid metrics specified: {invalid_metric_names}. If these are "
+                "custom metrics, check the function names."
             )
 
         if task == "cross_validate":
@@ -211,16 +210,14 @@ def _classify_featureset(args):  # noqa: C901
             logger.info(f"Training on {train_set_name}, feature set {featureset} ...")
         elif task == "learning_curve":
             logger.info(
-                "Generating learning curve "
-                f"({learning_curve_cv_folds} 80/20 folds, "
-                f"sizes={learning_curve_train_sizes}, "
-                f"objective={grid_objective}) on {train_set_name}, "
-                f"feature set {featureset} ..."
+                f"Generating learning curve ({learning_curve_cv_folds} 80/20 folds, "
+                f"sizes={learning_curve_train_sizes}, objective={grid_objective}) on "
+                f"{train_set_name}, feature set {featureset} ..."
             )
         else:  # predict
             logger.info(
-                f"Training on {train_set_name}, Making predictions on"
-                f" {test_set_name}, feature set {featureset} ..."
+                f"Training on {train_set_name}, Making predictions on {test_set_name},"
+                f" feature set {featureset} ..."
             )
 
         # check whether a trained model on the same data with the same
@@ -323,7 +320,7 @@ def _classify_featureset(args):  # noqa: C901
             "shuffle": shuffle,
             "learner_name": learner_name,
             "task": task,
-            "start_timestamp": start_timestamp.strftime("%d %b %Y %H:%M:" "%S.%f"),
+            "start_timestamp": start_timestamp.strftime("%d %b %Y %H:%M:%S.%f"),
             "version": __version__,
             "feature_scaling": feature_scaling,
             "folds_file": folds_file,
@@ -332,8 +329,9 @@ def _classify_featureset(args):  # noqa: C901
             "grid_search_folds": grid_search_folds_to_print,
             "min_feature_count": min_feature_count,
             "cv_folds": cv_folds_to_print,
-            "using_folds_file": isinstance(cv_folds, dict)
-            or isinstance(grid_search_folds, dict),
+            "using_folds_file": (
+                isinstance(cv_folds, dict) or isinstance(grid_search_folds, dict)
+            ),
             "save_cv_folds": save_cv_folds,
             "save_cv_models": save_cv_models,
             "use_folds_file_for_grid_search": use_folds_file_for_grid_search,
@@ -661,9 +659,8 @@ def run_configuration(  # noqa: C901
         if not local and not _HAVE_GRIDMAP:
             local = True
             logger.warning(
-                "gridmap 0.10.1+ not available. Forcing local "
-                "mode.  To run things on a DRMAA-compatible "
-                "cluster, install gridmap>=0.10.1 via pip."
+                "gridmap 0.10.1+ not available. Forcing local mode.  To run things on "
+                "a DRMAA-compatible cluster, install gridmap>=0.10.1 via pip."
             )
 
         # No grid search or ablation for learning curve generation
@@ -671,8 +668,8 @@ def run_configuration(  # noqa: C901
             if ablation is None or ablation > 0:
                 ablation = 0
                 logger.warning(
-                    "Ablating features is not supported during "
-                    "learning curve generation. Ignoring."
+                    "Ablating features is not supported during learning curve "
+                    "generation. Ignoring."
                 )
 
         # if we just had a train file and a test file, there are no real featuresets
@@ -719,8 +716,8 @@ def run_configuration(  # noqa: C901
             featureset_names = expanded_fs_names
         elif ablation < 0:
             raise ValueError(
-                'Value for "ablation" argument must be either '
-                "positive integer or None."
+                'Value for "ablation" argument must be either positive integer or '
+                "None."
             )
 
         # the list of jobs submitted (if running on grid)
@@ -735,13 +732,12 @@ def run_configuration(  # noqa: C901
         for featureset_name in featureset_names:
             if len(featureset_name) > 210:
                 raise OSError(
-                    f'System generated file length "{featureset_name}" '
-                    "exceeds the maximum length supported.  Please specify "
-                    'names of your datasets with "featureset_names".  If you '
-                    "are running ablation experiment, please reduce the "
-                    'length of the features in "featuresets" because the '
-                    "auto-generated name would be longer than the file system"
-                    " can handle"
+                    f'System generated file length "{featureset_name}" exceeds the '
+                    "maximum length supported.  Please specify names of your datasets "
+                    'with "featureset_names".  If you are running ablation experiment,'
+                    ' please reduce the length of the features in "featuresets" '
+                    "because the auto-generated name would be longer than the file "
+                    "system can handle"
                 )
 
         # if the task is learning curve, and ``metrics`` was specified, then
@@ -799,9 +795,8 @@ def run_configuration(  # noqa: C901
                         exists(result_json_path) and getsize(result_json_path)
                     ):
                         logger.info(
-                            "Running in resume mode and "
-                            f"{result_json_path} exists, so skipping "
-                            "job."
+                            f"Running in resume mode and {result_json_path} exists, "
+                            "so skipping job."
                         )
                         continue
 

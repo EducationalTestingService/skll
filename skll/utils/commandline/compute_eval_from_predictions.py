@@ -134,9 +134,8 @@ def compute_eval_from_predictions(
         else:
             if prediction_method is not None:
                 logger.warning(
-                    "A prediction method was provided, but the "
-                    "predictions file doesn't contain "
-                    "probabilities. Ignoring prediction method "
+                    "A prediction method was provided, but the predictions file "
+                    "doesn't contain probabilities. Ignoring prediction method "
                     f"'{prediction_method}'."
                 )
 
@@ -173,8 +172,8 @@ def main(argv=None):
     # Get command line arguments
     parser = argparse.ArgumentParser(
         description=(
-            "Computes evaluation metrics from prediction files after "
-            "you have run an experiment."
+            "Computes evaluation metrics from prediction files after you have run an "
+            "experiment."
         ),
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
@@ -185,10 +184,9 @@ def main(argv=None):
         "--method",
         "-m",
         help=(
-            "How to generate a prediction from the class "
-            "probabilities. Supported methods are 'highest' "
-            "(default) and 'expected_value' (only works with"
-            " integer classes)."
+            "How to generate a prediction from the class probabilities. Supported "
+            "methods are 'highest' (default) and 'expected_value' (only works with "
+            "integer classes)."
         ),
     )
     parser.add_argument(
@@ -199,9 +197,8 @@ def main(argv=None):
     supported_prediction_methods = {"highest", "expected_value"}
     if (args.method is not None) and (args.method not in supported_prediction_methods):
         raise KeyError(
-            f"Unrecognized prediction method '{args.method}'. "
-            "Supported methods are 'highest' and "
-            "'expected_value'."
+            f"Unrecognized prediction method '{args.method}'. Supported methods are "
+            "'highest' and 'expected_value'."
         )
 
     scores = compute_eval_from_predictions(

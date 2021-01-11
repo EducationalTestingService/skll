@@ -233,9 +233,9 @@ class Learner(object):
             self._model_kwargs["gamma"] = "scale"
             if self.probability:
                 self.logger.warning(
-                    "Because LibSVM does an internal cross-validation to "
-                    "produce probabilities, results will not be exactly "
-                    "replicable when using SVC and probability mode."
+                    "Because LibSVM does an internal cross-validation to produce "
+                    "probabilities, results will not be exactly replicable when using "
+                    "SVC and probability mode."
                 )
         elif issubclass(
             self._model_type,
@@ -390,10 +390,9 @@ class Learner(object):
             model_version_str = ".".join(map(str, skll_version))
             current_version_str = ".".join(map(str, VERSION))
             raise ValueError(
-                f"The learner stored in '{learner_path}' was "
-                f"created with v{model_version_str} of SKLL, "
-                "which is incompatible with the current "
-                f"v{current_version_str}."
+                f"The learner stored in '{learner_path}' was created with "
+                f"v{model_version_str} of SKLL, which is incompatible with the current"
+                f" v{current_version_str}."
             )
         else:
             if not hasattr(learner, "sampler"):
@@ -538,9 +537,8 @@ class Learner(object):
 
             if isinstance(self.feat_vectorizer, FeatureHasher):
                 self.logger.warning(
-                    "No feature names are available since "
-                    "this model was trained on hashed "
-                    "features."
+                    "No feature names are available since this model was trained on "
+                    "hashed features."
                 )
 
             for i, label in enumerate(label_list):
@@ -571,9 +569,8 @@ class Learner(object):
             intercept = {}
             if isinstance(self.feat_vectorizer, FeatureHasher):
                 self.logger.warning(
-                    "No feature names are available since "
-                    "this model was trained on hashed "
-                    "features."
+                    "No feature names are available since this model was trained on "
+                    "hashed features."
                 )
             for i, class_pair in enumerate(
                 combinations(range(len(self.label_list)), 2)
@@ -591,8 +588,8 @@ class Learner(object):
         else:
             # not supported
             raise ValueError(
-                f"{self._model_type.__name__} is not supported "
-                "by model_params with its current settings."
+                f"{self._model_type.__name__} is not supported by model_params with "
+                "its current settings."
             )
 
         return res, intercept
@@ -620,9 +617,8 @@ class Learner(object):
         self._probability = value
         if not hasattr(self.model_type, "predict_proba") and value:
             self.logger.warning(
-                "Probability was set to True, but "
-                f"{self.model_type.__name__} does not have a "
-                "predict_proba() method."
+                f"Probability was set to True, but {self.model_type.__name__} does not"
+                " have a predict_proba() method."
             )
             self._probability = False
 
@@ -705,17 +701,16 @@ class Learner(object):
             for label in examples.labels:
                 if isinstance(label, str):
                     raise TypeError(
-                        "You are doing regression with string "
-                        "labels.  Convert them to integers or "
-                        "floats."
+                        "You are doing regression with string labels.  Convert them to"
+                        " integers or floats."
                     )
 
         # make sure that feature values are not strings
         for val in examples.features.data:
             if isinstance(val, str):
                 raise TypeError(
-                    "You have feature values that are strings.  "
-                    "Convert them to floats."
+                    "You have feature values that are strings.  Convert them to "
+                    "floats."
                 )
 
     def _check_max_feature_value(self, feat_array):
@@ -730,10 +725,8 @@ class Learner(object):
         max_feat_abs = np.max(np.abs(feat_array.data))
         if max_feat_abs > 1000.0:
             self.logger.warning(
-                "You have a feature with a very large "
-                f"absolute value ({max_feat_abs}).  That may "
-                "cause the learning algorithm to crash or "
-                "perform poorly."
+                f"You have a feature with a very large absolute value ({max_feat_abs})"
+                ".  That may cause the learning algorithm to crash or perform poorly."
             )
 
     def _create_label_dict(self, examples):
@@ -766,8 +759,7 @@ class Learner(object):
         if self.pos_label_str is not None:
             if len(self.label_list) != 2:
                 self.logger.warning(
-                    "Ignoring value of `pos_label_str` for "
-                    "multi-class classification."
+                    "Ignoring value of `pos_label_str` for multi-class classification."
                 )
                 self.pos_label_str = None
             else:
@@ -891,9 +883,8 @@ class Learner(object):
 
             if not grid_objective:
                 raise ValueError(
-                    "Grid search is on by default. You must "
-                    "either specify a grid objective or turn off"
-                    " grid search."
+                    "Grid search is on by default. You must either specify a grid "
+                    "objective or turn off grid search."
                 )
 
             # get the list of objectives that are acceptable in the current
@@ -910,9 +901,8 @@ class Learner(object):
 
             if grid_objective not in allowed_objectives:
                 raise ValueError(
-                    f"'{grid_objective}' is not a valid objective"
-                    f" function for {self._model_type.__name__} "
-                    "with labels of type "
+                    f"'{grid_objective}' is not a valid objective function for "
+                    f"{self._model_type.__name__} with labels of type "
                     f"{label_type.__name__}."
                 )
 
@@ -926,12 +916,10 @@ class Learner(object):
                 and self.probability
             ):
                 self.logger.info(
-                    f'You specified "{grid_objective}" as the '
-                    'objective with "probability" set to "true".'
-                    " If this is a binary classification task "
-                    "with integer labels, the probabilities for "
-                    "the positive class will be used to compute "
-                    "the correlation."
+                    f'You specified "{grid_objective}" as the objective with '
+                    '"probability" set to "true". If this is a binary classification '
+                    "task with integer labels, the probabilities for the positive "
+                    "class will be used to compute the correlation."
                 )
                 old_grid_objective = grid_objective
                 new_grid_objective = f"{grid_objective}_probs"
@@ -949,9 +937,8 @@ class Learner(object):
         if grid_search or shuffle:
             if grid_search and not shuffle:
                 self.logger.warning(
-                    "Training data will be shuffled to randomize "
-                    "grid search folds.  Shuffling may yield "
-                    "different results compared to scikit-learn."
+                    "Training data will be shuffled to randomize grid search folds.  "
+                    "Shuffling may yield different results compared to scikit-learn."
                 )
             ids, labels, features = sk_shuffle(
                 examples.ids, examples.labels, examples.features, random_state=123456789
@@ -979,27 +966,25 @@ class Learner(object):
             except MemoryError:
                 if issubclass(self._model_type, _REQUIRES_DENSE):
                     reason = (
-                        f"{self._model_type.__name__} does not support "
-                        "sparse matrices."
+                        f"{self._model_type.__name__} does not support sparse "
+                        "matrices."
                     )
                 else:
                     reason = (
-                        f"{self._feature_scaling} feature scaling "
-                        "requires a dense matrix."
+                        f"{self._feature_scaling} feature scaling requires a dense "
+                        "matrix."
                     )
                 raise MemoryError(
-                    "Ran out of memory when converting training"
-                    " data to dense. This was required because "
-                    f"{reason}"
+                    "Ran out of memory when converting training data to dense. This "
+                    f"was required because {reason}"
                 )
 
         if isinstance(self.feat_vectorizer, FeatureHasher) and issubclass(
             self._model_type, MultinomialNB
         ):
             raise ValueError(
-                "Cannot use FeatureHasher with MultinomialNB "
-                "because MultinomialNB cannot handle negative "
-                "feature values."
+                "Cannot use FeatureHasher with MultinomialNB because MultinomialNB "
+                "cannot handle negative feature values."
             )
 
         # Scale features if necessary
@@ -1011,9 +996,8 @@ class Learner(object):
         # Sampler
         if self.sampler is not None and issubclass(self._model_type, MultinomialNB):
             raise ValueError(
-                "Cannot use a sampler with MultinomialNB "
-                "because MultinomialNB cannot handle negative "
-                "feature values."
+                "Cannot use a sampler with MultinomialNB because MultinomialNB cannot "
+                "handle negative feature values."
             )
 
         if self.sampler:
@@ -1040,11 +1024,9 @@ class Learner(object):
         if grid_search and not param_grid:
             if default_param_grid == {}:
                 self.logger.warning(
-                    "SKLL has no default parameter grid "
-                    "available for the "
-                    f"{self._model_type.__name__} learner and"
-                    " no parameter grids were supplied. Using"
-                    " default values instead of grid search."
+                    "SKLL has no default parameter grid available for the "
+                    f"{self._model_type.__name__} learner and no parameter grids were "
+                    "supplied. Using default values instead of grid search."
                 )
                 grid_search = False
             else:
@@ -1145,16 +1127,16 @@ class Learner(object):
             if self._use_dense_features or isinstance(self.sampler, SkewedChi2Sampler):
                 if isinstance(self.feat_vectorizer, DictVectorizer):
                     self.logger.warning(
-                        "The `sparse` attribute of the DictVectorizer stage "
-                        "will be set to `False` in the pipeline since dense "
-                        "features are required when centering."
+                        "The `sparse` attribute of the DictVectorizer stage will be "
+                        "set to `False` in the pipeline since dense features are "
+                        "required when centering."
                     )
                     vectorizer_copy.sparse = False
                 else:
                     self.logger.warning(
-                        "A custom pipeline stage (`Densifier`) will be "
-                        "inserted in the pipeline since the current SKLL "
-                        "configuration requires dense features."
+                        "A custom pipeline stage (`Densifier`) will be inserted in the"
+                        " pipeline since the current SKLL configuration requires dense"
+                        " features."
                     )
                     densifier = Densifier()
                     pipeline_steps.append(("densifier", densifier))
@@ -1258,11 +1240,9 @@ class Learner(object):
         if unacceptable_metrics:
             label_type = examples.labels.dtype.type
             raise ValueError(
-                "The following metrics are not valid "
-                f"for this learner ({self._model_type.__name__})"
-                " with these labels of type "
-                f"{label_type.__name__}: "
-                f"{list(unacceptable_metrics)}"
+                "The following metrics are not valid for this learner ("
+                f"{self._model_type.__name__}) with these labels of type "
+                f"{label_type.__name__}: {list(unacceptable_metrics)}"
             )
 
         # get the values of the evaluation metrics
@@ -1407,9 +1387,9 @@ class Learner(object):
                 examples.vectorizer.feature_names_
             ):
                 self.logger.warning(
-                    "There is mismatch between the training model features "
-                    "and the data passed to predict. The prediction features "
-                    "will be transformed to the trained model space."
+                    "There is mismatch between the training model features and the "
+                    "data passed to predict. The prediction features will be "
+                    "transformed to the trained model space."
                 )
             if self.feat_vectorizer == examples.vectorizer:
                 xtest = examples.features
@@ -1435,9 +1415,9 @@ class Learner(object):
                 xtest = examples.features
             else:
                 self.logger.error(
-                    "There is mismatch between the FeatureHasher "
-                    "configuration for the training data and the "
-                    "configuration for the data passed to predict"
+                    "There is mismatch between the FeatureHasher configuration for the"
+                    " training data and the configuration for the data passed to "
+                    "predict"
                 )
                 raise RuntimeError("Mismatched hasher configurations")
 
@@ -1450,9 +1430,8 @@ class Learner(object):
         # 4. model is a DictVectorizer and test set is a FeatureHasher
         elif model_dict_and_data_hasher:
             self.logger.error(
-                "Cannot predict with a model using a "
-                "DictVectorizer on data that uses a "
-                "FeatureHasher"
+                "Cannot predict with a model using a DictVectorizer on data that uses "
+                "a FeatureHasher"
             )
             raise RuntimeError("Cannot use FeatureHasher for data")
 
@@ -1466,18 +1445,17 @@ class Learner(object):
             except MemoryError:
                 if issubclass(self._model_type, _REQUIRES_DENSE):
                     reason = (
-                        f"{self._model_type.__name__} does not support "
-                        "sparse matrices."
+                        f"{self._model_type.__name__} does not support sparse "
+                        "matrices."
                     )
                 else:
                     reason = (
-                        f"{self._feature_scaling} feature scaling "
-                        "requires a dense matrix."
+                        f"{self._feature_scaling} feature scaling requires a dense "
+                        "matrix."
                     )
                 raise MemoryError(
-                    "Ran out of memory when converting test "
-                    "data to dense. This was required because "
-                    f"{reason}"
+                    "Ran out of memory when converting test data to dense. This was "
+                    f"required because {reason}"
                 )
 
         # Scale xtest if necessary
@@ -1658,8 +1636,8 @@ class Learner(object):
             examples.labels
         ) not in ["binary", "multiclass"]:
             raise ValueError(
-                "Floating point labels must be encoded as "
-                "strings for cross-validation."
+                "Floating point labels must be encoded as strings for "
+                "cross-validation."
             )
 
         # check that we have an objective since grid search is on by default
@@ -1669,9 +1647,8 @@ class Learner(object):
         if grid_search:
             if not grid_objective:
                 raise ValueError(
-                    "Grid search is on by default. You must "
-                    "either specify a grid objective or turn off"
-                    " grid search."
+                    "Grid search is on by default. You must either specify a grid "
+                    "objective or turn off grid search."
                 )
 
         # Shuffle so that the folds are random for the inner grid search CV.
@@ -1681,10 +1658,8 @@ class Learner(object):
         if grid_search or shuffle:
             if grid_search and not shuffle:
                 self.logger.warning(
-                    "Training data will be shuffled to "
-                    "randomize grid search folds. Shuffling "
-                    "may yield different results compared to "
-                    "scikit-learn."
+                    "Training data will be shuffled to randomize grid search folds. "
+                    "Shuffling may yield different results compared to scikit-learn."
                 )
             ids, labels, features = sk_shuffle(
                 examples.ids,
@@ -1725,8 +1700,8 @@ class Learner(object):
                 and grid_search_folds != cv_folds
             ):
                 self.logger.warning(
-                    "The specified custom folds will be used "
-                    "for the inner grid search."
+                    "The specified custom folds will be used for the inner grid "
+                    "search."
                 )
                 grid_search_folds = cv_folds
 
@@ -1865,25 +1840,23 @@ class Learner(object):
         if len(examples) < 500:
             if not override_minimum:
                 raise ValueError(
-                    f"Number of training examples provided - {len(examples)} "
-                    f"- is less than the minimum needed - {500} - for the "
-                    "learning curve to be reliable."
+                    f"Number of training examples provided - {len(examples)} - is less "
+                    "than the minimum needed - 500 - for the learning curve to be "
+                    "reliable."
                 )
             else:
                 self.logger.warning(
                     "Because the number of training examples provided - "
-                    f"{len(examples)} - is less than the ideal minimum - "
-                    f"{500} - learning curve generation is unreliable and "
-                    "might break"
+                    f"{len(examples)} - is less than the ideal minimum - 500 - "
+                    "learning curve generation is unreliable and might break"
                 )
 
         # raise a warning if we are using a probabilistic classifier
         # since that means we cannot use the predictions directly
         if self.probability:
             self.logger.warning(
-                "Since ``probability`` is set, the most likely "
-                "class will be computed via an argmax before "
-                "computing the curve."
+                "Since ``probability`` is set, the most likely class will be computed "
+                "via an argmax before computing the curve."
             )
 
         # Call train setup before since we need to train
