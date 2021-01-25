@@ -44,9 +44,9 @@ requirements:
   build:
     - beautifulsoup4
     - joblib
-    - numpy ==1.19.5
-    - pandas ==1.2.0
-    - python ==3.8.6
+    - numpy
+    - pandas
+    - python
     - ruamel.yaml
     - scikit-learn ==0.21.1
     - scipy
@@ -57,9 +57,9 @@ requirements:
   run:
     - beautifulsoup4
     - joblib
-    - numpy ==1.19.5
-    - pandas ==1.2.0
-    - python ==3.8.6
+    - numpy
+    - pandas
+    - python
     - ruamel.yaml
     - scikit-learn ==0.21.1
     - scipy
