@@ -997,13 +997,16 @@ class Learner(object):
                 folds = kfold.split(examples.features, examples.labels, fold_groups)
 
             # limit the number of grid_jobs to be no higher than five or the
-            # number of cores for the machine, whichever is lower
+            # number of cores for the machine, whichever is lower; we set
+            # `error_score` to "raise" since we want scikit-learn to explicitly
+            # raise an exception if the estimator fails to fit for any reason
             grid_jobs = min(grid_jobs, cpu_count(), MAX_CONCURRENT_PROCESSES)
             grid_searcher = GridSearchCV(estimator,
                                          param_grid,
                                          scoring=grid_objective,
                                          cv=folds,
                                          n_jobs=grid_jobs,
+                                         error_score="raise",
                                          pre_dispatch=grid_jobs)
 
             # run the grid search for hyperparameters
