@@ -18,14 +18,14 @@ from os.path import join
 from pathlib import Path
 
 import numpy as np
-from nose.tools import assert_almost_equal, assert_greater, assert_less, eq_, raises
+from nose.tools import assert_almost_equal, assert_greater, assert_less, eq_, raises, ok_
 from numpy.testing import assert_allclose
 from scipy.stats import pearsonr
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.linear_model import LogisticRegression
 
 from skll.config import _setup_config_parser
-from skll.data import FeatureSet, NDJWriter
+from skll.data import FeatureSet, NDJWriter, NDJReader
 from skll.experiments import run_configuration
 from skll.learner import Learner
 from skll.learner.utils import rescaled
@@ -727,3 +727,13 @@ def test_train_non_sparse_featureset():
     learner = Learner('LinearRegression')
     learner.train(train_fs, grid_search=False)
     ok_(hasattr(learner.model, "coef_"))
+
+
+@raises(TypeError)
+def test_train_string_labels():
+    """Test that regression on string labels raises TypeError"""
+    train_file = join(other_dir, 'test_int_labels_cv.jsonlines')
+    train_fs = NDJReader.for_path(train_file).read()
+    train_fs.labels = train_fs.labels.astype('str')
+    learner = Learner('LinearRegression')
+    learner.train(train_fs, grid_search=False)
