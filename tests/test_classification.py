@@ -1820,3 +1820,12 @@ def test_predict_return_and_write():
     for (learner, class_labels) in product([learner1, learner2],
                                            [False, True]):
         yield check_predict_return_and_write, learner, test_fs, class_labels
+
+
+def test_train_non_sparse_featureset():
+    """Test that we can train a classifier on a non-sparse featureset"""
+    train_file = join(other_dir, 'examples_train.jsonlines')
+    train_fs = NDJReader.for_path(train_file, sparse=False).read()
+    learner = Learner('LogisticRegression')
+    learner.train(train_fs, grid_search=False)
+    ok_(hasattr(learner.model, "coef_"))
