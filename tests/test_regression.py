@@ -39,7 +39,7 @@ from skll.experiments import run_configuration
 from skll.learner import Learner
 from skll.learner.utils import rescaled
 from skll.utils.constants import CLASSIFICATION_ONLY_METRICS, KNOWN_DEFAULT_PARAM_GRIDS
-from tests import config_dir, examples_dir, other_dir, output_dir, test_dir, train_dir
+from tests import config_dir, other_dir, output_dir, test_dir, train_dir
 from tests.utils import (
     fill_in_config_paths_for_fancy_output,
     make_regression_data,
@@ -752,10 +752,7 @@ def test_non_negative_regression():
     """Test that non-negative regression works as expected"""
 
     # read in the Boston example training data into a featureset
-    train_path = join(examples_dir,
-                      "boston",
-                      "train",
-                      "example_boston_features.jsonlines")
+    train_path = join(train_dir, "test_non_negative.jsonlines")
     train_fs = NDJReader.for_path(train_path).read()
 
     # train a regular SKLL linear regerssion learner first
