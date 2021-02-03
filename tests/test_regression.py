@@ -718,3 +718,12 @@ def test_invalid_regression_metric():
         for metric in CLASSIFICATION_ONLY_METRICS:
             yield check_invalid_regression_metric, learner, metric, True
             yield check_invalid_regression_metric, learner, metric, False
+
+
+def test_train_non_sparse_featureset():
+    """Test that we can train a regressor on a non-sparse featureset"""
+    train_file = join(other_dir, 'test_int_labels_cv.jsonlines')
+    train_fs = NDJReader.for_path(train_file, sparse=False).read()
+    learner = Learner('LinearRegression')
+    learner.train(train_fs, grid_search=False)
+    ok_(hasattr(learner.model, "coef_"))
