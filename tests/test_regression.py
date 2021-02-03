@@ -18,14 +18,21 @@ from os.path import join
 from pathlib import Path
 
 import numpy as np
-from nose.tools import assert_almost_equal, assert_greater, assert_less, eq_, raises, ok_
+from nose.tools import (
+    assert_almost_equal,
+    assert_greater,
+    assert_less,
+    eq_,
+    ok_,
+    raises,
+)
 from numpy.testing import assert_allclose
 from scipy.stats import pearsonr
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.linear_model import LogisticRegression
 
 from skll.config import _setup_config_parser
-from skll.data import FeatureSet, NDJWriter, NDJReader
+from skll.data import FeatureSet, NDJReader, NDJWriter
 from skll.experiments import run_configuration
 from skll.learner import Learner
 from skll.learner.utils import rescaled
