@@ -165,9 +165,11 @@ def check_linear_models(name,
                                                              num_features=3)
 
     # create the learner
-    if use_rescaling:
-        name = f'Rescaled{name}'
-    learner = Learner(name)
+    model_kwargs = {} if name in ["BayesianRidge",
+                                  "Lars",
+                                  "LinearRegression"] else {"max_iter": 500}
+    name = f'Rescaled{name}' if use_rescaling else name
+    learner = Learner(name, model_kwargs=model_kwargs)
 
     # train it with the training feature set we created
     # make sure to set the grid objective to pearson
