@@ -661,8 +661,14 @@ class Learner(object):
                                     "labels.  Convert them to integers or "
                                     "floats.")
 
-        # make sure that feature values are not strings
-        for val in examples.features.data:
+        # make sure that feature values are not strings; to check this
+        # we need to get a flattened version of the feature array,
+        # whether it is sparse (more likely) or dense
+        if sp.issparse(examples.features):
+            flattened_features = examples.features.data
+        else:
+            flattened_features = examples.features.flat
+        for val in flattened_features:
             if isinstance(val, str):
                 raise TypeError("You have feature values that are strings.  "
                                 "Convert them to floats.")
