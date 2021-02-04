@@ -35,10 +35,14 @@ def main(argv=None):
                     " features that do not match the specified patterns.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
-    parser.add_argument('infile',
+    parser.add_argument('-i', '--input',
+                        dest='infile',
+                        required=True,
                         help='input feature file (ends in .arff, .csv, '
                              '.jsonlines, .ndj, or .tsv)')
-    parser.add_argument('outfile',
+    parser.add_argument('-o', '--output',
+                        dest='outfile',
+                        required=True,
                         help='output feature file (must have same extension '
                              'as input file)')
     parser.add_argument('-f', '--feature',
@@ -54,7 +58,7 @@ def main(argv=None):
                         help='Name of the column which contains the instance '
                              'IDs in ARFF, CSV, or TSV files.',
                         default='id')
-    parser.add_argument('-i', '--inverse',
+    parser.add_argument('--inverse',
                         help='Instead of keeping features and/or examples in '
                              'lists, remove them.',
                         action='store_true')
