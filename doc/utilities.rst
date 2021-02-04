@@ -48,14 +48,24 @@ filter_features
 Filter feature file to remove (or keep) any instances with the specified IDs or
 labels.  Can also be used to remove/keep feature columns.
 
-Positional Arguments
-^^^^^^^^^^^^^^^^^^^^
-.. option:: infile
+.. warning:: Starting with v2.5 of SKLL, the arguments for ``filter_features``
+             have changed and are no longer backwards compatible with older
+             versions of SKLL. Specifically:
+
+             #. The input and output files must now be specified with ``-i``
+                and ``-o`` respectively
+
+             #. ``--inverse`` must now be used to invert the filtering command
+                since ``-i`` is used to specify the input file.
+
+Required Arguments
+^^^^^^^^^^^^^^^^^^
+.. option:: -i, --input
 
     Input feature file (ends in ``.arff``, ``.csv``, ``.jsonlines``,
     ``.ndj``, or ``.tsv``)
 
-.. option:: outfile
+.. option:: -o, --output
 
     Output feature file (must have same extension as input file)
 
@@ -72,7 +82,7 @@ Optional Arguments
     An instance ID in the feature file you would like to keep. If unspecified,
     no instances are removed based on their IDs.
 
-.. option:: -i, --inverse
+.. option:: --inverse
 
     Instead of keeping features and/or examples in lists, remove them.
 
