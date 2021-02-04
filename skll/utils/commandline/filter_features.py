@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # License: BSD 3 clause
 '''
-Script that filters a given feature file to remove unwanted features, labels,
-or IDs.
+Filter a given feature file to remove unwanted features, labels, or IDs.
 
 :author: Dan Blanchard (dblanchard@ets.org)
+:author: Nitin Madnani (nmadnani@ets.org)
 :organization: ETS
 '''
 
@@ -137,8 +137,16 @@ def main(argv=None):
                                             **kwargs)
     feature_set = reader.read()
 
+    # convert the specified labels with `safe_float` before using
+    # to match what the various featureset readers do
+    converted_labels = None
+    if args.label:
+        converted_labels = [safe_float(label) for label in args.label]
+
     # Do the actual filtering
-    feature_set.filter(ids=args.id, labels=args.label, features=args.feature,
+    feature_set.filter(ids=args.id,
+                       labels=converted_labels,
+                       features=args.feature,
                        inverse=args.inverse)
 
     # write out the file in the requested output format
