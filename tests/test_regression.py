@@ -20,16 +20,18 @@ from pathlib import Path
 import numpy as np
 from nose.tools import (
     assert_almost_equal,
+    assert_false,
     assert_greater,
     assert_less,
+    assert_true,
     eq_,
     ok_,
     raises,
 )
-from numpy.testing import assert_allclose
+from numpy.testing import assert_allclose, assert_array_equal
 from scipy.stats import pearsonr
 from sklearn.exceptions import ConvergenceWarning
-from sklearn.linear_model import LogisticRegression
+from sklearn.linear_model import LinearRegression, LogisticRegression
 
 from skll.config import _setup_config_parser
 from skll.data import FeatureSet, NDJReader, NDJWriter
@@ -163,9 +165,11 @@ def check_linear_models(name,
                                                              num_features=3)
 
     # create the learner
-    if use_rescaling:
-        name = f'Rescaled{name}'
-    learner = Learner(name)
+    model_kwargs = {} if name in ["BayesianRidge",
+                                  "Lars",
+                                  "LinearRegression"] else {"max_iter": 500}
+    name = f'Rescaled{name}' if use_rescaling else name
+    learner = Learner(name, model_kwargs=model_kwargs)
 
     # train it with the training feature set we created
     # make sure to set the grid objective to pearson
@@ -744,3 +748,32 @@ def test_train_string_labels():
     train_fs.labels = train_fs.labels.astype('str')
     learner = Learner('LinearRegression')
     learner.train(train_fs, grid_search=False)
+
+
+def test_non_negative_regression():
+    """Test that non-negative regression works as expected"""
+
+    # read in the Boston example training data into a featureset
+    train_path = join(train_dir, "test_non_negative.jsonlines")
+    train_fs = NDJReader.for_path(train_path).read()
+
+    # train a regular SKLL linear regerssion learner first
+    # and check that it gets some negative weights with this data
+    skll_estimator1 = Learner("LinearRegression", min_feature_count=0)
+    skll_estimator1.train(train_fs, grid_search=False)
+    assert_true(np.any(np.where(skll_estimator1.model.coef_ < 0, True, False)))
+
+    # now train a non-negative linear regression learner and check
+    # that _none_ of its weights are negative with the same data
+    skll_estimator2 = Learner("LinearRegression",
+                              model_kwargs={"positive": True},
+                              min_feature_count=0)
+    skll_estimator2.train(train_fs, grid_search=False)
+    assert_false(np.any(np.where(skll_estimator2.model.coef_ < 0, True, False)))
+
+    # just for good measure, train a non-negative learner directly
+    # in sklearn space and check that it has the same weights
+    sklearn_estimator = LinearRegression(positive=True)
+    X, y = train_fs.features.todense(), train_fs.labels
+    _ = sklearn_estimator.fit(X, y)
+    assert_array_equal(skll_estimator2.model.coef_, sklearn_estimator.coef_)

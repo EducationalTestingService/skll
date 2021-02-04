@@ -217,9 +217,18 @@ class Learner(object):
         self._probability = None
         # Use setter to set self.probability
         self.probability = probability
+
+        # we need to use dense features under certain conditions:
+        # - if we are using any of the estimators that are _known_
+        #   to accept only dense features
+        # - if we are doing centering as part of feature scaling
+        # - if we are using non-negative least squares regression
         self._use_dense_features = \
             (issubclass(self._model_type, _REQUIRES_DENSE) or
-             self._feature_scaling in {'with_mean', 'both'})
+                self._feature_scaling in {'with_mean', 'both'} or
+                (issubclass(self._model_type, LinearRegression) and
+                    model_kwargs is not None and
+                    model_kwargs.get("positive", False)))
 
         # Set default keyword arguments for models that we have some for.
         if issubclass(self._model_type, SVC):
@@ -1003,13 +1012,16 @@ class Learner(object):
                 folds = kfold.split(examples.features, examples.labels, fold_groups)
 
             # limit the number of grid_jobs to be no higher than five or the
-            # number of cores for the machine, whichever is lower
+            # number of cores for the machine, whichever is lower; we set
+            # `error_score` to "raise" since we want scikit-learn to explicitly
+            # raise an exception if the estimator fails to fit for any reason
             grid_jobs = min(grid_jobs, cpu_count(), MAX_CONCURRENT_PROCESSES)
             grid_searcher = GridSearchCV(estimator,
                                          param_grid,
                                          scoring=grid_objective,
                                          cv=folds,
                                          n_jobs=grid_jobs,
+                                         error_score="raise",
                                          pre_dispatch=grid_jobs)
 
             # run the grid search for hyperparameters
