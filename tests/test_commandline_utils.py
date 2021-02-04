@@ -1539,6 +1539,7 @@ def test_filter_features_arff_argparse():
 
 
 def check_filter_features_labels(extension, label_type):
+    """Make sure that labels are correctly converted before filtering"""
 
     reader_class = EXT_TO_READER[extension]
     writer_class = EXT_TO_WRITER[extension]
@@ -1577,7 +1578,6 @@ def check_filter_features_labels(extension, label_type):
 
 
 def test_filter_features_labels():
-    """Make sure that labels are correctly converted before filtering"""
     for extension, label_type in product([".jsonlines", ".ndj", ".tsv", ".csv"],
                                          ["integer", "string"]):
         yield check_filter_features_labels, extension, label_type
