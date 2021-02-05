@@ -94,7 +94,7 @@ with the following added restrictions:
 csv/tsv
 ^^^^^^^
 
-A simple comma or tab-delimited format. SKLL underlyingly uses 
+A simple comma or tab-delimited format. SKLL underlyingly uses
 [pandas](https://pandas.pydata.org) to read these files which is
 extremely fast but at the cost of some extra memory consumption.
 
@@ -241,7 +241,7 @@ field in each section is provided below, but to summarize:
     .. note::
 
         1. Ideally, one would first do cross-validation experiments with grid search and/or ablation and get a well-performing set of features and hyper-parameters for a set of learners. Then, one would explicitly specify those features (via :ref:`featuresets <featuresets>`) and hyper-parameters (via :ref:`fixed_parameters <fixed_parameters>`) in the config file for the learning curve and explore the impact of the size of the training data.
-        
+
         2. If you set :ref:`probability <probability>` to ``True``, the probabilities will be converted to the most likely label via an argmax before computing the curve.
 
 .. _learners_required:
@@ -281,9 +281,9 @@ What types of experiment we're trying to run. Valid options are:
 Input
 ^^^^^
 
-The Input section must specify the machine learners to use via the :ref:`learners` 
+The Input section must specify the machine learners to use via the :ref:`learners`
 field as well as the data and features to be used when
-training the model. This can be done by specifying either (a) 
+training the model. This can be done by specifying either (a)
 :ref:`train_file <train_file>` in which case all of the features in
 the file will be used, or (b) :ref:`train_directory <train_directory>` along
 with :ref:`featuresets <featuresets>`.
@@ -293,7 +293,7 @@ with :ref:`featuresets <featuresets>`.
 learners
 """"""""
 List of scikit-learn models to be used in the experiment. Acceptable values
-are described below.  Custom learners can also be specified. See 
+are described below.  Custom learners can also be specified. See
 :ref:`custom_learner_path <custom_learner_path>`.
 
 .. _classifiers:
@@ -362,7 +362,7 @@ if this is not the case.  Cannot be used in combination with
 
 .. _train_file:
 
-train_file 
+train_file
 """"""""""
 
 Path to a file containing the features to train on.  Cannot be used in
@@ -376,7 +376,7 @@ combination with :ref:`featuresets <featuresets>`,
 
 .. _train_directory:
 
-train_directory 
+train_directory
 """""""""""""""
 
 Path to directory containing training data files. There must be a file for each
@@ -388,7 +388,7 @@ or :ref:`test_file <test_file>`.
     If :ref:`train_directory <train_directory>` is not specified,
     :ref:`train_file <train_file>` must be.
 
-The following is a list of the other optional fields in this section 
+The following is a list of the other optional fields in this section
 in alphabetical order.
 
 .. _class_map:
@@ -451,9 +451,9 @@ that returns ``True``.
 custom_metric_path *(Optional)*
 """""""""""""""""""""""""""""""
 
-Path to a ``.py`` file that defines a 
-:ref:`custom metric function <custom_metrics>`. This file will be imported dynamically.  This is only required if a custom metric is specified as a 
-:ref:`tuning objective  <objectives>`, an :ref:`output metric <metrics>`, 
+Path to a ``.py`` file that defines a
+:ref:`custom metric function <custom_metrics>`. This file will be imported dynamically.  This is only required if a custom metric is specified as a
+:ref:`tuning objective  <objectives>`, an :ref:`output metric <metrics>`,
 or both.
 
 
@@ -477,7 +477,7 @@ information see `the scikit-learn documentation <https://scikit-learn.org/stable
              you have F feature files and you choose H as the number of hashed
              features (via :ref:`hasher_features <hasher_features>`), you will
              end up with F x H features in the end. If this is not the
-             desired behavior, use the :ref:`join_features <join_features>` 
+             desired behavior, use the :ref:`join_features <join_features>`
              utility script to combine all feature files into a single file
              before running the experiment.
 
@@ -650,9 +650,9 @@ TheilSenRegressor
 .. note::
 
         The `fixed_parameters` field offers us a way to deal with imbalanced
-        data sets by using the parameter ``class_weight`` for the following 
-        classifiers: ``DecisionTreeClassifier``, ``LogisticRegression``, 
-        ``LinearSVC``, ``RandomForestClassifier``, ``RidgeClassifier``, 
+        data sets by using the parameter ``class_weight`` for the following
+        classifiers: ``DecisionTreeClassifier``, ``LogisticRegression``,
+        ``LinearSVC``, ``RandomForestClassifier``, ``RidgeClassifier``,
         ``SGDClassifier``, and ``SVC``.
 
     Two possible options are available. The first one is ``balanced``, which
@@ -767,8 +767,8 @@ Whether to use random folds for cross-validation. Defaults to ``False``.
 sampler *(Optional)*
 """"""""""""""""""""
 
-Whether to use a feature sampler that performs  non-linear transformations 
-of the input, which can serve as a basis for linear classification 
+Whether to use a feature sampler that performs  non-linear transformations
+of the input, which can serve as a basis for linear classification
 or other algorithms. Valid options are:
 `Nystroem <https://scikit-learn.org/stable/modules/generated/sklearn.kernel_approximation.Nystroem.html#sklearn.kernel_approximation.Nystroem>`__,
 `RBFSampler <https://scikit-learn.org/stable/modules/generated/sklearn.kernel_approximation.RBFSampler.html#sklearn.kernel_approximation.RBFSampler>`__,
@@ -852,12 +852,12 @@ Tuning
 
 Generally, in this section, you would specify fields that pertain to the
 hyperparameter tuning for each learner. The most common required field
-is :ref:`objectives` although it may also be optional in certain 
+is :ref:`objectives` although it may also be optional in certain
 circumstances.
 
 .. _objectives:
 
-objectives 
+objectives
 """"""""""
 
 A list of one or more metrics to use as objective functions for tuning the learner
@@ -918,8 +918,8 @@ SKLL provides the following metrics but you can also write your own :ref:`custom
     *   **qwk_off_by_one**: Same as ``quadratic_weighted_kappa``, but all
         ranking differences are discounted by one. (*Contiguous integer labels only*).
     *   **recall**: |Recall link|_ for binary classification
-    *   **recall_macro**: Macro-averaged |Recall link|_ 
-    *   **recall_micro**: Micro-averaged |Recall link|_ 
+    *   **recall_macro**: Macro-averaged |Recall link|_
+    *   **recall_micro**: Micro-averaged |Recall link|_
     *   **recall_weighted**: Weighted average |Recall link|_
     *   **roc_auc**: `Area under ROC curve <https://scikit-learn.org/stable/modules/generated/sklearn.metrics.roc_auc_score.html>`__ .To use this metric, :ref:`probability <probability>` must be set to ``True``. (*Binary classification only*).
     *   **spearman**: `Spearman rank-correlation <https://en.wikipedia.org/wiki/Spearman's_rank_correlation_coefficient>`__. For binary classification and with :ref:`probability <probability>` set to ``True``, the probabilities for the positive class will be used to compute the correlation values. In all other cases, the labels are used. (*Integer labels only*).
@@ -974,7 +974,7 @@ almost always leads to better performance. Note that for the
 :ref:`learning_curve <learning_curve>` task, grid search is not allowed
 and setting it to ``True`` will generate a warning and be ignored.
 
-.. note:: 
+.. note::
 
     1. In versions of SKLL before v2.0, this option was set to
        ``False`` by default but that was changed since the benefits
@@ -985,13 +985,13 @@ and setting it to ``True`` will generate a warning and be ignored.
     2. Although SKLL only uses the combination of hyperparameters in
        the grid that maximizes the grid search objective, the results
        for all other points on the grid that were tried are also available.
-       See the ``grid_search_cv_results`` attribute in the ``.results.json`` 
-       file. 
+       See the ``grid_search_cv_results`` attribute in the ``.results.json``
+       file.
 
 .. _grid_search_folds:
 
 grid_search_folds *(Optional)*
-    
+
 """"""""""""""""""""""""""""""
 
 The number of folds to use for grid search. Defaults to 3.
@@ -1159,11 +1159,11 @@ Defaults to ``True``.
 Output
 ^^^^^^
 
-The fields in this section generally pertain to the 
+The fields in this section generally pertain to the
 :ref:`output files<experiment_output_files>` produced
-by the experiment. The most common fields are ``logs``, ``models``, 
+by the experiment. The most common fields are ``logs``, ``models``,
 ``predictions``, and ``results``. These fields are mostly optional
-although they may be required in certain cases. A common option 
+although they may be required in certain cases. A common option
 is to use the same directory for all of these fields.
 
 .. _log:
@@ -1171,8 +1171,8 @@ is to use the same directory for all of these fields.
 log *(Optional)*
 """"""""""""""""
 
-Directory to store SKLL :ref:`log files <output_log_files>` in. 
-If omitted, the current working directory is used. 
+Directory to store SKLL :ref:`log files <output_log_files>` in.
+If omitted, the current working directory is used.
 
 .. _models:
 
@@ -1181,7 +1181,7 @@ models *(Optional)*
 
 Directory in which to store :ref:`trained models <output_model_files>`.
 Can be omitted to not store models except when using the :ref:`train <train>`
-task, where this path *must* be specified. On the other hand, this path must 
+task, where this path *must* be specified. On the other hand, this path must
 *not* be specified for the :ref:`learning_curve <learning_curve>` task.
 
 .. _metrics:
@@ -1190,17 +1190,17 @@ metrics *(Optional)*
 """"""""""""""""""""
 For the ``evaluate`` and ``cross_validate`` tasks, this is an optional
 list of additional metrics that will be computed *in addition to*
-the tuning objectives and added to the results files. However, for the 
-:ref:`learning_curve <learning_curve>` task, this list is **required**. 
-Possible values are all of the same functions as those available for the 
-:ref:`tuning objectives <objectives>` (with the same caveats). 
+the tuning objectives and added to the results files. However, for the
+:ref:`learning_curve <learning_curve>` task, this list is **required**.
+Possible values are all of the same functions as those available for the
+:ref:`tuning objectives <objectives>` (with the same caveats).
 
 As with objectives, You can also use your own :ref:`custom metric <custom_metrics>`
 functions.
 
 .. note::
 
-    If the list of metrics overlaps with the grid search tuning 
+    If the list of metrics overlaps with the grid search tuning
     :ref:`objectives <objectives>`, then, for each job, the objective
     that overlaps is *not* computed again as a metric. Recall that
     each SKLL job can only contain a single tuning objective. Therefore,
@@ -1283,7 +1283,7 @@ predictions *(Optional)*
 """"""""""""""""""""""""
 
 Directory in which to store :ref:`prediction files <output_prediction_files>`.
-Can be omitted to not store predictions. Must *not* be specified for the 
+Can be omitted to not store predictions. Must *not* be specified for the
 :ref:`learning_curve <learning_curve>` and :ref:`train <train>` tasks.
 
 .. _probability:
@@ -1302,7 +1302,7 @@ results *(Optional)*
 """"""""""""""""""""
 
 Directory in which to store :ref:`result files <output_results_files>`.
-If omitted, the current working directory is used. 
+If omitted, the current working directory is used.
 
 .. _save_cv_folds:
 
@@ -1317,7 +1317,7 @@ Defaults to ``False``.
 save_cv_models *(Optional)*
 """""""""""""""""""""""""""
 
-Whether to save each of the K :ref:`model files <output_model_files>` trained during 
+Whether to save each of the K :ref:`model files <output_model_files>` trained during
 each step of a K-fold cross-validation experiment.
 Defaults to ``False``.
 
@@ -1412,7 +1412,7 @@ behavior.
 Output files
 ------------
 
-For most of the SKLL tasks the various output files generated by :ref:`run_experiment <run_experiment>` share the automatically generated prefix 
+For most of the SKLL tasks the various output files generated by :ref:`run_experiment <run_experiment>` share the automatically generated prefix
 ``<EXPERIMENT>_<FEATURESET>_<LEARNER>_<OBJECTIVE>``, where the following definitions hold:
 
     ``<EXPERIMENT>``
@@ -1422,16 +1422,16 @@ For most of the SKLL tasks the various output files generated by :ref:`run_exper
         The components of the feature set that was used for training, joined with "+".
 
     ``<LEARNER>``
-        The learner that was used to generate the current results/model/etc. 
+        The learner that was used to generate the current results/model/etc.
 
     ``<OBJECTIVE>``
         The objective function that was used to generate the current results/model/etc.
 
-.. note:: 
+.. note::
 
-    In SKLL terminology, a specific combination of featuresets, learners, 
+    In SKLL terminology, a specific combination of featuresets, learners,
     and objectives specified in the configuration file is called a ``job``.
-    Therefore, an experiment (represented by a configuration file) can  
+    Therefore, an experiment (represented by a configuration file) can
     contain multiple jobs.
 
     However, if the :ref:`objectives <objectives>` field in the configuration file
@@ -1454,7 +1454,7 @@ and a single, top level log file for the entire experiment. Each of the job
 log files have the usual job prefix as described above whereas the experiment
 log file is simply named ``<EXPERIMENT>.log``.
 
-While the job-level log files contain messages that pertain to the specific 
+While the job-level log files contain messages that pertain to the specific
 characteristics of the job (e.g., warnings from scikit-learn pertaining to
 the specific learner), the experiment-level log file will contain logging
 messages that pertain to the overall experiment and configuration file (e.g.,
@@ -1478,7 +1478,7 @@ Model files
 Model files end in ``.model`` and are serialized :py:mod:`skll.learner.Learner`
 instances. :ref:`run_experiment <run_experiment>` will re-use existing model
 files if they exist, unless it is explicitly told not to. These model files
-can also be loaded programmatically via the SKLL API, specifically the 
+can also be loaded programmatically via the SKLL API, specifically the
 :py:mod:`skll.learner.Learner.from_file()` method.
 
 .. _output_results_files:
@@ -1486,12 +1486,12 @@ can also be loaded programmatically via the SKLL API, specifically the
 Results files
 ^^^^^^^^^^^^^
 
-SKLL generates two types of result files: 
+SKLL generates two types of result files:
 
 1. Files ending in ``.results`` which contain a human-readable summary of the
    job, complete with confusion matrix, objective function score on the test set,
    and values of any additional metrics specified via the :ref:`metrics <metrics>`
-   configuration file option. 
+   configuration file option.
 
 2. Files ending in ``.results.json``, which contain all of the same information as the
    ``.results`` files, but in a format more well-suited to automated processing. In
@@ -1506,8 +1506,8 @@ Prediction files
 ^^^^^^^^^^^^^^^^
 
 Predictions files are TSV files that contain either the predicted
-values (for regression) OR predicted labels/class probabiltiies 
-(for classification) for each instance in the test feature set. 
+values (for regression) OR predicted labels/class probabiltiies
+(for classification) for each instance in the test feature set.
 The value of the :ref:`probability <probability>` option decides whether SKLL
 outputs the labels or the probabilities.
 
@@ -1531,7 +1531,7 @@ Summary file
 
 For every experiment you run, there will also be an experiment summary file
 generated that is a tab-delimited file summarizing the results for each
-job in the experiment. It is named ``<EXPERIMENT>_summary.tsv``. 
+job in the experiment. It is named ``<EXPERIMENT>_summary.tsv``.
 For :ref:`learning_curve <learning_curve>` experiments, this summary
 file will contain training set sizes and the averaged scores for all
 combinations of featuresets, learners, and objectives.

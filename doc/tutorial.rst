@@ -4,7 +4,7 @@
 Tutorial
 ========
 
-Before doing anything below, you'll want to :ref:`install SKLL <install>`. 
+Before doing anything below, you'll want to :ref:`install SKLL <install>`.
 
 Workflow
 --------
@@ -34,9 +34,9 @@ from Kaggle and included them in the SKLL repository. Next, we need to get the f
 and process them to get them in the right shape.
 
 The provided script, :download:`make_titanic_example_data.py <../examples/make_titanic_example_data.py>`, will split the train and test data files
-from Kaggle up into groups of related features and store them in 
-``dev``, ``test``, ``train``, and ``train+dev`` subdirectories.  
-The development set that gets created by the script is 20% of the data 
+from Kaggle up into groups of related features and store them in
+``dev``, ``test``, ``train``, and ``train+dev`` subdirectories.
+The development set that gets created by the script is 20% of the data
 that was in the original training set, and ``train`` contains the other 80%.
 
 Create a configuration file for the experiment
@@ -219,7 +219,7 @@ An example of a human-readable results file for our Titanic experiment is::
 
 IRIS Example on Binder
 ----------------------
-If you prefer using an interactive Jupyter notebook to learn about SKLL, you can do so by clicking the launch button below. 
+If you prefer using an interactive Jupyter notebook to learn about SKLL, you can do so by clicking the launch button below.
 
 .. image:: https://static.mybinder.org/badge_logo.svg
  :target: https://mybinder.org/v2/gh/EducationalTestingService/skll/main?filepath=examples%2FTutorial.ipynb

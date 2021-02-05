@@ -6,27 +6,29 @@ Module containing tests for custom metrics.
 """
 
 import json
+import sys
 from glob import glob
 from os.path import join
-import sys
 
 import numpy as np
-import skll.metrics
-
 from nose.tools import assert_almost_equal, eq_, ok_, raises, with_setup
-from numpy.testing import (assert_array_equal,
-                           assert_array_almost_equal,
-                           assert_raises_regex)
+from numpy.testing import (
+    assert_array_almost_equal,
+    assert_array_equal,
+    assert_raises_regex,
+)
+from sklearn.metrics import SCORERS, fbeta_score
 
-from sklearn.metrics import fbeta_score, SCORERS
+import skll.metrics
 from skll import Learner, run_configuration
 from skll.data import NDJReader
 from skll.metrics import _CUSTOM_METRICS, register_custom_metric, use_score_func
-
 from tests import config_dir, other_dir, output_dir
-from tests.utils import (fill_in_config_paths_for_single_file,
-                         make_classification_data, unlink)
-
+from tests.utils import (
+    fill_in_config_paths_for_single_file,
+    make_classification_data,
+    unlink,
+)
 
 
 def setup_func():

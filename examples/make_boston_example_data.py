@@ -28,7 +28,6 @@ def main():
     print('done')
     sys.stdout.flush()
 
-
     X = boston_data['data']
     Y = boston_data['target']
 

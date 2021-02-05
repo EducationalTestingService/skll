@@ -5,6 +5,7 @@
 
 variables:
   MPLBACKEND: Agg
+  PYTHON_VERSION: 3.8
 
 trigger:
   branches:
@@ -35,7 +36,7 @@ jobs:
       pip install -e .
     displayName: 'Install dependencies & code'
 
-  - powershell: ./DistributeTests.ps1 
+  - powershell: ./DistributeTests.ps1
     displayName: 'PowerShell Script to distribute tests'
 
   - script: |

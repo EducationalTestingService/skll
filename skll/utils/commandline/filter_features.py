@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # License: BSD 3 clause
 '''
-Script that filters a given feature file to remove unwanted features, labels,
-or IDs.
+Filter a given feature file to remove unwanted features, labels, or IDs.
 
 :author: Dan Blanchard (dblanchard@ets.org)
+:author: Nitin Madnani (nmadnani@ets.org)
 :organization: ETS
 '''
 
@@ -14,7 +14,7 @@ import os
 import sys
 
 from skll.data.readers import EXT_TO_READER, safe_float
-from skll.data.writers import ARFFWriter, CSVWriter, TSVWriter, EXT_TO_WRITER
+from skll.data.writers import EXT_TO_WRITER, ARFFWriter, CSVWriter, TSVWriter
 from skll.version import __version__
 
 
@@ -35,10 +35,14 @@ def main(argv=None):
                     " features that do not match the specified patterns.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
-    parser.add_argument('infile',
+    parser.add_argument('-i', '--input',
+                        dest='infile',
+                        required=True,
                         help='input feature file (ends in .arff, .csv, '
                              '.jsonlines, .ndj, or .tsv)')
-    parser.add_argument('outfile',
+    parser.add_argument('-o', '--output',
+                        dest='outfile',
+                        required=True,
                         help='output feature file (must have same extension '
                              'as input file)')
     parser.add_argument('-f', '--feature',
@@ -54,7 +58,7 @@ def main(argv=None):
                         help='Name of the column which contains the instance '
                              'IDs in ARFF, CSV, or TSV files.',
                         default='id')
-    parser.add_argument('-i', '--inverse',
+    parser.add_argument('--inverse',
                         help='Instead of keeping features and/or examples in '
                              'lists, remove them.',
                         action='store_true')
@@ -137,8 +141,16 @@ def main(argv=None):
                                             **kwargs)
     feature_set = reader.read()
 
+    # convert the specified labels with `safe_float` before using
+    # to match what the various featureset readers do
+    converted_labels = None
+    if args.label:
+        converted_labels = [safe_float(label) for label in args.label]
+
     # Do the actual filtering
-    feature_set.filter(ids=args.id, labels=args.label, features=args.feature,
+    feature_set.filter(ids=args.id,
+                       labels=converted_labels,
+                       features=args.feature,
                        inverse=args.inverse)
 
     # write out the file in the requested output format

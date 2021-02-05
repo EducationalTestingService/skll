@@ -9,18 +9,13 @@ Metrics that can be used to evaluate the performance of learners.
 """
 
 import sys
-
 from importlib import import_module
 from inspect import signature
 from os.path import abspath, basename, dirname, exists
 
 import numpy as np
-from scipy.stats import kendalltau, spearmanr, pearsonr
-from sklearn.metrics import (confusion_matrix,
-                             f1_score,
-                             make_scorer,
-                             SCORERS)
-
+from scipy.stats import kendalltau, pearsonr, spearmanr
+from sklearn.metrics import SCORERS, confusion_matrix, f1_score, make_scorer
 
 # a set that will hold the names of any custom metrics;
 # this is a private variable only meant for internal use

@@ -13,7 +13,7 @@ import os
 import sys
 
 from skll.data.readers import EXT_TO_READER
-from skll.data.writers import ARFFWriter, CSVWriter, TSVWriter, EXT_TO_WRITER
+from skll.data.writers import EXT_TO_WRITER, ARFFWriter, CSVWriter, TSVWriter
 from skll.version import __version__
 
 

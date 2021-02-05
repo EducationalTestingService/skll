@@ -13,18 +13,15 @@ import csv
 import itertools
 import json
 import re
-
 from glob import glob
-from os.path import join, exists
+from os.path import exists, join
 from pathlib import Path
 
 import numpy as np
-
-from nose.tools import assert_less, assert_greater, eq_, raises
+from nose.tools import assert_greater, assert_less, eq_, raises
 from numpy.testing import assert_almost_equal
-
-from sklearn.feature_extraction import FeatureHasher
 from sklearn.datasets import make_classification
+from sklearn.feature_extraction import FeatureHasher
 from sklearn.model_selection import StratifiedKFold
 
 from skll.config import load_cv_folds
@@ -32,12 +29,13 @@ from skll.data import FeatureSet
 from skll.experiments import load_featureset, run_configuration
 from skll.learner import Learner
 from skll.utils.constants import KNOWN_DEFAULT_PARAM_GRIDS
-
 from tests import config_dir, other_dir, output_dir, train_dir
-from tests.utils import (create_jsonlines_feature_files,
-                         fill_in_config_paths_for_single_file,
-                         remove_jsonlines_feature_files,
-                         unlink)
+from tests.utils import (
+    create_jsonlines_feature_files,
+    fill_in_config_paths_for_single_file,
+    remove_jsonlines_feature_files,
+    unlink,
+)
 
 _ALL_MODELS = list(KNOWN_DEFAULT_PARAM_GRIDS.keys())
 

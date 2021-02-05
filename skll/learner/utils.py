@@ -12,7 +12,6 @@ import inspect
 import logging
 import os
 import sys
-
 from collections import Counter, defaultdict
 from csv import DictWriter, excel_tab
 from functools import wraps
@@ -22,21 +21,27 @@ import numpy as np
 import scipy.sparse as sp
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.feature_selection import SelectKBest
-from sklearn.metrics import (accuracy_score,
-                             confusion_matrix,
-                             precision_recall_fscore_support)
-from sklearn.model_selection import (KFold,
-                                     LeaveOneGroupOut,
-                                     ShuffleSplit,
-                                     StratifiedKFold)
+from sklearn.metrics import (
+    accuracy_score,
+    confusion_matrix,
+    precision_recall_fscore_support,
+)
+from sklearn.model_selection import (
+    KFold,
+    LeaveOneGroupOut,
+    ShuffleSplit,
+    StratifiedKFold,
+)
 
 from skll.data import FeatureSet
 from skll.metrics import _CUSTOM_METRICS, use_score_func
-from skll.utils.constants import (CLASSIFICATION_ONLY_METRICS,
-                                  CORRELATION_METRICS,
-                                  REGRESSION_ONLY_METRICS,
-                                  UNWEIGHTED_KAPPA_METRICS,
-                                  WEIGHTED_KAPPA_METRICS)
+from skll.utils.constants import (
+    CLASSIFICATION_ONLY_METRICS,
+    CORRELATION_METRICS,
+    REGRESSION_ONLY_METRICS,
+    UNWEIGHTED_KAPPA_METRICS,
+    WEIGHTED_KAPPA_METRICS,
+)
 
 
 class Densifier(BaseEstimator, TransformerMixin):

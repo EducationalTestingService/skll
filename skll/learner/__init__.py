@@ -20,24 +20,37 @@ import joblib
 import numpy as np
 import scipy.sparse as sp
 from sklearn.dummy import DummyClassifier, DummyRegressor
-from sklearn.ensemble import (AdaBoostClassifier, AdaBoostRegressor,
-                              GradientBoostingClassifier,
-                              GradientBoostingRegressor,
-                              RandomForestClassifier, RandomForestRegressor)
+from sklearn.ensemble import (
+    AdaBoostClassifier,
+    AdaBoostRegressor,
+    GradientBoostingClassifier,
+    GradientBoostingRegressor,
+    RandomForestClassifier,
+    RandomForestRegressor,
+)
 from sklearn.feature_extraction import DictVectorizer as OldDictVectorizer
 from sklearn.feature_extraction import FeatureHasher
-from sklearn.kernel_approximation import (Nystroem, RBFSampler,
-                                          SkewedChi2Sampler)
-from sklearn.linear_model import (BayesianRidge, ElasticNet, HuberRegressor,
-                                  Lars, Lasso, LinearRegression,
-                                  LogisticRegression, RANSACRegressor, Ridge,
-                                  RidgeClassifier, SGDClassifier, SGDRegressor,
-                                  TheilSenRegressor)
+from sklearn.kernel_approximation import Nystroem, RBFSampler, SkewedChi2Sampler
+from sklearn.linear_model import (
+    BayesianRidge,
+    ElasticNet,
+    HuberRegressor,
+    Lars,
+    Lasso,
+    LinearRegression,
+    LogisticRegression,
+    RANSACRegressor,
+    Ridge,
+    RidgeClassifier,
+    SGDClassifier,
+    SGDRegressor,
+    TheilSenRegressor,
+)
 from sklearn.linear_model._base import LinearModel
 from sklearn.metrics import make_scorer
 from sklearn.model_selection import GridSearchCV
 from sklearn.naive_bayes import MultinomialNB
-from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
+from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor  # noqa: F401
 from sklearn.neural_network import MLPClassifier, MLPRegressor
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
@@ -50,20 +63,31 @@ from skll.data import FeatureSet
 from skll.data.dict_vectorizer import DictVectorizer
 from skll.data.readers import safe_float
 from skll.metrics import SCORERS
-from skll.utils.constants import (CORRELATION_METRICS,
-                                  KNOWN_DEFAULT_PARAM_GRIDS,
-                                  KNOWN_REQUIRES_DENSE,
-                                  MAX_CONCURRENT_PROCESSES)
+from skll.utils.constants import (
+    CORRELATION_METRICS,
+    KNOWN_DEFAULT_PARAM_GRIDS,
+    KNOWN_REQUIRES_DENSE,
+    MAX_CONCURRENT_PROCESSES,
+)
 from skll.version import VERSION
 
-from .utils import (Densifier, FilteredLeaveOneGroupOut, SelectByMinCount,
-                    add_unseen_labels, compute_evaluation_metrics,
-                    compute_num_folds_from_example_counts,
-                    get_acceptable_classification_metrics,
-                    get_acceptable_regression_metrics, get_predictions,
-                    load_custom_learner, rescaled, setup_cv_fold_iterator,
-                    setup_cv_split_iterator, train_and_score,
-                    write_predictions)
+from .utils import (
+    Densifier,
+    FilteredLeaveOneGroupOut,
+    SelectByMinCount,
+    add_unseen_labels,
+    compute_evaluation_metrics,
+    compute_num_folds_from_example_counts,
+    get_acceptable_classification_metrics,
+    get_acceptable_regression_metrics,
+    get_predictions,
+    load_custom_learner,
+    rescaled,
+    setup_cv_fold_iterator,
+    setup_cv_split_iterator,
+    train_and_score,
+    write_predictions,
+)
 
 # we need a list of learners requiring dense input and a dictionary of
 # default parameter grids that we can dynamically update in case we
@@ -141,7 +165,7 @@ class Learner(object):
         Defaults to ``None``.
     """
 
-    def __init__(self,
+    def __init__(self,  # noqa: C901
                  model_type,
                  probability=False,
                  pipeline=False,
@@ -193,9 +217,18 @@ class Learner(object):
         self._probability = None
         # Use setter to set self.probability
         self.probability = probability
+
+        # we need to use dense features under certain conditions:
+        # - if we are using any of the estimators that are _known_
+        #   to accept only dense features
+        # - if we are doing centering as part of feature scaling
+        # - if we are using non-negative least squares regression
         self._use_dense_features = \
             (issubclass(self._model_type, _REQUIRES_DENSE) or
-             self._feature_scaling in {'with_mean', 'both'})
+                self._feature_scaling in {'with_mean', 'both'} or
+                (issubclass(self._model_type, LinearRegression) and
+                    model_kwargs is not None and
+                    model_kwargs.get("positive", False)))
 
         # Set default keyword arguments for models that we have some for.
         if issubclass(self._model_type, SVC):
@@ -637,8 +670,14 @@ class Learner(object):
                                     "labels.  Convert them to integers or "
                                     "floats.")
 
-        # make sure that feature values are not strings
-        for val in examples.features.data:
+        # make sure that feature values are not strings; to check this
+        # we need to get a flattened version of the feature array,
+        # whether it is sparse (more likely) or dense
+        if sp.issparse(examples.features):
+            flattened_features = examples.features.data
+        else:
+            flattened_features = examples.features.flat
+        for val in flattened_features:
             if isinstance(val, str):
                 raise TypeError("You have feature values that are strings.  "
                                 "Convert them to floats.")
@@ -735,7 +774,7 @@ class Learner(object):
                                          with_mean=False,
                                          with_std=False)
 
-    def train(self,
+    def train(self,  # noqa: C901
               examples,
               param_grid=None,
               grid_search_folds=3,
@@ -973,13 +1012,16 @@ class Learner(object):
                 folds = kfold.split(examples.features, examples.labels, fold_groups)
 
             # limit the number of grid_jobs to be no higher than five or the
-            # number of cores for the machine, whichever is lower
+            # number of cores for the machine, whichever is lower; we set
+            # `error_score` to "raise" since we want scikit-learn to explicitly
+            # raise an exception if the estimator fails to fit for any reason
             grid_jobs = min(grid_jobs, cpu_count(), MAX_CONCURRENT_PROCESSES)
             grid_searcher = GridSearchCV(estimator,
                                          param_grid,
                                          scoring=grid_objective,
                                          cv=folds,
                                          n_jobs=grid_jobs,
+                                         error_score="raise",
                                          pre_dispatch=grid_jobs)
 
             # run the grid search for hyperparameters
@@ -1164,7 +1206,7 @@ class Learner(object):
                objective_score, metric_scores)
         return res
 
-    def predict(self,
+    def predict(self,  # noqa: C901
                 examples,
                 prediction_prefix=None,
                 append=False,
@@ -1738,6 +1780,7 @@ class Learner(object):
         out = np.asarray(out).transpose((2, 1, 0))
 
         return list(out[0]), list(out[1]), list(train_sizes_abs)
+
 
 # Rescaled regressors
 @rescaled

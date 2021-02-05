@@ -9,10 +9,9 @@ Utility classes and functions for running SKLL experiments.
 
 import json
 import math
+from collections import defaultdict
 
 import numpy as np
-
-from collections import defaultdict
 from tabulate import tabulate
 
 from skll.utils.logging import get_skll_logger

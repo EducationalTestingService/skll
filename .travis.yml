@@ -1,6 +1,6 @@
 language: python
 python:
-  - 3.6
+  - 3.7
 notifications:
   email: false
   slack:
@@ -35,4 +35,3 @@ script:
 # Calculate coverage
 after_success:
   - codecov
-

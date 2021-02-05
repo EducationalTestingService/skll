@@ -3,7 +3,6 @@ Utility functions to make SKLL testing simpler.
 """
 
 import re
-
 from collections import OrderedDict
 from math import floor, log10
 from os.path import exists, join
@@ -12,17 +11,18 @@ from typing import Union
 
 import numpy as np
 from numpy.random import RandomState
-from sklearn.datasets import (fetch_california_housing,
-                              load_digits,
-                              make_classification,
-                              make_regression)
+from sklearn.datasets import (
+    fetch_california_housing,
+    load_digits,
+    make_classification,
+    make_regression,
+)
 from sklearn.feature_extraction import FeatureHasher
 from sklearn.model_selection import ShuffleSplit
 
-from skll.data import FeatureSet, NDJWriter
 from skll.config import _setup_config_parser
-
-from tests import _my_dir, output_dir, train_dir, test_dir
+from skll.data import FeatureSet, NDJWriter
+from tests import _my_dir, output_dir, test_dir, train_dir
 
 
 def unlink(file_path: Union[str, Path]):

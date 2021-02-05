@@ -16,11 +16,11 @@ from pathlib import Path
 import numpy as np
 from nose.tools import raises
 from numpy.testing import assert_array_equal
+
 from skll.data import NDJWriter
 from skll.experiments import run_configuration
 from skll.learner import Learner
 from skll.utils.constants import KNOWN_DEFAULT_PARAM_GRIDS
-
 from tests import config_dir, other_dir, output_dir, test_dir, train_dir
 from tests.utils import fill_in_config_paths, make_classification_data, unlink
 
