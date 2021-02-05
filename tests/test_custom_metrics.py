@@ -20,8 +20,9 @@ from numpy.testing import (
 from sklearn.metrics import SCORERS, fbeta_score
 
 import skll.metrics
-from skll import Learner, run_configuration
 from skll.data import NDJReader
+from skll.experiments import run_configuration
+from skll.learner import Learner
 from skll.metrics import _CUSTOM_METRICS, register_custom_metric, use_score_func
 from tests import config_dir, other_dir, output_dir
 from tests.utils import (

@@ -17,7 +17,7 @@ import numpy as np
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC, LinearSVC
 
-from skll import Learner
+from skll.learner import Learner
 from skll.version import __version__
 
 
