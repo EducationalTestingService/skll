@@ -33,8 +33,9 @@ from sklearn.naive_bayes import MultinomialNB
 from sklearn.pipeline import Pipeline
 from sklearn.svm import SVC, SVR
 
-from skll import Learner, run_configuration
 from skll.data import FeatureSet, NDJReader
+from skll.experiments import run_configuration
+from skll.learner import Learner
 from skll.learner.voting import VotingLearner
 from skll.utils.logging import close_and_remove_logger_handlers, get_skll_logger
 from tests.other.custom_logistic_wrapper import CustomLogisticRegressionWrapper

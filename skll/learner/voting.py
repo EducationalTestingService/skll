@@ -18,8 +18,8 @@ from sklearn.ensemble import VotingClassifier, VotingRegressor
 from sklearn.utils import shuffle as sk_shuffle
 from sklearn.utils.multiclass import type_of_target
 
-from skll import Learner
 from skll.data import FeatureSet
+from skll.learner import Learner
 from skll.utils.constants import MAX_CONCURRENT_PROCESSES
 
 from .utils import (
