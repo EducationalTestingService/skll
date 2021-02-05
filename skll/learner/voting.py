@@ -130,7 +130,8 @@ class VotingLearner(object):
         self.sampler_list = [] if sampler_list is None else sampler_list
         self.sampler_kwargs_list = [] if sampler_kwargs_list is None else sampler_kwargs_list
 
-        # check that the arguments that are supposed to be lists are lists
+        # check that the arguments that are supposed to be lists are lists;
+        # if they are `None`, set them to be empty lists
         for argument_name in ["model_kwargs_list",
                               "sampler_list",
                               "sampler_kwargs_list"]:
@@ -143,6 +144,18 @@ class VotingLearner(object):
                                      f"specified {argument_value}")
                 else:
                     setattr(self, argument_name, argument_value)
+
+        # check that the list arguments, if not empty, have the right length
+        for attribute_name in ["model_kwargs_list",
+                               "sampler_list",
+                               "sampler_kwargs_list"]:
+            attribute_value = getattr(self, attribute_name)
+            try:
+                assert (len(attribute_value) == 0 or
+                        len(attribute_value) == len(learner_names))
+            except AssertionError:
+                raise ValueError(f"'{attribute_name}' must have {len(learner_names)} "
+                                 "entries, same as the number of learners")
 
         # instantiate each of the given estimators
         self._learners = []
@@ -169,7 +182,7 @@ class VotingLearner(object):
             self._learners.append(learner)
 
         # infer what type of metalearner we have - a classifier or
-        # a regressor, it can only be one or the other
+        # a regressor; it can only be one or the other
         try:
             assert (len(learner_types) == 1 and
                     (learner_types == {"classifier"} or
