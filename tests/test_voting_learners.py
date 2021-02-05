@@ -203,6 +203,37 @@ def test_initialize():
                sampler_list)
 
 
+def test_initialize_incorrect_model_kwargs_list():
+    assert_raises_regex(ValueError,
+                        r"must have 3 entries",
+                        VotingLearner,
+                        ["SVC", "LogisticRegression", "MultinomialNB"],
+                        model_kwargs_list=[{"C": 0.01}, {"C": 0.1}])
+
+
+def test_initialize_incorrect_sampler_list():
+    assert_raises_regex(ValueError,
+                        r"must have 3 entries",
+                        VotingLearner,
+                        ["SVC", "LogisticRegression", "MultinomialNB"],
+                        sampler_list=["RBFSampler"])
+
+
+def test_initialize_incorrect_sampler_kwargs_list():
+    assert_raises_regex(ValueError,
+                        r"must have 3 entries",
+                        VotingLearner,
+                        ["SVC", "LogisticRegression", "MultinomialNB"],
+                        sampler_kwargs_list=[{"gamma": 1.0}])
+
+
+def test_intialize_bad_learner_types():
+    assert_raises_regex(ValueError,
+                        r"cannot mix classifiers and regressors",
+                        VotingLearner,
+                        ["SVC", "LinearRegression", "MultinomialNB"])
+
+
 def check_train(learner_type, with_grid_search):
     """Run checks when training voting learners."""
 
