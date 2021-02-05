@@ -53,7 +53,7 @@ labels.  Can also be used to remove/keep feature columns.
              versions of SKLL. Specifically:
 
              #. The input and output files must now be specified with ``-i``
-                and ``-o`` respectively
+                and ``-o`` respectively.
 
              #. ``--inverse`` must now be used to invert the filtering command
                 since ``-i`` is used to specify the input file.
