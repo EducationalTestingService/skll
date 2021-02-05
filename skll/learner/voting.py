@@ -22,11 +22,17 @@ from skll import Learner
 from skll.data import FeatureSet
 from skll.utils.constants import MAX_CONCURRENT_PROCESSES
 
-from .utils import (add_unseen_labels, compute_evaluation_metrics,
-                    get_acceptable_classification_metrics,
-                    get_acceptable_regression_metrics, get_predictions,
-                    setup_cv_fold_iterator, setup_cv_split_iterator,
-                    train_and_score, write_predictions)
+from .utils import (
+    add_unseen_labels,
+    compute_evaluation_metrics,
+    get_acceptable_classification_metrics,
+    get_acceptable_regression_metrics,
+    get_predictions,
+    setup_cv_fold_iterator,
+    setup_cv_split_iterator,
+    train_and_score,
+    write_predictions,
+)
 
 
 class VotingLearner(object):

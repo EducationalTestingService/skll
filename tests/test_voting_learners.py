@@ -12,17 +12,23 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from nose.tools import (assert_almost_equal, assert_is_not_none, eq_, ok_,
-                        raises)
-from numpy.testing import (assert_allclose, assert_array_almost_equal,
-                           assert_array_equal, assert_raises_regex)
+from nose.tools import assert_almost_equal, assert_is_not_none, eq_, ok_, raises
+from numpy.testing import (
+    assert_allclose,
+    assert_array_almost_equal,
+    assert_array_equal,
+    assert_raises_regex,
+)
 from scipy.stats import pearsonr
-from sklearn.ensemble import (RandomForestRegressor, VotingClassifier,
-                              VotingRegressor)
+from sklearn.ensemble import RandomForestRegressor, VotingClassifier, VotingRegressor
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.metrics import accuracy_score, f1_score, mean_squared_error
-from sklearn.model_selection import (PredefinedSplit, ShuffleSplit,
-                                     cross_val_predict, learning_curve)
+from sklearn.model_selection import (
+    PredefinedSplit,
+    ShuffleSplit,
+    cross_val_predict,
+    learning_curve,
+)
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.pipeline import Pipeline
 from sklearn.svm import SVC, SVR
@@ -30,12 +36,14 @@ from sklearn.svm import SVC, SVR
 from skll import Learner, run_configuration
 from skll.data import FeatureSet, NDJReader
 from skll.learner.voting import VotingLearner
-from skll.utils.logging import (close_and_remove_logger_handlers,
-                                get_skll_logger)
+from skll.utils.logging import close_and_remove_logger_handlers, get_skll_logger
 from tests.other.custom_logistic_wrapper import CustomLogisticRegressionWrapper
-from tests.utils import (fill_in_config_paths_for_single_file,
-                         make_california_housing_data,
-                         make_classification_data, make_digits_data)
+from tests.utils import (
+    fill_in_config_paths_for_single_file,
+    make_california_housing_data,
+    make_classification_data,
+    make_digits_data,
+)
 
 # define some constants needed for testing
 MY_DIR = Path(__file__).parent.resolve()
