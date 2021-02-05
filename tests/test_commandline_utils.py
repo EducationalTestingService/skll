@@ -29,7 +29,7 @@ except ImportError:
 from nose.plugins.logcapture import LogCapture
 from nose.tools import assert_almost_equal, eq_, raises
 from numpy import concatenate
-from numpy.testing import assert_allclose, assert_array_almost_equal
+from numpy.testing import assert_allclose, assert_array_almost_equal, assert_array_equal
 from pandas.testing import assert_frame_equal
 from sklearn.feature_extraction import FeatureHasher
 from sklearn.linear_model import SGDClassifier, SGDRegressor
@@ -88,6 +88,7 @@ def tearDown():
                          join(output_dir, 'test_generate_predictions_console.model*'),
                          join(other_dir, 'test_skll_convert*'),
                          join(other_dir, 'test_join_features*'),
+                         join(other_dir, 'test_filter_features_labels*'),
                          join(other_dir, 'features', 'features*')]:
         for f in glob(glob_pattern):
             unlink(f)
@@ -1312,7 +1313,7 @@ def check_filter_features_no_arff_argparse(extension, filter_type,
     # create a simple featureset with actual ids, labels and features
     fs, _ = make_classification_data(num_labels=3, train_test_ratio=1.0)
 
-    ff_cmd_args = [infile, outfile]
+    ff_cmd_args = ['-i', infile, '-o', outfile]
 
     if filter_type == 'feature':
         if inverse:
@@ -1337,21 +1338,25 @@ def check_filter_features_no_arff_argparse(extension, filter_type,
             ff_cmd_args.append(idee)
 
     elif filter_type == 'label':
+        # any numeric labels will get converted to integers via
+        # `safe_float` before they get passed to `FeatureSet.filter()`
         if inverse:
-            labels_to_keep = ['0', '1']
+            label_values = ['0', '1']
+            labels_to_keep = [0, 1]
         else:
-            labels_to_keep = ['2']
+            label_values = ['2']
+            labels_to_keep = [2]
 
         ff_cmd_args.append('-L')
 
-        for lbl in labels_to_keep:
+        for lbl in label_values:
             ff_cmd_args.append(lbl)
 
     ff_cmd_args.extend(['-l', label_col])
     ff_cmd_args.extend(['--id_col', id_col])
 
     if inverse:
-        ff_cmd_args.append('-i')
+        ff_cmd_args.append('--inverse')
 
     if quiet:
         ff_cmd_args.append('-q')
@@ -1438,7 +1443,7 @@ def check_filter_features_arff_argparse(filter_type, label_col='y',
     writer = writer_class(infile, fs, label_col=label_col, id_col=id_col)
     writer.write()
 
-    ff_cmd_args = [infile, outfile]
+    ff_cmd_args = ['-i', infile, '-o', outfile]
 
     if filter_type == 'feature':
         if inverse:
@@ -1463,21 +1468,25 @@ def check_filter_features_arff_argparse(filter_type, label_col='y',
             ff_cmd_args.append(idee)
 
     elif filter_type == 'label':
+        # any numeric labels will get converted to integers via
+        # `safe_float` before they get passed to `FeatureSet.filter()`
         if inverse:
-            labels_to_keep = ['0', '1']
+            label_values = ['0', '1']
+            labels_to_keep = [0, 1]
         else:
-            labels_to_keep = ['2']
+            label_values = ['2']
+            labels_to_keep = [2]
 
         ff_cmd_args.append('-L')
 
-        for lbl in labels_to_keep:
+        for lbl in label_values:
             ff_cmd_args.append(lbl)
 
     ff_cmd_args.extend(['-l', label_col])
     ff_cmd_args.extend(['--id_col', id_col])
 
     if inverse:
-        ff_cmd_args.append('-i')
+        ff_cmd_args.append('--inverse')
 
     if quiet:
         ff_cmd_args.append('-q')
@@ -1529,13 +1538,58 @@ def test_filter_features_arff_argparse():
                label_col, id_col, inverse, quiet)
 
 
+def check_filter_features_labels(extension, label_type):
+    """Make sure that labels are correctly converted before filtering"""
+
+    reader_class = EXT_TO_READER[extension]
+    writer_class = EXT_TO_WRITER[extension]
+
+    # create some dummy input and output filenames
+    infile = join(other_dir, f"test_filter_features_labels_input_{label_type}{extension}")
+    outfile = join(other_dir, f"test_filter_features_labels_output_{label_type}{extension}")
+
+    # create a simple featureset with 4 labels, either string or integer
+    if label_type == "integer":
+        fs, _ = make_classification_data(num_labels=4, train_test_ratio=1.0)
+    else:
+        fs, _ = make_classification_data(num_labels=4,
+                                         train_test_ratio=1.0,
+                                         string_label_list=['a', 'b', 'c', 'd'])
+
+    # write out this featuerset to disk
+    writer = writer_class(infile, fs, quiet=True)
+    writer.write()
+
+    # set up the arguments for the `filter_features` call and
+    # compute the IDs that we expect to be in the filtered output
+    if label_type == "integer":
+        ff_cmd_args = ["-i", infile, "-o", outfile, "-L", "1", "3", "-q"]
+        expected_ids = fs.ids[np.logical_or(fs.labels == 1, fs.labels == 3)]
+    else:
+        ff_cmd_args = ["-i", infile, "-o", outfile, "-L", "c", "d", "-q"]
+        expected_ids = fs.ids[np.logical_or(fs.labels == 'c', fs.labels == 'd')]
+
+    # call `filter_features`
+    ff.main(argv=ff_cmd_args)
+
+    # read in the output file and check that the filtered IDs match
+    filtered_fs = reader_class.for_path(outfile).read()
+    assert_array_equal(filtered_fs.ids, expected_ids)
+
+
+def test_filter_features_labels():
+    for extension, label_type in product([".jsonlines", ".ndj", ".tsv", ".csv"],
+                                         ["integer", "string"]):
+        yield check_filter_features_labels, extension, label_type
+
+
 @raises(SystemExit)
 def test_filter_features_libsvm_input_argparse():
     """
     Make sure filter_features exits when passing in input libsvm files
     """
 
-    ff_cmd_args = ['foo.libsvm', 'bar.csv', '-f', 'a', 'b', 'c']
+    ff_cmd_args = ['-f', 'a', 'b', 'c', '-i', 'foo.libsvm', '-o', 'bar.csv']
     ff.main(argv=ff_cmd_args)
 
 
@@ -1545,7 +1599,7 @@ def test_filter_features_libsvm_output_argparse():
     Make sure filter_features exits when passing in output libsvm files
     """
 
-    ff_cmd_args = ['foo.csv', 'bar.libsvm', '-f', 'a', 'b', 'c']
+    ff_cmd_args = ['-f', 'a', 'b', 'c', 'i', 'foo.csv', '-o', 'bar.libsvm']
     ff.main(argv=ff_cmd_args)
 
 
@@ -1555,7 +1609,7 @@ def test_filter_features_unknown_input_format():
     Make sure that filter_features exits when passing in an unknown input file format
     """
 
-    ff_cmd_args = ['foo.xxx', 'bar.csv', '-f', 'a', 'b', 'c']
+    ff_cmd_args = ['-f', 'a', 'b', 'c', '-i', 'foo.xxx', '-o', 'bar.csv']
     ff.main(argv=ff_cmd_args)
 
 
@@ -1564,7 +1618,7 @@ def test_filter_features_unknown_output_format():
     """
     Make sure that filter_features exits when passing in an unknown input file format
     """
-    ff_cmd_args = ['foo.csv', 'bar.xxx', '-f', 'a', 'b', 'c']
+    ff_cmd_args = ['-f', 'a', 'b', 'c', '-i', 'foo.csv', '-o', 'bar.xxx']
     ff.main(argv=ff_cmd_args)
 
 
@@ -1582,7 +1636,7 @@ def test_filter_features_unmatched_formats():
     # format
     for inext, outext in combinations(['.arff', '.ndj', '.tsv',
                                        '.jsonlines', '.csv'], 2):
-        ff_cmd_args = [f'foo{inext}', f'bar{outext}', '-f',
+        ff_cmd_args = ['-i', f'foo{inext}', '-o', f'bar{outext}', '-f',
                        'a', 'b', 'c']
         yield check_filter_features_raises_system_exit, ff_cmd_args
 
@@ -1762,8 +1816,14 @@ def test_filter_features_with_drop_blanks():
     df.to_csv(csv_infile, index=False)
     df.to_csv(tsv_infile, index=False, sep='\t')
 
-    filter_features_csv_cmd = [csv_infile, csv_outfile, '-l', 'L', '--drop_blanks']
-    filter_features_tsv_cmd = [tsv_infile, tsv_outfile, '-l', 'L', '--drop_blanks']
+    filter_features_csv_cmd = ['-i', csv_infile,
+                               '-o', csv_outfile,
+                               '-l', 'L',
+                               '--drop_blanks']
+    filter_features_tsv_cmd = ['-i', tsv_infile,
+                               '-o', tsv_outfile,
+                               '-l', 'L',
+                               '--drop_blanks']
 
     ff.main(filter_features_csv_cmd)
     ff.main(filter_features_tsv_cmd)
@@ -1807,9 +1867,13 @@ def test_filter_features_with_replace_blanks_with():
     df.to_csv(csv_infile, index=False)
     df.to_csv(tsv_infile, index=False, sep='\t')
 
-    filter_features_csv_cmd = [csv_infile, csv_outfile, '-l', 'L',
+    filter_features_csv_cmd = ['-i', csv_infile,
+                               '-o', csv_outfile,
+                               '-l', 'L',
                                '--replace_blanks_with', '4.5']
-    filter_features_tsv_cmd = [tsv_infile, tsv_outfile, '-l', 'L',
+    filter_features_tsv_cmd = ['-i', tsv_infile,
+                               '-o', tsv_outfile,
+                               '-l', 'L',
                                '--replace_blanks_with', '4.5']
 
     ff.main(filter_features_csv_cmd)
@@ -1840,7 +1904,8 @@ def test_filter_features_with_replace_blanks_with_and_drop_blanks_raises_error()
 
     df.to_csv(csv_infile, index=False)
 
-    filter_features_csv_cmd = [csv_infile, csv_outfile,
+    filter_features_csv_cmd = ['-i', csv_infile,
+                               '-o', csv_outfile,
                                '--drop_blanks',
                                '--replace_blanks_with', '4.5']
 
