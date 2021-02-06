@@ -11,12 +11,7 @@ common scikit-learn experiments with pre-generated features.
 
 from sklearn.metrics import SCORERS, f1_score, fbeta_score, make_scorer
 
-from .data import FeatureSet
-from .experiments import run_configuration
-from .learner import Learner
 from .metrics import correlation, f1_score_least_frequent, kappa
-
-__all__ = ["FeatureSet", "Learner", "run_configuration"]
 
 # Add our scorers to the sklearn dictionary here so that they will always be
 # available if you import anything from skll

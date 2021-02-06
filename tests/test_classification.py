@@ -32,9 +32,9 @@ from sklearn.metrics import (
 )
 from sklearn.utils import shuffle as sk_shuffle
 
-from skll import run_configuration
 from skll.config import parse_config_file
 from skll.data import FeatureSet, NDJReader, NDJWriter
+from skll.experiments import run_configuration
 from skll.learner import Learner
 from skll.learner.utils import (
     FilteredLeaveOneGroupOut,
