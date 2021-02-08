@@ -9,9 +9,11 @@ Utility classes and functions for running SKLL experiments.
 
 import json
 import math
+import re
 from collections import defaultdict
 
 import numpy as np
+from sklearn.pipeline import Pipeline
 from tabulate import tabulate
 
 from skll.utils.logging import get_skll_logger
@@ -32,6 +34,20 @@ class NumpyTypeEncoder(json.JSONEncoder):
             return int(obj)
         elif isinstance(obj, np.ndarray):
             return obj.tolist()
+        return json.JSONEncoder.default(self, obj)
+
+
+class PipelineTypeEncoder(json.JSONEncoder):
+    """
+    This class is used for serializing ``sklearn.pipline.Pipeline`` objects.
+    """
+
+    def default(self, obj):
+        if isinstance(obj, Pipeline):
+            pipeline_steps = str(obj.named_steps)
+            pipeline_steps = re.sub(r'\n', '', pipeline_steps)
+            pipeline_steps = re.sub(r'\s+', ' ', pipeline_steps)
+            return pipeline_steps
         return json.JSONEncoder.default(self, obj)
 
 
@@ -120,7 +136,11 @@ def _create_learner_result_dicts(task_results,
         if learner_result_dict_base['task'] == 'cross_validate':
             learner_result_dict['fold'] = k
 
-        learner_result_dict['model_params'] = json.dumps(model_params)
+        # include model parameters dump for regular learners only;
+        # we need to use a special JSON encoder for voting learners
+        # that contain ``Pipeline`` objects
+        learner_result_dict['model_params'] = json.dumps(model_params,
+                                                         cls=PipelineTypeEncoder)
         if grid_score is not None:
             learner_result_dict['grid_score'] = grid_score
             learner_result_dict['grid_search_cv_results'] = grid_search_cv_results

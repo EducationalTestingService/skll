@@ -592,8 +592,9 @@ class VotingLearner(object):
                                                      probability=self.voting == "soft",
                                                      logger=self.logger)
 
-        # add in the model parameters and return
-        model_params = self.model.get_params()
+        # add in the model parameters,excluding the ones
+        # for the underlying estimators, and return
+        model_params = self.model.get_params(deep=False)
         res = (conf_matrix, accuracy, result_dict, model_params,
                objective_score, metric_scores)
         return res

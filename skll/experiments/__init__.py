@@ -383,10 +383,12 @@ def _classify_featureset(args):  # noqa: C901
                 grid_scores = [None]
                 grid_search_cv_results_dicts = [None]
 
-            # print out the parameters
+            # print out the model parameters; note that for
+            # voting learners, we exclude the parameters for
+            # the underlying estimators
+            params = learner.model.get_params(deep=isinstance(learner, Learner))
             param_out = (f'{param_name}: {param_value}' for
-                         param_name, param_value in
-                         learner.model.get_params().items())
+                         param_name, param_value in params.items())
             logger.info(f"Hyperparameters: {', '.join(param_out)}")
 
             # run on test set or cross-validate on training data,
