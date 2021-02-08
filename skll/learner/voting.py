@@ -505,6 +505,7 @@ class VotingLearner(object):
                  prediction_prefix=None,
                  append=False,
                  grid_objective=None,
+                 individual_predictions=False,
                  output_metrics=[]):
         """
         Evaluates the meta-estimator on a given ``FeatureSet``.
@@ -526,6 +527,9 @@ class VotingLearner(object):
             The objective function that was used when doing
             the grid search.
             Defaults to ``None``.
+        individual_predictions : bool, optional
+            Optionally, write out the predictions from each underlying learner.
+            Defaults to ``False``.
         output_metrics : list of str, optional
             List of additional metric names to compute in
             addition to grid objective. Empty by default.
@@ -544,7 +548,8 @@ class VotingLearner(object):
         yhat, _ = self.predict(examples,
                                class_labels=False,
                                prediction_prefix=prediction_prefix,
-                               append=append)
+                               append=append,
+                               individual_predictions=individual_predictions)
 
         # for classifiers, convert class labels indices for consistency
         # but account for any unseen labels in the test set that may not
