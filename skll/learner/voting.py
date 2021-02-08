@@ -23,6 +23,8 @@ from skll.learner import Learner
 from skll.utils.constants import MAX_CONCURRENT_PROCESSES
 
 from .utils import (
+    _load_learner_from_disk,
+    _save_learner_to_disk,
     add_unseen_labels,
     compute_evaluation_metrics,
     get_acceptable_classification_metrics,
@@ -225,6 +227,42 @@ class VotingLearner(object):
         for learner in self.learners:
             learner._create_label_dict(examples)
             learner._train_setup(examples)
+
+    def save(self, learner_path):
+        """
+        Save the ``VotingLearner`` instance to a file.
+
+        Parameters
+        ----------
+        learner_path : str
+            The path to save the ``VotingLearner`` instance to.
+        """
+        _save_learner_to_disk(self, learner_path)
+
+    @classmethod
+    def from_file(cls, learner_path, logger=None):
+        """
+        Load a saved ``VotingLearner`` instance from a file.
+
+        Parameters
+        ----------
+        learner_path : str
+            The path to a saved ``VotingLearner`` instance file.
+        logger : logging object, optional
+            A logging object. If ``None`` is passed, get logger from ``__name__``.
+            Defaults to ``None``.
+
+        Returns
+        -------
+        learner : skll.learner.voting.VotingLearner
+            The ``VotingLearner`` instance loaded from the file.
+        """
+        # use the logger that's passed in or if nothing was passed in,
+        # then create a new logger
+        logger = logger if logger else logging.getLogger(__name__)
+
+        # call the learner loding utility function
+        return _load_learner_from_disk(cls, learner_path, logger)
 
     def train(self,
               examples,

@@ -16,7 +16,9 @@ from collections import Counter, defaultdict
 from csv import DictWriter, excel_tab
 from functools import wraps
 from importlib import import_module
+from pathlib import Path
 
+import joblib
 import numpy as np
 import scipy.sparse as sp
 from sklearn.base import BaseEstimator, TransformerMixin
@@ -42,6 +44,7 @@ from skll.utils.constants import (
     UNWEIGHTED_KAPPA_METRICS,
     WEIGHTED_KAPPA_METRICS,
 )
+from skll.version import VERSION
 
 
 class Densifier(BaseEstimator, TransformerMixin):
@@ -1143,3 +1146,79 @@ def write_predictions(example_ids,
 
             # write out the row
             writer.writerow(row)
+
+
+def _save_learner_to_disk(learner, filepath):
+    """
+    Save the given SKLL learner instance to disk.
+
+    NOTE: This function should only be used by the ``save()`` methods
+    for the various learner classes in SKLL.
+
+    Parameters
+    ----------
+    learner : skll.learner.Learner or skll.learner.voting.VotingLearner
+        A ``Learner`` or ``VotingLearner`` instance to save to disk.
+    filepath : str
+        The path to save the learner instance to.
+    """
+    # create the directory if it doesn't exist
+    learner_dir = Path(filepath).parent
+    if not learner_dir.exists():
+        learner_dir.mkdir(parents=True)
+    # write out the learner to disk
+    joblib.dump((VERSION, learner), filepath)
+
+
+def _load_learner_from_disk(learner_type, filepath, logger):
+    """
+    Load a saved instance of the given type from disk.
+
+    NOTE: This function should only be used by the ``from_file()``
+    methods for the various learner classes in SKLL.
+
+    Parameters
+    ----------
+    learner_type : skll.learner.Learner or skll.learner.voting.VotingLearner
+        The type of learner instance to load from disk.
+    filepath : str
+        The path to a saved ``Learner`` or ``VotingLearner`` file.
+    logger : logging object
+        A logging object.
+
+    Returns
+    -------
+    learner : skll.learner.Learner or skll.learner.voting.VotingLearner
+        The ``Learner`` or ``VotingLearner`` instance loaded from the file.
+
+    Raises
+    ------
+    ValueError
+        If the pickled version of the ``Learner`` instance is out of date.
+    """
+    skll_version, learner = joblib.load(filepath)
+
+    # Check that we've actually loaded an instance of the requested type
+    if not isinstance(learner, learner_type):
+        raise ValueError(f"'{filepath}' does not contain an object "
+                         f"of type '{learner_type.__name__}'.")
+
+    # set the learner logger attribute to the logger that's passed in
+    learner.logger = logger
+
+    # For backward compatibility, convert string model types to actual classes
+    if isinstance(learner._model_type, str):
+        learner._model_type = globals()[learner._model_type]
+
+    # check that versions are compatible
+    elif skll_version < (2, 5, 0):
+        model_version_str = '.'.join(map(str, skll_version))
+        current_version_str = '.'.join(map(str, VERSION))
+        raise ValueError(f"The learner stored in '{filepath}' was "
+                         f"created with v{model_version_str} of SKLL, "
+                         "which is incompatible with the current "
+                         f"v{current_version_str}.")
+    else:
+        if not hasattr(learner, 'sampler'):
+            learner.sampler = None
+        return learner
