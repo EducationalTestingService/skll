@@ -157,7 +157,7 @@ class VotingLearner(object):
                         len(attribute_value) == len(learner_names))
             except AssertionError:
                 raise ValueError(f"'{attribute_name}' must have {len(learner_names)} "
-                                 "entries, same as the number of learners")
+                                 "entries, same as the number of learners") from None
 
         # instantiate each of the given estimators
         self._learners = []
