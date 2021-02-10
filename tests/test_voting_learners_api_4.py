@@ -12,6 +12,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from nose.tools import assert_almost_equal, eq_, ok_
+from numpy.testing import assert_raises_regex
 from scipy.stats import pearsonr
 from sklearn.ensemble import VotingClassifier, VotingRegressor
 from sklearn.metrics import accuracy_score, f1_score, mean_squared_error
@@ -19,7 +20,11 @@ from sklearn.model_selection import PredefinedSplit, cross_val_predict
 
 from skll.learner.voting import VotingLearner
 from tests import other_dir, output_dir
-from tests.utils import make_california_housing_data, make_digits_data
+from tests.utils import (
+    make_california_housing_data,
+    make_classification_data,
+    make_digits_data,
+)
 
 # define some constants needed for testing
 TRAIN_FS_DIGITS, TEST_FS_DIGITS = make_digits_data(use_digit_names=True)
@@ -32,8 +37,36 @@ CUSTOM_LEARNER_PATH = Path(other_dir) / "custom_logistic_wrapper.py"
 
 def tearDown():
     """ Clean up after tests"""
-    for output_file_path in output_dir.glob("test_xval_voting_no_gs*"):
+    for output_file_path in Path(output_dir).glob("test_xval_voting_no_gs*"):
         output_file_path.unlink()
+
+
+def test_cross_validate_with_continuous_labels():
+    """Test that voting learner cross validation fails with continuous labels"""
+    fs, _ = make_classification_data(num_examples=500,
+                                     train_test_ratio=0.8,
+                                     num_labels=3,
+                                     non_negative=True)
+    fs.labels = fs.labels.astype(float) + 0.5
+    voting_learner = VotingLearner(["LogisticRegression", "SVC", "MultinomialNB"])
+    assert_raises_regex(ValueError,
+                        "must be encoded as strings",
+                        voting_learner.cross_validate,
+                        fs,
+                        grid_search=False)
+
+
+def test_cross_validate_grid_search_but_no_objective():
+    """Test that voting learner cross validation fails with continuous labels"""
+    fs, _ = make_classification_data(num_examples=500,
+                                     train_test_ratio=0.8,
+                                     num_labels=3,
+                                     non_negative=True)
+    voting_learner = VotingLearner(["LogisticRegression", "SVC", "MultinomialNB"])
+    assert_raises_regex(ValueError,
+                        "must either specify a grid objective",
+                        voting_learner.cross_validate,
+                        fs)
 
 
 def check_cross_validate_without_grid_search(learner_type, with_soft_voting):

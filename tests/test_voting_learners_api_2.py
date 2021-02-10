@@ -1,6 +1,6 @@
 # License: BSD 3 clause
 """
-Evaluation tests for voting learners.
+Evaluation and learning curve tests for voting learners.
 
 :author: Nitin Madnani (nmadnani@ets.org)
 :organization: ETS
