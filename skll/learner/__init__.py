@@ -29,7 +29,12 @@ from sklearn.ensemble import (
 )
 from sklearn.feature_extraction import DictVectorizer as OldDictVectorizer
 from sklearn.feature_extraction import FeatureHasher
-from sklearn.kernel_approximation import Nystroem, RBFSampler, SkewedChi2Sampler
+from sklearn.kernel_approximation import (  # noqa: F401
+    AdditiveChi2Sampler,
+    Nystroem,
+    RBFSampler,
+    SkewedChi2Sampler,
+)
 from sklearn.linear_model import (
     BayesianRidge,
     ElasticNet,
