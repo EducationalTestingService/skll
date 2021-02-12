@@ -284,13 +284,15 @@ def _classify_featureset(args):  # noqa: C901
             if custom_learner_path:
                 globals()[learner_name] = load_custom_learner(custom_learner_path, learner_name)
             train_set_size = 'unknown'
+
+            # load the non-custom learner from disk
             if exists(modelfile) and not overwrite:
                 logger.info(f"Loading pre-existing {learner_name} model: "
                             f"{modelfile}")
-            learner = Learner.from_file(modelfile)
-
-            # attach the job logger to this learner
-            learner.logger = logger
+            if learner_name in ["VotingClassifier", "VotingRegressor"]:
+                learner = VotingLearner.from_file(modelfile, logger=logger)
+            else:
+                learner = Learner.from_file(modelfile, logger=logger)
 
         # Load test set if there is one
         if task == 'evaluate' or task == 'predict':
@@ -413,7 +415,7 @@ def _classify_featureset(args):  # noqa: C901
                                                                   cv_folds=learning_curve_cv_folds,
                                                                   train_sizes=learning_curve_train_sizes)
         else:
-            # if we have do not have a saved model, we need to train one
+            # if we do not have a saved model, we need to train one
             grid_scores = [None]
             grid_search_cv_results_dicts = [None]
             if not exists(modelfile) or overwrite:

@@ -1203,13 +1203,6 @@ def _load_learner_from_disk(learner_type, filepath, logger):
         raise ValueError(f"'{filepath}' does not contain an object "
                          f"of type '{learner_type.__name__}'.")
 
-    # set the learner logger attribute to the logger that's passed in
-    learner.logger = logger
-
-    # For backward compatibility, convert string model types to actual classes
-    if isinstance(learner._model_type, str):
-        learner._model_type = globals()[learner._model_type]
-
     # check that versions are compatible
     elif skll_version < (2, 5, 0):
         model_version_str = '.'.join(map(str, skll_version))
@@ -1221,4 +1214,18 @@ def _load_learner_from_disk(learner_type, filepath, logger):
     else:
         if not hasattr(learner, 'sampler'):
             learner.sampler = None
+
+        # For backward compatibility, convert string model types to actual classes
+        if isinstance(learner._model_type, str):
+            learner._model_type = globals()[learner._model_type]
+
+        # set the learner logger attribute to the logger that's passed in
+        learner.logger = logger
+
+        # if the loaded learner is a `VotingLearner` then we need to attach
+        # the same logger to the underlying learners as well
+        if learner_type.__name__ == "VotingLearner":
+            for underlying_learner in learner._learners:
+                underlying_learner.logger = logger
+
         return learner

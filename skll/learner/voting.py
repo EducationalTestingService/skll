@@ -179,7 +179,8 @@ class VotingLearner(object):
                               pos_label_str=pos_label_str,
                               probability=self.voting == "soft",
                               sampler=sampler,
-                              sampler_kwargs=sampler_kwargs)
+                              sampler_kwargs=sampler_kwargs,
+                              logger=logger)
             learner_types.add(learner.model_type._estimator_type)
             self._learners.append(learner)
 
@@ -227,6 +228,16 @@ class VotingLearner(object):
         for learner in self.learners:
             learner._create_label_dict(examples)
             learner._train_setup(examples)
+
+    def __getstate__(self):
+        """
+        Return the attributes that should be dumped. We need this
+        because we do not want to dump loggers.
+        """
+        attribute_dict = dict(self.__dict__)
+        if 'logger' in attribute_dict:
+            del attribute_dict['logger']
+        return attribute_dict
 
     def save(self, learner_path):
         """
