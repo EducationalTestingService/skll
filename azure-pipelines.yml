@@ -42,7 +42,7 @@ jobs:
   - script: |
       CALL activate sklldev
       echo $(pytestfiles)
-      nosetests --with-xunit $(pytestfiles)
+      nosetests --nologcapture --logging-level=WARNING --with-xunit $(pytestfiles)
     displayName: 'Run tests'
     continueOnError: true
 

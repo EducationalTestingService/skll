@@ -29,7 +29,7 @@ install:
 
 # Run test
 script:
-  - MPLBACKEND=Agg ${HOME}/miniconda3/envs/sklldev/bin/nosetests --nologcapture --with-coverage --cover-package=skll --cov-config .coveragerc ${TESTFILES}
+  - MPLBACKEND=Agg ${HOME}/miniconda3/envs/sklldev/bin/nosetests --nologcapture --logging-level=WARNING --with-coverage --cover-package=skll --cov-config .coveragerc ${TESTFILES}
 
 # Calculate coverage
 after_success:
