@@ -21,18 +21,16 @@ before_install:
   - wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
   - chmod +x miniconda.sh
   - ./miniconda.sh -b
-  - export PATH=/home/travis/miniconda3/bin:$PATH
-  - conda install -c anaconda --yes setuptools
+  - ${HOME}/miniconda3/bin/conda update conda --yes
 install:
-  - conda install --yes -c conda-forge python=$TRAVIS_PYTHON_VERSION codecov --file conda_requirements.txt
-  # Have to use pip for nose-cov because its entry points are not supported by conda yet
-  - pip install nose-cov
-  - python setup.py install
+  - ${HOME}/miniconda3/bin/conda create --name sklldev -c conda-forge --file conda_requirements.txt python=${TRAVIS_PYTHON_VERSION} codecov --yes --quiet
+  - ${HOME}/miniconda3/envs/sklldev/bin/pip install nose-cov
+  - ${HOME}/miniconda3/envs/sklldev/bin/pip install -e .
 
 # Run test
 script:
-  - MPLBACKEND=Agg nosetests -v --with-cov --cov skll --cov-config .coveragerc --logging-level=DEBUG ${TESTFILES}
+  - MPLBACKEND=Agg ${HOME}/miniconda3/envs/sklldev/bin/nosetests --nologcapture --with-coverage --cover-package=skll --cov-config .coveragerc ${TESTFILES}
 
 # Calculate coverage
 after_success:
-  - codecov
+  - ${HOME}/miniconda3/envs/sklldev/bin/codecov
