@@ -143,9 +143,9 @@ def check_train_task(learner_type, options_dict):
         for idx, actual_call in enumerate(mocks['save'].call_args_list):
             if (not options_dict["with_grid_search"] or
                     (options_dict["with_grid_search"] and not options_dict["with_multiple_objectives"])):
-                expected_save_args = (f"{output_dir}/{job_name}.model",)
+                expected_save_args = (Path(output_dir) / f"{job_name}.model",)
             else:
-                expected_save_args = (f"{output_dir}/{job_name}_{objectives[idx]}.model",)
+                expected_save_args = (Path(output_dir) / f"{job_name}_{objectives[idx]}.model",)
             eq_(actual_call.args, expected_save_args)
 
     # stop all the manual patchers

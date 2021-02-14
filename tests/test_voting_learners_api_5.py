@@ -31,6 +31,12 @@ FS_HOUSING.ids = np.arange(2000)
 CUSTOM_LEARNER_PATH = Path(other_dir) / "custom_logistic_wrapper.py"
 
 
+def setup():
+    """Set up the tests"""
+    for dir_path in [other_dir, output_dir]:
+        Path(dir_path).mkdir(exist_ok=True)
+
+
 def tearDown():
     """Clean up after tests"""
     for output_file_path in Path(output_dir).glob("test_xval_voting_gs*"):

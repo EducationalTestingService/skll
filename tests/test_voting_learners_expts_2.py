@@ -12,7 +12,6 @@ tested comprehensively in ``test_voting_learners_api_2.py``.
 """
 
 from itertools import product
-from os.path import join
 from pathlib import Path
 from unittest.mock import DEFAULT, patch
 
@@ -171,11 +170,10 @@ def check_evaluate_task(learner_type, options_dict):
 
             # if we trained a model, we also saved it
             eq_(mocks['save'].call_count, len(objectives) if options_dict["with_grid_search"] else 1)
-            eq_(mocks['save'].call_args[0][0], f"{output_dir}/{job_name}.model")
+            eq_(mocks['save'].call_args[0][0], Path(output_dir) / f"{job_name}.model")
         else:
             eq_(mock_vl_from_file.call_count, 1)
-            eq_(mock_vl_from_file.call_args[0][0],
-                join(other_dir, f"{job_name}.model"))
+            eq_(mock_vl_from_file.call_args[0][0], Path(other_dir) / f"{job_name}.model")
 
         # check that evaluate was called the expected number of times
         eq_(mocks['evaluate'].call_count, len(objectives) if options_dict["with_grid_search"] else 1)

@@ -189,9 +189,9 @@ def check_xval_task(learner_type, options_dict):
                 if (not options_dict["with_grid_search"] or
                         (options_dict["with_grid_search"] and
                          not options_dict["with_multiple_objectives"])):
-                    expected_save_args = (f"{output_dir}/{job_name}_fold{fold_idx+1}.model",)
+                    expected_save_args = (Path(output_dir) / f"{job_name}_fold{fold_idx+1}.model",)
                 else:
-                    expected_save_args = (f"{output_dir}/{job_name}_{objectives[objective_idx]}_fold{fold_idx+1}.model",)
+                    expected_save_args = (Path(output_dir) / f"{job_name}_{objectives[objective_idx]}_fold{fold_idx+1}.model",)
                 eq_(actual_call.args, expected_save_args)
 
     # stop all the patchers

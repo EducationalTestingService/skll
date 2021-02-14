@@ -33,6 +33,12 @@ FS_HOUSING.ids = np.arange(2000)
 CUSTOM_LEARNER_PATH = Path(other_dir) / "custom_logistic_wrapper.py"
 
 
+def setup():
+    """Set up the tests"""
+    for dir_path in [other_dir, output_dir]:
+        Path(dir_path).mkdir(exist_ok=True)
+
+
 def check_evaluate(learner_type,
                    with_grid_search,
                    with_soft_voting):
