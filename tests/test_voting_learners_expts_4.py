@@ -12,6 +12,7 @@ tested comprehensively in ``test_voting_learners_api_4.py``.
 """
 
 from itertools import product
+from os.path import join
 from pathlib import Path
 from unittest.mock import DEFAULT, patch
 
@@ -135,9 +136,9 @@ def check_xval_task(learner_type, options_dict):
 
         # check that each init call had the expected arguments
         for actual_call in mock_vl_init.call_args_list:
-            eq_(actual_call.args, expected_init_args)
+            eq_(actual_call[0], expected_init_args)
             for key, expected_value in expected_init_kwargs.items():
-                actual_value = actual_call.kwargs[key]
+                actual_value = actual_call[1][key]
                 eq_(actual_value, expected_value)
 
         # check that cross_validate was called the expected number of times
@@ -155,15 +156,15 @@ def check_xval_task(learner_type, options_dict):
                                 "save_cv_models": options_dict["with_save_cv_models"]}
 
         for idx, actual_call in enumerate(mock_vl_xval.call_args_list):
-            actual_arg = actual_call.args[0]
+            actual_arg = actual_call[0][0]
             ok_(isinstance(actual_arg, FeatureSet))
             eq_(set(actual_arg.labels), {"cat", "dog"})
             for key, expected_value in expected_xval_kwargs.items():
-                actual_value = actual_call.kwargs[key]
+                actual_value = actual_call[1][key]
                 eq_(actual_value, expected_value)
 
             # check the grid objective value
-            eq_(actual_call.kwargs["grid_objective"],
+            eq_(actual_call[1]["grid_objective"],
                 objectives[idx] if options_dict["with_grid_search"] else None)
 
             # check the prediction prefix value
@@ -173,7 +174,7 @@ def check_xval_task(learner_type, options_dict):
                 expected_prediction_prefix = job_name
             else:
                 expected_prediction_prefix = f"{job_name}_{objectives[idx]}"
-            eq_(actual_call.kwargs["prediction_prefix"], expected_prediction_prefix)
+            eq_(actual_call[1]["prediction_prefix"], expected_prediction_prefix)
 
         # if we were asked to save the CV models, check that
         # save was called the expected number of times
@@ -189,10 +190,10 @@ def check_xval_task(learner_type, options_dict):
                 if (not options_dict["with_grid_search"] or
                         (options_dict["with_grid_search"] and
                          not options_dict["with_multiple_objectives"])):
-                    expected_save_args = (Path(output_dir) / f"{job_name}_fold{fold_idx+1}.model",)
+                    expected_save_args = (join(output_dir, f"{job_name}_fold{fold_idx+1}.model"),)
                 else:
-                    expected_save_args = (Path(output_dir) / f"{job_name}_{objectives[objective_idx]}_fold{fold_idx+1}.model",)
-                eq_(actual_call.args, expected_save_args)
+                    expected_save_args = (join(output_dir, f"{job_name}_{objectives[objective_idx]}_fold{fold_idx+1}.model"),)
+                eq_(actual_call[0], expected_save_args)
 
     # stop all the patchers
     _ = output_patchers.stop()

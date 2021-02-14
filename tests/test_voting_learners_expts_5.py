@@ -130,9 +130,9 @@ def check_learning_curve_task(learner_type, options_dict):
                                 "sampler_kwargs_list": None}
 
         actual_call = mock_vl_init.call_args
-        eq_(actual_call.args, expected_init_args)
+        eq_(actual_call[0], expected_init_args)
         for key, expected_value in expected_init_kwargs.items():
-            actual_value = actual_call.kwargs[key]
+            actual_value = actual_call[1][key]
             eq_(actual_value, expected_value)
 
         # check that predict was called the expected number of times
@@ -143,12 +143,12 @@ def check_learning_curve_task(learner_type, options_dict):
                                           "train_sizes": learning_curve_train_sizes}
 
         for idx, actual_call in enumerate(mock_vl_learning_curve.call_args_list):
-            actual_args = actual_call.args
+            actual_args = actual_call[0]
             ok_(isinstance(actual_args[0], FeatureSet))
             eq_(set(actual_args[0].labels), {"cat", "dog"})
             eq_(actual_args[1], output_metrics[idx])
             for key, expected_value in expected_learning_curve_kwargs.items():
-                actual_value = actual_call.kwargs[key]
+                actual_value = actual_call[1][key]
                 eq_(actual_value, expected_value)
 
     # stop all the manual patchers

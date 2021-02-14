@@ -12,6 +12,7 @@ tested comprehensively in ``test_voting_learners_api_2.py``.
 """
 
 from itertools import product
+from os.path import join
 from pathlib import Path
 from unittest.mock import DEFAULT, patch
 
@@ -140,9 +141,9 @@ def check_evaluate_task(learner_type, options_dict):
 
         # check that each init call had the expected arguments
         for actual_call in mock_vl_init.call_args_list:
-            eq_(actual_call.args, expected_init_args)
+            eq_(actual_call[0], expected_init_args)
             for key, expected_value in expected_init_kwargs.items():
-                actual_value = actual_call.kwargs[key]
+                actual_value = actual_call[1][key]
                 eq_(actual_value, expected_value)
 
         # we either trained a model via `train()` or used an existing
@@ -157,23 +158,23 @@ def check_evaluate_task(learner_type, options_dict):
                                      "grid_jobs": None,
                                      "shuffle": False}
             for idx, actual_call in enumerate(mocks['train'].call_args_list):
-                actual_arg = actual_call.args[0]
+                actual_arg = actual_call[0][0]
                 ok_(isinstance(actual_arg, FeatureSet))
                 eq_(set(actual_arg.labels), {"cat", "dog"})
                 for key, expected_value in expected_train_kwargs.items():
-                    actual_value = actual_call.kwargs[key]
+                    actual_value = actual_call[1][key]
                     eq_(actual_value, expected_value)
 
                 # if we aren't doing grid search, then the objective should be `None`
-                eq_(actual_call.kwargs["grid_objective"],
+                eq_(actual_call[1]["grid_objective"],
                     objectives[idx] if options_dict["with_grid_search"] else None)
 
             # if we trained a model, we also saved it
             eq_(mocks['save'].call_count, len(objectives) if options_dict["with_grid_search"] else 1)
-            eq_(mocks['save'].call_args[0][0], Path(output_dir) / f"{job_name}.model")
+            eq_(mocks['save'].call_args[0][0], join(output_dir, f"{job_name}.model"))
         else:
             eq_(mock_vl_from_file.call_count, 1)
-            eq_(mock_vl_from_file.call_args[0][0], Path(other_dir) / f"{job_name}.model")
+            eq_(mock_vl_from_file.call_args[0][0], join(other_dir, f"{job_name}.model"))
 
         # check that evaluate was called the expected number of times
         eq_(mocks['evaluate'].call_count, len(objectives) if options_dict["with_grid_search"] else 1)
@@ -185,11 +186,11 @@ def check_evaluate_task(learner_type, options_dict):
                                 "output_metrics": output_metrics}
 
         for idx, actual_call in enumerate(mocks['evaluate'].call_args_list):
-            actual_arg = actual_call.args[0]
+            actual_arg = actual_call[0][0]
             ok_(isinstance(actual_arg, FeatureSet))
             eq_(set(actual_arg.labels), {"cat", "dog"})
             for key, expected_value in expected_eval_kwargs.items():
-                actual_value = actual_call.kwargs[key]
+                actual_value = actual_call[1][key]
                 eq_(actual_value, expected_value)
 
     # stop all the manual patchers

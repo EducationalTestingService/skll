@@ -12,6 +12,7 @@ tested comprehensively in ``test_voting_learners_api_1.py``.
 """
 
 from itertools import product
+from os.path import join
 from pathlib import Path
 from unittest.mock import DEFAULT, patch
 
@@ -109,9 +110,9 @@ def check_train_task(learner_type, options_dict):
 
         # check that each init call had the expected arguments
         for actual_call in mock_vl_init.call_args_list:
-            eq_(actual_call.args, expected_init_args)
+            eq_(actual_call[0], expected_init_args)
             for key, expected_value in expected_init_kwargs.items():
-                actual_value = actual_call.kwargs[key]
+                actual_value = actual_call[1][key]
                 eq_(actual_value, expected_value)
 
         # check that train was called the expected number of times
@@ -125,15 +126,15 @@ def check_train_task(learner_type, options_dict):
                                  "shuffle": options_dict["with_shuffle"]}
 
         for idx, actual_call in enumerate(mocks['train'].call_args_list):
-            actual_arg = actual_call.args[0]
+            actual_arg = actual_call[0][0]
             ok_(isinstance(actual_arg, FeatureSet))
             eq_(set(actual_arg.labels), {"cat", "dog"})
             for key, expected_value in expected_train_kwargs.items():
-                actual_value = actual_call.kwargs[key]
+                actual_value = actual_call[1][key]
                 eq_(actual_value, expected_value)
 
             # if we aren't doing grid search, then the objective should be `None`
-            eq_(actual_call.kwargs["grid_objective"],
+            eq_(actual_call[1]["grid_objective"],
                 objectives[idx] if options_dict["with_grid_search"] else None)
 
         # check that save was called the expected number of times
@@ -143,10 +144,10 @@ def check_train_task(learner_type, options_dict):
         for idx, actual_call in enumerate(mocks['save'].call_args_list):
             if (not options_dict["with_grid_search"] or
                     (options_dict["with_grid_search"] and not options_dict["with_multiple_objectives"])):
-                expected_save_args = (Path(output_dir) / f"{job_name}.model",)
+                expected_save_args = (join(output_dir, f"{job_name}.model"),)
             else:
-                expected_save_args = (Path(output_dir) / f"{job_name}_{objectives[idx]}.model",)
-            eq_(actual_call.args, expected_save_args)
+                expected_save_args = (join(output_dir, f"{job_name}_{objectives[idx]}.model"),)
+            eq_(actual_call[0], expected_save_args)
 
     # stop all the manual patchers
     _ = patcher.stop()
