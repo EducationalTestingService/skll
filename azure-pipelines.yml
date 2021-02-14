@@ -18,7 +18,7 @@ jobs:
   pool:
     vmImage: 'windows-latest'
   strategy:
-    parallel: 5
+    parallel: 6
 
   steps:
   - powershell: Write-Host "##vso[task.prependpath]$env:CONDA\Scripts"
