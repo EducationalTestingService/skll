@@ -6,6 +6,14 @@ notifications:
   slack:
     secure: d+NSaR+cfRkcJfX/uEVwdyQDlayZO6c8QV96grl1stmWxG3XOXvXg1tM6v7EBeb9VRw5T4VglnnJGNJA62j1ReEJ0XyWr5XtaNWiF6Lc4UOty/TTG36IQdkWS1vQA8v2Hre73YbvOhtBb6biNneVAk+rrfRSgomEa+ec22cjgUo=
 env:
+  global:
+  - BINDIR=${HOME}/miniconda3/envs/sklldev/bin
+  - MPLBACKEND=Agg
+  - NOSE_WITH_COV=1
+  - NOSE_COVER_PACKAGE=skll
+  - LOGCAPTURE_LEVEL=WARNING
+  - NOSE_NOLOGCAPTURE=1
+  matrix:
   - TESTFILES="tests/test_featureset.py tests/test_commandline_utils.py tests/test_custom_metrics.py tests/test_voting_learners_api_3.py"
   - TESTFILES="tests/test_output.py tests/test_voting_learners_api_4.py"
   - TESTFILES="tests/test_regression.py tests/test_voting_learners_api_2.py"
@@ -29,7 +37,7 @@ install:
 
 # Run test
 script:
-  - MPLBACKEND=Agg ${HOME}/miniconda3/envs/sklldev/bin/nosetests --nologcapture --logging-level=WARNING --with-coverage --cover-package=skll --cov-config .coveragerc ${TESTFILES}
+  - if [ "${TRAVIS_JOB_NUMBER :-1}" == "6" ]; then travis_wait ${HOME}/miniconda3/envs/sklldev/bin/nosetests ${TESTFILES}; else ${HOME}/miniconda3/envs/sklldev/bin/nosetests ${TESTFILES}; fi
 
 # Calculate coverage
 after_success:
