@@ -46,10 +46,10 @@ def tearDown():
 def check_cross_validate_with_grid_search(learner_type, with_soft_voting):
 
     # to test the cross_validate() method with grid search, we
-    # instantiate the SKLL voting learner, call `cross_validate()` on it
-    # while writing out the predictions and also asking it to return
-    # the actual folds it used as well as the models. Then, we take
-    # each of the 10 models, take its underlying estimators, use them
+    # instantiate the SKLL voting learner, call `cross_validate()` with
+    # 3 folds on it while writing out the predictions and also asking it
+    # to return the actual folds it used as well as the models. Then, we take
+    # each of the 3 models, take its underlying estimators, use them
     # to train a scikit-learn voting learner directly on the corresponding
     # training fold and make predictions on the test fold. Then we compute
     # metrics over both sets of cross-validated predictions on the
@@ -87,14 +87,15 @@ def check_cross_validate_with_grid_search(learner_type, with_soft_voting):
      used_models) = skll_vl.cross_validate(featureset,
                                            grid_search=True,
                                            grid_objective=objective,
+                                           cv_folds=3,
                                            prediction_prefix=prediction_prefix,
                                            output_metrics=[extra_metric],
                                            save_cv_folds=True,
                                            save_cv_models=True)
 
     # check that the results are as expected
-    ok_(len(xval_results), 10)               # number of folds
-    for i in range(10):
+    ok_(len(xval_results), 3)               # number of folds
+    for i in range(3):
         if learner_type == "classifier":
             ok_(isinstance(xval_results[i][0], list))  # confusion matrix
             ok_(isinstance(xval_results[i][1], float))  # accuracy
@@ -111,7 +112,7 @@ def check_cross_validate_with_grid_search(learner_type, with_soft_voting):
     df_folds = pd.DataFrame(used_fold_ids.items(), columns=["id", "fold"])
     df_folds = df_folds.sort_values(by="id").reset_index(drop=True)
     splitter = PredefinedSplit(df_folds["fold"].astype(int).to_numpy())
-    eq_(splitter.get_n_splits(), 10)
+    eq_(splitter.get_n_splits(), 3)
 
     # now read in the SKLL xval predictions from the file written to disk
     df_preds = pd.read_csv(f"{prediction_prefix}_predictions.tsv", sep="\t")
