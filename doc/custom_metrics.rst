@@ -95,8 +95,8 @@ is located in the current directory.
 
 .. code-block:: python
 
-    from skll import Learner
     from skll.data import CSVReader
+    from skll.learner import Learner
     from skll.metrics import register_custom_metric
 
     # register the custom function with SKLL

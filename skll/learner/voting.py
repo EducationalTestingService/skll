@@ -1,7 +1,6 @@
 # License: BSD 3 clause
 """
-This module provides the `VotingLearner` meta-learner class which is a wrapper
-around scikit-learn's `VotingClassifier` and `VotingRegressor`.
+A meta-learner class that wraps scikit-learn's `VotingClassifier` and `VotingRegressor`.
 
 :author: Nitin Madnani (nmadnani@ets.org)
 :organization: ETS
@@ -195,8 +194,7 @@ class VotingLearner(object):
         else:
             self.learner_type = list(learner_types)[0]
 
-        # unset the voting attribute for regressors which makes things
-        # much simpler later
+        # unset the voting attribute for regressors for downstream simplicity
         if self.learner_type == "regressor":
             self.voting = None
 
@@ -405,11 +403,14 @@ class VotingLearner(object):
 
         For regressors, the returned and written-out predictions are identical.
         However, for classifiers:
-        - if ``class_labels`` is ``True``, class labels are returned
-          as well as written out.
+
+        - if ``class_labels`` is ``True``, class labels are returned as well as
+          written out.
+
         - if ``class_labels`` is ``False`` and the classifier is probabilistic
           (i.e., ``self.probability`` is ``True``), class probabilities are
           returned as well as written out.
+
         - if ``class_labels`` is ``False`` and the classifier is non-probabilistic
           (i.e., ``self..probability`` is ``False``), class indices are returned
           and class labels are written out. This option is generally only
