@@ -12,6 +12,7 @@ from pathlib import Path
 
 import numpy as np
 from nose.tools import assert_almost_equal, eq_, ok_, raises
+from numpy.testing import assert_raises_regex
 from scipy.stats import pearsonr
 from sklearn.ensemble import VotingClassifier, VotingRegressor
 from sklearn.metrics import accuracy_score, f1_score, mean_squared_error
@@ -157,6 +158,16 @@ def test_evaluate():
                    learner_type,
                    with_grid_search,
                    with_soft_voting)
+
+
+def test_evaluate_bad_output_metric():
+    vl = VotingLearner(["SVC", "LogisticRegression", "MultinomialNB"])
+    vl.train(TRAIN_FS_DIGITS[:100], grid_search=False)
+    assert_raises_regex(ValueError,
+                        r"metrics are not valid",
+                        vl.evaluate,
+                        TEST_FS_DIGITS[:100],
+                        output_metrics=["f05", "pearson"])
 
 
 def check_learning_curve(learner_type, with_soft_voting):

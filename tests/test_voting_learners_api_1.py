@@ -183,6 +183,30 @@ def test_initialize():
                sampler_list)
 
 
+def test_initialize_bad_model_kwargs_list():
+    assert_raises_regex(ValueError,
+                        r"should be a list",
+                        VotingLearner,
+                        ["SVC", "LogisticRegression", "MultinomialNB"],
+                        model_kwargs_list={"C": 0.01})
+
+
+def test_initialize_bad_sampler_list():
+    assert_raises_regex(ValueError,
+                        r"should be a list",
+                        VotingLearner,
+                        ["SVC", "LogisticRegression", "MultinomialNB"],
+                        sampler_list="Nystroem")
+
+
+def test_initialize_bad_sampler_kwargs_list():
+    assert_raises_regex(ValueError,
+                        r"should be a list",
+                        VotingLearner,
+                        ["SVC", "LogisticRegression", "MultinomialNB"],
+                        sampler_kwargs_list=0.01)
+
+
 def test_initialize_incorrect_model_kwargs_list():
     assert_raises_regex(ValueError,
                         r"must have 3 entries",
@@ -296,6 +320,16 @@ def test_train_with_custom_path():
     assert(isinstance(pipeline2, Pipeline))
     eq_(pipeline1['estimator'].__class__.__name__, "CustomLogisticRegressionWrapper")
     assert(isinstance(pipeline2['estimator'], SVC))
+
+
+def test_train_bad_param_grid_list():
+    vl = VotingLearner(["SVC", "LogisticRegression", "MultinomialNB"])
+    assert_raises_regex(ValueError,
+                        r"should be a list",
+                        vl.train,
+                        TRAIN_FS_DIGITS[:100],
+                        grid_objective="accuracy",
+                        param_grid_list={"C": [0.01, 0.1, 1.0, 10.0]})
 
 
 def check_save_and_load(learner_type, use_current_directory):
