@@ -12,7 +12,6 @@ env:
   - NOSE_WITH_COV=1
   - NOSE_COVER_PACKAGE=skll
   - LOGCAPTURE_LEVEL=WARNING
-  - NOSE_NOLOGCAPTURE=1
   matrix:
   - TESTFILES="tests/test_featureset.py tests/test_commandline_utils.py tests/test_custom_metrics.py tests/test_voting_learners_api_3.py"
   - TESTFILES="tests/test_output.py tests/test_voting_learners_api_4.py"
