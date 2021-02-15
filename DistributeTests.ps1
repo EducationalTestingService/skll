@@ -36,6 +36,7 @@ if ($agentNumber -eq 1) {
 elseif ($agentNumber -eq 2) {
     $testsToRun = $testsToRun + "tests/test_output.py"
     $testsToRun = $testsToRun + "tests/test_voting_learners_api_4.py"
+    $testsToRun = $testsToRun + "tests/test_voting_learners_api_5.py"
 }
 elseif ($agentNumber -eq 3) {
     $testsToRun = $testsToRun + "tests/test_regression.py"
@@ -59,7 +60,6 @@ elseif ($agentNumber -eq 5) {
 }
 elseif ($agentNumber -eq 6) {
     $testsToRun = $testsToRun + "tests/test_voting_learners_api_3.py"
-    $testsToRun = $testsToRun + "tests/test_voting_learners_api_5.py"
     $testsToRun = $testsToRun + "tests/test_voting_learners_expts_2.py"
     $testsToRun = $testsToRun + "tests/test_voting_learners_expts_3.py"
     $testsToRun = $testsToRun + "tests/test_voting_learners_expts_5.py"
