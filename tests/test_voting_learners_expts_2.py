@@ -181,7 +181,7 @@ def check_evaluate_task(learner_type, options_dict):
 
         # check that each evaluate call had the expected arguments
         expected_eval_kwargs = {"grid_objective": objectives[idx] if options_dict["with_grid_search"] else None,
-                                "prediction_prefix": f"{output_dir}/{job_name}" if options_dict["with_prediction_prefix"] else job_name,
+                                "prediction_prefix": join(output_dir, job_name) if options_dict["with_prediction_prefix"] else job_name,
                                 "individual_predictions": options_dict["with_individual_predictions"],
                                 "output_metrics": output_metrics}
 

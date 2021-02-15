@@ -180,7 +180,7 @@ def check_predict_task(learner_type, options_dict):
         eq_(mocks['predict'].call_count, len(objectives) if options_dict["with_grid_search"] else 1)
 
         # check that each predict call had the expected arguments
-        expected_predict_kwargs = {"prediction_prefix": f"{output_dir}/{job_name}" if options_dict["with_prediction_prefix"] else job_name,
+        expected_predict_kwargs = {"prediction_prefix": join(output_dir, job_name) if options_dict["with_prediction_prefix"] else job_name,
                                    "individual_predictions": options_dict["with_individual_predictions"],
                                    "class_labels": False}
 
