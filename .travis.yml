@@ -36,7 +36,7 @@ install:
 
 # Run test
 script:
-  - if [ "${TRAVIS_JOB_NUMBER:${#TRAVIS_JOB_NUMBER}-1:-1}" == "6" ]; then travis_wait ${HOME}/miniconda3/envs/sklldev/bin/nosetests ${TESTFILES}; else ${HOME}/miniconda3/envs/sklldev/bin/nosetests ${TESTFILES}; fi
+  - ${HOME}/miniconda3/envs/sklldev/bin/nosetests ${TESTFILES}
 
 # Calculate coverage
 after_success:
