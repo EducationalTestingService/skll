@@ -816,7 +816,6 @@ class Learner(object):
         # is specified and that the specified function is valid for the
         # selected learner
         if grid_search:
-
             if not grid_objective:
                 raise ValueError("Grid search is on by default. You must "
                                  "either specify a grid objective or turn off"
