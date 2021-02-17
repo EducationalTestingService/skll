@@ -398,8 +398,8 @@ def _classify_featureset(args):  # noqa: C901
                 (task_results,
                  skll_fold_ids,
                  models) = results
-                grid_scores = [None]
-                grid_search_cv_results_dicts = [None]
+                grid_scores = [None] * cv_folds
+                grid_search_cv_results_dicts = [None] * cv_folds
 
             if models:
                 for index, m in enumerate(models, start=1):
