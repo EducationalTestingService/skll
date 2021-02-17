@@ -7,6 +7,7 @@ Cross-validation tests without grid search for voting learners.
 """
 
 from itertools import product
+from os.path import exists
 from pathlib import Path
 
 import numpy as np
@@ -75,7 +76,9 @@ def test_cross_validate_grid_search_but_no_objective():
                         fs)
 
 
-def check_cross_validate_without_grid_search(learner_type, with_soft_voting):
+def check_cross_validate_without_grid_search(learner_type,
+                                             with_soft_voting,
+                                             with_individual_predictions):
 
     # to test the cross_validate() method without grid search, we
     # instantiate the SKLL voting learner, call `cross_validate()` on it
@@ -118,7 +121,8 @@ def check_cross_validate_without_grid_search(learner_type, with_soft_voting):
                                            prediction_prefix=prediction_prefix,
                                            output_metrics=[extra_metric],
                                            save_cv_folds=True,
-                                           save_cv_models=True)
+                                           save_cv_models=True,
+                                           individual_predictions=with_individual_predictions)
 
     # check that the results are as expected
     ok_(len(xval_results), 10)               # number of folds
@@ -219,15 +223,27 @@ def check_cross_validate_without_grid_search(learner_type, with_soft_voting):
     assert_almost_equal(skll_metrics[0], sklearn_metrics[0], places=2)
     assert_almost_equal(skll_metrics[1], sklearn_metrics[1], places=2)
 
+    # if we asked for individual predictions, make sure that they exist
+    # note that we do not need to check that the individual predictions
+    # match because we already tested that with `predict()` in
+    # `test_voting_learners_api_3.py` and `cross_validate()` calls
+    # `predict()` anyway
+    if with_individual_predictions:
+        for learner_name in learner_names:
+            ok_(exists(f"{prediction_prefix}_{learner_name}_predictions.tsv"))
+
 
 def test_cross_validate_without_grid_search():
     for (learner_type,
-         with_soft_voting) in product(["classifier", "regressor"],
-                                      [False, True]):
+         with_soft_voting,
+         with_individual_predictions) in product(["classifier", "regressor"],
+                                                 [False, True],
+                                                 [False, True]):
         # regressors do not support soft voting
         if learner_type == "regressor" and with_soft_voting:
             continue
         else:
             yield (check_cross_validate_without_grid_search,
                    learner_type,
-                   with_soft_voting)
+                   with_soft_voting,
+                   with_individual_predictions)

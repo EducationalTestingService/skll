@@ -380,6 +380,7 @@ def _classify_featureset(args):  # noqa: C901
             # a single parameter grid
             if isinstance(learner, VotingLearner):
                 xval_kwargs["param_grid_list"] = param_grids_list
+                xval_kwargs["individual_predictions"] = save_votes
             else:
                 xval_kwargs["param_grid"] = param_grid
 

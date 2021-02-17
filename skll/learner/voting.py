@@ -625,6 +625,7 @@ class VotingLearner(object):
                        shuffle=False,
                        save_cv_folds=False,
                        save_cv_models=False,
+                       individual_predictions=False,
                        use_custom_folds_for_grid_search=True):
         """
         Cross-validate the meta-estimator on the given examples.
@@ -693,6 +694,10 @@ class VotingLearner(object):
              Defaults to ``False``.
         save_cv_models : bool, optional
             Whether to save the cv models or not?
+            Defaults to ``False``.
+        individual_predictions : bool, optional
+            Write out the cross-validated predictions from each
+            underlying learner as well.
             Defaults to ``False``.
         use_custom_folds_for_grid_search : bool, optional
             If ``cv_folds`` is a custom dictionary, but
@@ -824,7 +829,8 @@ class VotingLearner(object):
                                          prediction_prefix=prediction_prefix,
                                          append=append_predictions,
                                          grid_objective=grid_objective,
-                                         output_metrics=output_metrics))
+                                         output_metrics=output_metrics,
+                                         individual_predictions=individual_predictions))
             append_predictions = True
 
             # save the fold number for each test ID if we were asked to

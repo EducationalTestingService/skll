@@ -128,7 +128,7 @@ def check_xval_task(learner_type, options_dict):
         # note that the init arguments are the same no matter the call
         expected_init_args = (estimator_names,)
         expected_init_kwargs = {"voting": "soft" if options_dict["with_soft_voting"] else "hard",
-                                "feature_scaling": "with_mean" if options_dict["with_centering"] else "none",
+                                "feature_scaling": "none",
                                 "pos_label_str": "dog" if options_dict["with_pos_label_str"] else None,
                                 "model_kwargs_list": model_kwargs_list,
                                 "sampler_list": sampler_list,
@@ -153,7 +153,8 @@ def check_xval_task(learner_type, options_dict):
                                 "cv_folds": num_cv_folds,
                                 "output_metrics": output_metrics,
                                 "save_cv_folds": options_dict["with_save_cv_folds"],
-                                "save_cv_models": options_dict["with_save_cv_models"]}
+                                "save_cv_models": options_dict["with_save_cv_models"],
+                                "individual_predictions": options_dict["with_individual_predictions"]}
 
         for idx, actual_call in enumerate(mock_vl_xval.call_args_list):
             actual_arg = actual_call[0][0]
@@ -210,7 +211,6 @@ def test_xval_task():
     # not very common or because they are already tested in other voting
     # learner experiment tests
     option_names = ["with_soft_voting",
-                    "with_centering",
                     "with_pos_label_str",
                     "with_model_kwargs_list",
                     "with_grid_search",
@@ -220,7 +220,8 @@ def test_xval_task():
                     "with_cv_folds",
                     "with_output_metrics",
                     "with_save_cv_folds",
-                    "with_save_cv_models"]
+                    "with_save_cv_models",
+                    "with_individual_predictions"]
 
     for option_values in product(["classifier", "regressor"],
                                  [False, True],
