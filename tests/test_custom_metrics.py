@@ -275,7 +275,9 @@ def test_custom_metric_api_experiment():
     # set up a learner to tune using one of the custom metrics
     # and evaluate it using the other one
     learner = Learner("LogisticRegression")
-    _ = learner.train(train_fs, grid_objective="f075_macro")
+    _ = learner.train(train_fs,
+                      grid_objective="f075_macro",
+                      grid_search_folds=3)
     results = learner.evaluate(test_fs,
                                grid_objective="f075_macro",
                                output_metrics=["balanced_accuracy", "f06_micro"])
@@ -344,7 +346,9 @@ def test_custom_metric_api_experiment_with_kappa_filename():
     # this should work as there should be no confict between
     # the two "kappa" names
     learner = Learner("LogisticRegression")
-    _ = learner.train(train_fs, grid_objective="unweighted_kappa")
+    _ = learner.train(train_fs,
+                      grid_objective="unweighted_kappa",
+                      grid_search_folds=3)
     results = learner.evaluate(test_fs,
                                grid_objective="unweighted_kappa",
                                output_metrics=["balanced_accuracy",
@@ -431,14 +435,16 @@ def test_api_with_inverted_custom_metric():
     learner1 = Learner("LogisticRegression")
     (grid_score1,
      grid_results_dict1) = learner1.train(train_fs,
-                                          grid_objective="one_minus_precision")
+                                          grid_objective="one_minus_precision",
+                                          grid_search_folds=3)
 
     # now setup another learner that uses the complementary version
     # of our custom metric (regular precision) for grid search
     learner2 = Learner("LogisticRegression")
     (grid_score2,
      grid_results_dict2) = learner2.train(train_fs,
-                                          grid_objective="precision")
+                                          grid_objective="precision",
+                                          grid_search_folds=3)
 
     # for both learners the ranking of the C hyperparameter should be
     # should be the identical since when we defined one_minus_precision
@@ -530,12 +536,17 @@ def test_api_with_custom_prob_metric():
     learner1 = Learner("LinearSVC")
     assert_raises_regex(AttributeError,
                         r"has no attribute 'predict_proba'",
-                        learner1.train, train_fs, grid_objective="fake_prob_metric")
+                        learner1.train,
+                        train_fs,
+                        grid_objective="fake_prob_metric",
+                        grid_search_folds=3)
 
     # set up another learner with explicit probability support
     # this should work just fine with our custom metric
     learner2 = Learner("SVC", probability=True)
-    grid_score, _ = learner2.train(train_fs, grid_objective="fake_prob_metric")
+    grid_score, _ = learner2.train(train_fs,
+                                   grid_objective="fake_prob_metric",
+                                   grid_search_folds=3)
     ok_(grid_score > 0.95)
 
 

@@ -120,7 +120,7 @@ def check_train_task(learner_type, options_dict):
 
         # check that each train call had the expected arguments
         expected_train_kwargs = {"param_grid_list": param_grid_list,
-                                 "grid_search_folds": 4 if options_dict["with_gs_folds"] else 3,
+                                 "grid_search_folds": 4 if options_dict["with_gs_folds"] else 5,
                                  "grid_search": options_dict["with_grid_search"],
                                  "grid_jobs": None,
                                  "shuffle": options_dict["with_shuffle"]}

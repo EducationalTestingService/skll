@@ -454,6 +454,7 @@ def check_grid_search_cv_results(task, do_grid_search):  # noqa: C901
                            'train_file': train_path,
                            'task': task,
                            'grid_search': json.dumps(do_grid_search),
+                           'grid_search_folds': "3",
                            'objectives': "['f1_score_micro']",
                            'featureset_names': "['f0']",
                            'learners': json.dumps(learners),

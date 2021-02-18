@@ -153,7 +153,7 @@ def check_evaluate_task(learner_type, options_dict):
             eq_(mocks['train'].call_count,
                 len(objectives) if options_dict["with_grid_search"] else 1)
             expected_train_kwargs = {"param_grid_list": param_grid_list,
-                                     "grid_search_folds": 3,
+                                     "grid_search_folds": 5,
                                      "grid_search": options_dict["with_grid_search"],
                                      "grid_jobs": None,
                                      "shuffle": False}

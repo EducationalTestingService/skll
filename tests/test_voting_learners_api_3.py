@@ -79,7 +79,8 @@ def check_predict(learner_type,
                             voting=voting_type)
     skll_vl.train(train_fs,
                   grid_objective=objective,
-                  grid_search=with_grid_search)
+                  grid_search=with_grid_search,
+                  grid_search_folds=3)
 
     # get the overall and individual predictions from SKLL
     (skll_predictions,
@@ -129,7 +130,7 @@ def check_predict(learner_type,
                 estimator_predictions = [sklearn_vl.classes_[index]
                                          for index in estimator_predictions]
             # if no class labels, then get the probabilities with soft
-            # voting; note that sinec the individual predictions from
+            # voting; note that since the individual predictions from
             # scikit-learn are already indices, we do not need to do
             # anything for the hard voting case
             else:
@@ -165,7 +166,7 @@ def check_predict(learner_type,
                 assert_array_almost_equal(skll_individual_dict["MultinomialNB"],
                                           sklearn_individual_dict["MultinomialNB"],
                                           decimal=2)
-        # in all other cases, we expect the actual class lables or class indices
+        # in all other cases, we expect the actual class labels or class indices
         # to be identical between SKLL and scikit-learn
         else:
             assert_array_equal(skll_predictions, sklearn_predictions)

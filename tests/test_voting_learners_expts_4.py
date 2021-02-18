@@ -146,7 +146,7 @@ def check_xval_task(learner_type, options_dict):
 
         # check that each cross_validate call had the expected arguments
         expected_xval_kwargs = {"param_grid_list": param_grid_list,
-                                "grid_search_folds": 4 if options_dict["with_gs_folds"] else 3,
+                                "grid_search_folds": 4 if options_dict["with_gs_folds"] else 5,
                                 "grid_search": options_dict["with_grid_search"],
                                 "grid_jobs": None,
                                 "stratified": True,
