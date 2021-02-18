@@ -287,7 +287,7 @@ def compute_evaluation_metrics(metrics,
 
     # if we are doing classification and are a probablistic
     # learner or a soft-voting meta learner, then `yhat` are
-    # probabilities so we need to compute the  class indices
+    # probabilities so we need to compute the class indices
     # separately and save them too
     if model_type == 'classifier' and probability:
         class_probs = predictions

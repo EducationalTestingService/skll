@@ -3,8 +3,8 @@ Learning curve task experiment tests for voting learners.
 
 The main idea behind these tests is to not run every single possible
 experiment but rather to simply confirm that the various options specified
-in the configuration file call ``__init__()`` and ``learning_curve()`` with the right
-arguments. This is reasonable because those two methods are already
+in the configuration file call ``__init__()`` and ``learning_curve()`` with
+the right arguments. This is reasonable because those two methods are already
 tested comprehensively in ``test_voting_learners_api_2.py``.
 
 :author: Nitin Madnani (nmadnani@ets.org)
