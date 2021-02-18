@@ -286,9 +286,9 @@ class VotingLearner(object):
 
         First, we train each of the underlying estimators (represented by
         a skll ``Learner``), possibly with grid search. Then, we instantiate
-        a `VotingClassifier` or ``VotingRegressor`` as appropriate with the
+        a ``VotingClassifier`` or ``VotingRegressor`` as appropriate with the
         scikit-learn ``Pipeline`` stored in the ``pipeline`` attribute
-        of each trained `Learner` instance as the estimator. Finally,
+        of each trained ``Learner`` instance as the estimator. Finally,
         we call ``fit()`` on the ``VotingClassifier`` or ``VotingRegressor``
         instance. We follow this process because it allows us to use grid
         search to find good hyperparameter values for our underlying learners
@@ -304,9 +304,11 @@ class VotingLearner(object):
         examples : skll.FeatureSet
             The ``FeatureSet`` instance to use for training.
         param_grid_list : list, optional
-            The list of parameters grid to search through for grid
+            The list of parameter grids to search through for grid
             search, one for each underlying learner. The order of
-            the dictionaries should correspond to the order If ``None``, the default
+            the dictionaries should correspond to the order in
+            which the underlying estimators were specified when the
+            ``VotingLearner`` was instantiated. If ``None``, the default
             parameter grids will be used for the underlying estimators.
             Defaults to ``None``.
         grid_search_folds : int or dict, optional
@@ -371,7 +373,7 @@ class VotingLearner(object):
         # learners, save it into a easier to access attribute
         self.label_dict = self.learners[0].label_dict
 
-        # get the training label sin the right format too
+        # get the training labels in the right format too
         # NOTE: technically, we could also use a `LabelEncoder` here but
         # that may not account for passing `pos_label_str` above when
         # instantiating the learners so we stick with the label dict
@@ -384,7 +386,7 @@ class VotingLearner(object):
         # now we need to fit the actual meta learner which will also fit
         # clones of the underlying pipelines;
         # NOTE: this will *not* yield the same results as the case where we take
-        # the predictions from the trained SKLL learners above and did the
+        # the predictions from the trained SKLL learners above and do the
         # voting ourselves. This is because SKLL learners do a lot of things
         # differently (e.g., shuffling before grid search) that can cause
         # differences in results and/or floating point precision.
@@ -604,7 +606,7 @@ class VotingLearner(object):
                                                      probability=self.voting == "soft",
                                                      logger=self.logger)
 
-        # add in the model parameters,excluding the ones
+        # add in the model parameters, excluding the ones
         # for the underlying estimators, and return
         model_params = self.model.get_params(deep=False)
         res = (conf_matrix, accuracy, result_dict, model_params,
