@@ -748,7 +748,7 @@ class Learner(object):
     def train(self,  # noqa: C901
               examples,
               param_grid=None,
-              grid_search_folds=3,
+              grid_search_folds=5,
               grid_search=True,
               grid_objective=None,
               grid_jobs=None,
@@ -1404,7 +1404,7 @@ class Learner(object):
                        stratified=True,
                        cv_folds=10,
                        grid_search=True,
-                       grid_search_folds=3,
+                       grid_search_folds=5,
                        grid_jobs=None,
                        grid_objective=None,
                        output_metrics=[],

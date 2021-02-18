@@ -122,7 +122,7 @@ KNOWN_DEFAULT_PARAM_GRIDS = {AdaBoostClassifier:
 
 KNOWN_REQUIRES_DENSE = (BayesianRidge, Lars, TheilSenRegressor)
 
-MAX_CONCURRENT_PROCESSES = int(os.getenv('SKLL_MAX_CONCURRENT_PROCESSES', '3'))
+MAX_CONCURRENT_PROCESSES = int(os.getenv('SKLL_MAX_CONCURRENT_PROCESSES', '5'))
 
 VALID_FEATURE_SCALING_OPTIONS = frozenset(['both',
                                            'none',

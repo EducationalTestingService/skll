@@ -62,7 +62,7 @@ class SKLLConfigParser(configparser.ConfigParser):
                     'featureset_names': '[]',
                     'fixed_parameters': '[]',
                     'grid_search': 'True',
-                    'grid_search_folds': '3',
+                    'grid_search_folds': '5',
                     'grid_search_jobs': '0',
                     'hasher_features': '0',
                     'id_col': 'id',

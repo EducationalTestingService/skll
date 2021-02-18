@@ -1012,7 +1012,7 @@ grid_search_folds *(Optional)*
 
 """"""""""""""""""""""""""""""
 
-The number of folds to use for grid search. Defaults to 3.
+The number of folds to use for grid search. Defaults to 5.
 
 .. _grid_search_jobs:
 
