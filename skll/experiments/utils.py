@@ -39,7 +39,7 @@ class NumpyTypeEncoder(json.JSONEncoder):
 
 class PipelineTypeEncoder(json.JSONEncoder):
     """
-    This class is used for serializing ``sklearn.pipline.Pipeline`` objects.
+    This class is used for serializing ``sklearn.pipeline.Pipeline`` objects.
     """
 
     def default(self, obj):

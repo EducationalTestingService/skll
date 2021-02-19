@@ -125,7 +125,7 @@ def check_evaluate(learner_type,
     sklearn_vl = sklearn_model_type(**sklearn_model_kwargs)
     sklearn_vl.fit(train_fs.features, train_fs.labels)
 
-    # get the predictions from this voting classifier on the test ste
+    # get the predictions from this voting classifier on the test set
     sklearn_predictions = sklearn_vl.predict(test_fs.features)
 
     # compute the values of the objective and the extra metric
