@@ -1328,7 +1328,7 @@ save_cv_folds *(Optional)*
 """"""""""""""""""""""""""
 
 Whether to save the :ref:`folds file <output_folds_file>` containing the folds for a cross-validation experiment.
-Defaults to ``False``.
+Defaults to ``True``.
 
 .. _save_cv_models:
 

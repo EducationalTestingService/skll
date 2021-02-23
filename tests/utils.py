@@ -378,8 +378,8 @@ def fill_in_config_options_for_voting_learners(learner_type,  # noqa: C901
         num_cv_folds = 6
         values_to_fill_dict["num_cv_folds"] = str(num_cv_folds)
 
-    if options_dict["with_save_cv_folds"]:
-        values_to_fill_dict["save_cv_folds"] = "true"
+    if options_dict["without_save_cv_folds"]:
+        values_to_fill_dict["save_cv_folds"] = "false"
 
     if options_dict["with_save_cv_models"]:
         values_to_fill_dict["save_cv_models"] = "true"

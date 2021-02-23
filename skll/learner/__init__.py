@@ -1411,7 +1411,7 @@ class Learner(object):
                        prediction_prefix=None,
                        param_grid=None,
                        shuffle=False,
-                       save_cv_folds=False,
+                       save_cv_folds=True,
                        save_cv_models=False,
                        use_custom_folds_for_grid_search=True):
         """
@@ -1466,7 +1466,7 @@ class Learner(object):
             Defaults to ``False``.
         save_cv_folds : bool, optional
              Whether to save the cv fold ids or not?
-             Defaults to ``False``.
+             Defaults to ``True``.
         save_cv_models : bool, optional
             Whether to save the cv models or not?
             Defaults to ``False``.

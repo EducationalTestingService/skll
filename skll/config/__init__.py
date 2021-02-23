@@ -85,7 +85,7 @@ class SKLLConfigParser(configparser.ConfigParser):
                     'results': '',
                     'sampler': '',
                     'sampler_parameters': '[]',
-                    'save_cv_folds': 'False',
+                    'save_cv_folds': 'True',
                     'save_cv_models': 'False',
                     'shuffle': 'False',
                     'suffix': '',
