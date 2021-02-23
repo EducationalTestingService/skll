@@ -93,7 +93,8 @@ class SKLLConfigParser(configparser.ConfigParser):
                     'test_file': '',
                     'train_directory': '',
                     'train_file': '',
-                    'use_folds_file_for_grid_search': 'True'}
+                    'use_folds_file_for_grid_search': 'True',
+                    'save_votes': 'False'}
 
         correct_section_mapping = {'class_map': 'Input',
                                    'custom_learner_path': 'Input',
@@ -136,7 +137,8 @@ class SKLLConfigParser(configparser.ConfigParser):
                                    'test_file': 'Input',
                                    'train_directory': 'Input',
                                    'train_file': 'Input',
-                                   'use_folds_file_for_grid_search': 'Tuning'}
+                                   'use_folds_file_for_grid_search': 'Tuning',
+                                   'save_votes': 'Output'}
 
         # make sure that the defaults dictionary and the
         # section mapping dictionary have the same keys
@@ -359,6 +361,8 @@ def parse_config_file(config_path, log_level=logging.INFO):  # noqa: C901
         curve respectively.
     output_metrics : list
         A list of output metrics to use.
+    save_votes : bool
+        Whether to save the individual predictions from voting learners.
 
     Raises
     ------
@@ -678,6 +682,10 @@ def parse_config_file(config_path, log_level=logging.INFO):  # noqa: C901
                                                  'metrics',
                                                  logger=logger)
 
+    # do we want to save the individual predictions from voting
+    # learner estimators?
+    save_votes = config.getboolean("Output", "save_votes")
+
     #####################
     # 4. Tuning section #
     #####################
@@ -830,7 +838,7 @@ def parse_config_file(config_path, log_level=logging.INFO):  # noqa: C901
             prediction_dir, log_path, train_path, test_path, ids_to_floats,
             class_map, custom_learner_path, custom_metric_path,
             learning_curve_cv_folds_list, learning_curve_train_sizes,
-            output_metrics)
+            output_metrics, save_votes)
 
 
 def _setup_config_parser(config_path, validate=True):

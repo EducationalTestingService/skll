@@ -10,7 +10,6 @@ An easy-to-use class that wraps scikit-learn estimators.
 
 import copy
 import logging
-import os
 from importlib import import_module
 from itertools import combinations
 from math import floor, log10
@@ -30,7 +29,12 @@ from sklearn.ensemble import (
 )
 from sklearn.feature_extraction import DictVectorizer as OldDictVectorizer
 from sklearn.feature_extraction import FeatureHasher
-from sklearn.kernel_approximation import Nystroem, RBFSampler, SkewedChi2Sampler
+from sklearn.kernel_approximation import (  # noqa: F401
+    AdditiveChi2Sampler,
+    Nystroem,
+    RBFSampler,
+    SkewedChi2Sampler,
+)
 from sklearn.linear_model import (
     BayesianRidge,
     ElasticNet,
@@ -69,12 +73,13 @@ from skll.utils.constants import (
     KNOWN_REQUIRES_DENSE,
     MAX_CONCURRENT_PROCESSES,
 )
-from skll.version import VERSION
 
 from .utils import (
     Densifier,
     FilteredLeaveOneGroupOut,
     SelectByMinCount,
+    _load_learner_from_disk,
+    _save_learner_to_disk,
     add_unseen_labels,
     compute_evaluation_metrics,
     compute_num_folds_from_example_counts,
@@ -335,42 +340,15 @@ class Learner(object):
 
         Returns
         -------
-        learner : skll.Learner
+        learner : skll.learner.Learner
             The ``Learner`` instance loaded from the file.
-
-        Raises
-        ------
-        ValueError
-            If the pickled object is not a ``Learner`` instance.
-        ValueError
-            If the pickled version of the ``Learner`` instance is out of date.
         """
-        skll_version, learner = joblib.load(learner_path)
+        # use the logger that's passed in or if nothing was passed in,
+        # then create a new logger
+        logger = logger if logger else logging.getLogger(__name__)
 
-        # create the learner logger attribute to the logger that's passed in
-        # or if nothing was passed in, then a new logger should be linked
-        learner.logger = logger if logger else logging.getLogger(__name__)
-
-        # For backward compatibility, convert string model types to labels.
-        if isinstance(learner._model_type, str):
-            learner._model_type = globals()[learner._model_type]
-
-        # Check that we've actually loaded a Learner (or sub-class)
-        if not isinstance(learner, cls):
-            raise ValueError(f"'{learner_path}' does not contain a learner "
-                             "object.")
-        # check that versions are compatible.
-        elif skll_version < (2, 5, 0):
-            model_version_str = '.'.join(map(str, skll_version))
-            current_version_str = '.'.join(map(str, VERSION))
-            raise ValueError(f"The learner stored in '{learner_path}' was "
-                             f"created with v{model_version_str} of SKLL, "
-                             "which is incompatible with the current "
-                             f"v{current_version_str}.")
-        else:
-            if not hasattr(learner, 'sampler'):
-                learner.sampler = None
-            return learner
+        # call the learner loding utility function
+        return _load_learner_from_disk(cls, learner_path, logger)
 
     @property
     def model_type(self):
@@ -608,14 +586,7 @@ class Learner(object):
         learner_path : str
             The path to save the ``Learner`` instance to.
         """
-        # create the directory if it doesn't exist
-        learner_dir = os.path.dirname(learner_path)
-        if not learner_dir:
-            learner_dir = os.getcwd()
-        if not os.path.exists(learner_dir):
-            os.makedirs(learner_dir)
-        # write out the learner to disk
-        joblib.dump((VERSION, self), learner_path)
+        _save_learner_to_disk(self, learner_path)
 
     def _create_estimator(self):
         """
@@ -845,7 +816,6 @@ class Learner(object):
         # is specified and that the specified function is valid for the
         # selected learner
         if grid_search:
-
             if not grid_objective:
                 raise ValueError("Grid search is on by default. You must "
                                  "either specify a grid objective or turn off"
@@ -1385,7 +1355,7 @@ class Learner(object):
                 self.logger.warning('SkewedChi2Sampler uses a dense matrix')
                 if sp.issparse(xtest):
                     xtest = xtest.todense()
-            xtest = self.sampler.fit_transform(xtest)
+            xtest = self.sampler.transform(xtest)
 
         # get the various prediction from this learner on these features
         prediction_dict = get_predictions(self, xtest)
@@ -1532,6 +1502,8 @@ class Learner(object):
         ------
         ValueError
             If classification labels are not properly encoded as strings.
+        ValueError
+            If ``grid_search`` is ``True`` but ``grid_objective`` is ``None``.
         """
 
         # Seed the random number generator so that randomized algorithms are
@@ -1721,16 +1693,15 @@ class Learner(object):
         if len(examples) < 500:
             if not override_minimum:
                 raise ValueError(
-                    f'Number of training examples provided - {len(examples)} '
-                    f'- is less than the minimum needed - {500} - for the '
-                    'learning curve to be reliable.'
+                    f"Number of training examples provided ({len(examples)}) "
+                    "is less than the minimum needed (500) for the "
+                    "learning curve to be reliable."
                 )
             else:
                 self.logger.warning(
-                    'Because the number of training examples provided - '
-                    f'{len(examples)} - is less than the ideal minimum - '
-                    f'{500} - learning curve generation is unreliable and '
-                    'might break')
+                    "Learning curves can be unreliable for examples fewer than "
+                    f"500. You provided {len(examples)}."
+                )
 
         # raise a warning if we are using a probabilistic classifier
         # since that means we cannot use the predictions directly

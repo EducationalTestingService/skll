@@ -984,7 +984,7 @@ def test_config_parsing_no_grid_objectives_needed_for_learning_curve():
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
      class_map, custom_learner_path, custom_metric_path, learning_curve_cv_folds_list,
-     learning_curve_train_sizes, output_metrics) = parse_config_file(config_path)
+     learning_curve_train_sizes, output_metrics, save_votes) = parse_config_file(config_path)
 
     eq_(do_grid_search, False)
     eq_(grid_objectives, [])
@@ -1022,7 +1022,7 @@ def test_config_parsing_relative_input_path():
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
      class_map, custom_learner_path, custom_metric_path, learning_curve_cv_folds_list,
-     learning_curve_train_sizes, output_metrics) = parse_config_file(config_path)
+     learning_curve_train_sizes, output_metrics, save_votes) = parse_config_file(config_path)
 
     # we need to use normcase here for Azure package builds to pass
     eq_(normcase(normpath(train_path)), normcase(train_dir))
@@ -1296,7 +1296,7 @@ def check_cv_folds_and_grid_search_folds(task,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
      class_map, custom_learner_path, custom_metric_path, learning_curve_cv_folds_list,
-     learning_curve_train_sizes, output_metrics) = parse_config_file(config_path)
+     learning_curve_train_sizes, output_metrics, save_votes) = parse_config_file(config_path)
 
     eq_(cv_folds, chosen_cv_folds)
     eq_(grid_search_folds, chosen_grid_search_folds)
@@ -1334,7 +1334,7 @@ def test_default_number_of_cv_folds():
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
      class_map, custom_learner_path, custom_metric_path, learning_curve_cv_folds_list,
-     learning_curve_train_sizes, output_metrics) = parse_config_file(config_path)
+     learning_curve_train_sizes, output_metrics, save_votes) = parse_config_file(config_path)
 
     eq_(cv_folds, 10)
 
@@ -1371,7 +1371,7 @@ def test_setting_number_of_cv_folds():
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
      class_map, custom_learner_path, custom_metric_path, learning_curve_cv_folds_list,
-     learning_curve_train_sizes, output_metrics) = parse_config_file(config_path)
+     learning_curve_train_sizes, output_metrics, save_votes) = parse_config_file(config_path)
 
     eq_(cv_folds, 5)
 
@@ -1410,7 +1410,7 @@ def test_setting_param_grids():
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
      class_map, custom_learner_path, custom_metric_path, learning_curve_cv_folds_list,
-     learning_curve_train_sizes, output_metrics) = parse_config_file(config_path)
+     learning_curve_train_sizes, output_metrics, save_votes) = parse_config_file(config_path)
 
     eq_(param_grid_list[0]['C'][0], 1e-6)
     eq_(param_grid_list[0]['C'][1], 1e-3)
@@ -1453,7 +1453,7 @@ def test_setting_fixed_parameters():
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
      class_map, custom_learner_path, custom_metric_path, learning_curve_cv_folds_list,
-     learning_curve_train_sizes, output_metrics) = parse_config_file(config_path)
+     learning_curve_train_sizes, output_metrics, save_votes) = parse_config_file(config_path)
 
     eq_(fixed_parameter_list[0]['C'][0], 1e-6)
     eq_(fixed_parameter_list[0]['C'][1], 1e-3)
@@ -1521,7 +1521,7 @@ def test_default_learning_curve_options():
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
      class_map, custom_learner_path, custom_metric_path, learning_curve_cv_folds_list,
-     learning_curve_train_sizes, output_metrics) = parse_config_file(config_path)
+     learning_curve_train_sizes, output_metrics, save_votes) = parse_config_file(config_path)
 
     eq_(learning_curve_cv_folds_list, [10, 10])
     ok_(np.all(learning_curve_train_sizes == np.linspace(0.1, 1.0, 5)))
@@ -1558,7 +1558,7 @@ def test_setting_learning_curve_options():
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
      class_map, custom_learner_path, custom_metric_path, learning_curve_cv_folds_list,
-     learning_curve_train_sizes, output_metrics) = parse_config_file(config_path)
+     learning_curve_train_sizes, output_metrics, save_votes) = parse_config_file(config_path)
 
     eq_(learning_curve_cv_folds_list, [100, 10])
     eq_(learning_curve_train_sizes, [10, 50, 100, 200, 500])
@@ -1597,7 +1597,7 @@ def test_learning_curve_metrics_and_objectives_throw_error():
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
      class_map, custom_learner_path, custom_metric_path, learning_curve_cv_folds_list,
-     learning_curve_train_sizes, output_metrics) = parse_config_file(config_path)
+     learning_curve_train_sizes, output_metrics, save_votes) = parse_config_file(config_path)
 
     eq_(output_metrics, ["accuracy", "f1_score_micro"])
 
@@ -1633,7 +1633,7 @@ def test_learning_curve_metrics_and_no_objectives():
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
      class_map, custom_learner_path, custom_metric_path, learning_curve_cv_folds_list,
-     learning_curve_train_sizes, output_metrics) = parse_config_file(config_path)
+     learning_curve_train_sizes, output_metrics, save_votes) = parse_config_file(config_path)
 
     eq_(output_metrics, ["accuracy", "unweighted_kappa"])
 
@@ -1669,7 +1669,7 @@ def test_learning_curve_metrics():
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
      class_map, custom_learner_path, custom_metric_path, learning_curve_cv_folds_list,
-     learning_curve_train_sizes, output_metrics) = parse_config_file(config_path)
+     learning_curve_train_sizes, output_metrics, save_votes) = parse_config_file(config_path)
 
     eq_(output_metrics, ["accuracy"])
     eq_(grid_objectives, [])
@@ -1707,7 +1707,7 @@ def test_learning_curve_pipeline_option():
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
      class_map, custom_learner_path, custom_metric_path, learning_curve_cv_folds_list,
-     learning_curve_train_sizes, output_metrics) = parse_config_file(config_path)
+     learning_curve_train_sizes, output_metrics, save_votes) = parse_config_file(config_path)
 
     eq_(pipeline, True)
 
@@ -1853,7 +1853,7 @@ def test_config_parsing_no_grid_search_but_objectives_specified():
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
      class_map, custom_learner_path, custom_metric_path, learning_curve_cv_folds_list,
-     learning_curve_train_sizes, output_metrics) = parse_config_file(config_path)
+     learning_curve_train_sizes, output_metrics, save_votes) = parse_config_file(config_path)
 
     eq_(do_grid_search, False)
     eq_(grid_objectives, [])
@@ -1944,6 +1944,87 @@ def test_config_parsing_default_pos_label_str_value():
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
      class_map, custom_learner_path, custom_metric_path, learning_curve_cv_folds_list,
-     learning_curve_train_sizes, output_metrics) = parse_config_file(config_path)
+     learning_curve_train_sizes, output_metrics, save_votes) = parse_config_file(config_path)
 
     eq_(pos_label_str, None)
+
+
+def test_config_parsing_default_save_votes_value():
+    """
+    Check that the default value of `save_value` gets set to `False`
+    """
+
+    values_to_fill_dict = {
+        'experiment_name': 'config_parsing',
+        'task': 'evaluate',
+        'train_directory': train_dir,
+        'test_directory': test_dir,
+        'featuresets': "[['f1', 'f2', 'f3']]",
+        'fixed_parameters': '[{"estimator_names": ["SVC", "LogisticRegression", "MultinomialNB"]}]',
+        'learners': "['VotingClassifier']",
+        'objectives': "['accuracy']",
+        'log': output_dir,
+        'results': output_dir,
+    }
+
+    config_template_path = join(config_dir,
+                                'test_config_parsing.template.cfg')
+
+    config_path = fill_in_config_options(config_template_path,
+                                         values_to_fill_dict,
+                                         'default_value_save_votes')
+
+    (experiment_name, task, sampler, fixed_sampler_parameters,
+     feature_hasher, hasher_features, id_col, label_col, train_set_name,
+     test_set_name, suffix, featuresets, do_shuffle, model_path,
+     do_grid_search, grid_objectives, probability, pipeline, results_path,
+     pos_label_str, feature_scaling, min_feature_count, folds_file,
+     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
+     save_cv_models, use_folds_file_for_grid_search, do_stratified_folds,
+     fixed_parameter_list, param_grid_list, featureset_names, learners,
+     prediction_dir, log_path, train_path, test_path, ids_to_floats,
+     class_map, custom_learner_path, custom_metric_path, learning_curve_cv_folds_list,
+     learning_curve_train_sizes, output_metrics, save_votes) = parse_config_file(config_path)
+
+    eq_(save_votes, False)
+
+
+def test_config_parsing_set_save_votes_value():
+    """
+    Check that the value of `save_value` gets correctly set
+    """
+
+    values_to_fill_dict = {
+        'experiment_name': 'config_parsing',
+        'task': 'evaluate',
+        'train_directory': train_dir,
+        'test_directory': test_dir,
+        'featuresets': "[['f1', 'f2', 'f3']]",
+        'fixed_parameters': '[{"estimator_names": ["SVC", "LogisticRegression", "MultinomialNB"]}]',
+        'learners': "['VotingClassifier']",
+        'objectives': "['accuracy']",
+        'log': output_dir,
+        'results': output_dir,
+        'save_votes': 'true'
+    }
+
+    config_template_path = join(config_dir,
+                                'test_config_parsing.template.cfg')
+
+    config_path = fill_in_config_options(config_template_path,
+                                         values_to_fill_dict,
+                                         'set_value_save_votes')
+
+    (experiment_name, task, sampler, fixed_sampler_parameters,
+     feature_hasher, hasher_features, id_col, label_col, train_set_name,
+     test_set_name, suffix, featuresets, do_shuffle, model_path,
+     do_grid_search, grid_objectives, probability, pipeline, results_path,
+     pos_label_str, feature_scaling, min_feature_count, folds_file,
+     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
+     save_cv_models, use_folds_file_for_grid_search, do_stratified_folds,
+     fixed_parameter_list, param_grid_list, featureset_names, learners,
+     prediction_dir, log_path, train_path, test_path, ids_to_floats,
+     class_map, custom_learner_path, custom_metric_path, learning_curve_cv_folds_list,
+     learning_curve_train_sizes, output_metrics, save_votes) = parse_config_file(config_path)
+
+    eq_(save_votes, True)

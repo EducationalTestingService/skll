@@ -18,7 +18,7 @@ jobs:
   pool:
     vmImage: 'windows-latest'
   strategy:
-    parallel: 5
+    parallel: 6
 
   steps:
   - powershell: Write-Host "##vso[task.prependpath]$env:CONDA\Scripts"
@@ -42,7 +42,7 @@ jobs:
   - script: |
       CALL activate sklldev
       echo $(pytestfiles)
-      nosetests --with-xunit $(pytestfiles)
+      nosetests --logging-level=WARNING --with-xunit $(pytestfiles)
     displayName: 'Run tests'
     continueOnError: true
 

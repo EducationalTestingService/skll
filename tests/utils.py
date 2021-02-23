@@ -1,5 +1,5 @@
 """
-Utilities functions to make SKLL testing simpler
+Utility functions to make SKLL testing simpler.
 """
 
 import re
@@ -11,12 +11,24 @@ from typing import Union
 
 import numpy as np
 from numpy.random import RandomState
-from sklearn.datasets import make_classification, make_regression
+from sklearn.datasets import (
+    fetch_california_housing,
+    load_digits,
+    make_classification,
+    make_regression,
+)
 from sklearn.feature_extraction import FeatureHasher
+from sklearn.model_selection import ShuffleSplit
 
-from skll.config import _setup_config_parser
+from skll.config import _setup_config_parser, fix_json
 from skll.data import FeatureSet, NDJWriter
-from tests import _my_dir, output_dir, test_dir, train_dir
+from tests import _my_dir, config_dir, other_dir, output_dir, test_dir, train_dir
+
+
+class BoolDict(dict):
+    """Dictionary that returns ``False`` instead of ``None`` as default."""
+    def __getitem__(self, key):
+        return super().get(key, False)
 
 
 def unlink(file_path: Union[str, Path]):
@@ -82,8 +94,10 @@ def fill_in_config_paths(config_template_path):
     return new_config_path
 
 
-def fill_in_config_paths_for_single_file(config_template_path, train_file,
-                                         test_file, train_directory='',
+def fill_in_config_paths_for_single_file(config_template_path,
+                                         train_file,
+                                         test_file,
+                                         train_directory='',
                                          test_directory=''):
     """
     Add paths to train and test files, and output directories to a given config
@@ -140,9 +154,7 @@ def fill_in_config_options(config_template_path,
                            values_to_fill_dict,
                            sub_prefix,
                            good_probability_option=False):
-    """
-    Fill in values in the given config template
-    """
+    """Fill in values in the given config template"""
 
     config = _setup_config_parser(config_template_path, validate=False)
 
@@ -155,19 +167,20 @@ def fill_in_config_options(config_template_path,
     to_fill_in = {'General': ['experiment_name', 'task'],
                   'Input': ['train_directory', 'train_file', 'test_directory',
                             'test_file', 'featuresets', 'featureset_names',
-                            'feature_hasher', 'hasher_features', 'learners',
+                            'custom_learner_path', 'feature_hasher',
+                            'hasher_features', 'learners',
                             'sampler', 'shuffle', 'feature_scaling',
                             'learning_curve_cv_folds_list', 'folds_file',
                             'learning_curve_train_sizes', 'fixed_parameters',
                             'num_cv_folds', 'bad_option', 'duplicate_option',
                             'suffix'],
-                  'Tuning': ['grid_search', 'objective',
+                  'Tuning': ['grid_search', 'objective', 'min_feature_count',
                              'use_folds_file_for_grid_search', 'grid_search_folds',
                              'pos_label_str', 'param_grids', 'objectives',
                              'duplicate_option'],
                   'Output': ['results', 'log', 'models', 'metrics',
                              'predictions', 'pipeline', 'save_cv_folds',
-                             'save_cv_models']}
+                             'save_cv_models', 'save_votes']}
 
     if good_probability_option:
         to_fill_in['Output'].append('probability')
@@ -212,6 +225,195 @@ def fill_in_config_paths_for_fancy_output(config_template_path):
         config.write(new_config_file)
 
     return new_config_path
+
+
+def fill_in_config_options_for_voting_learners(learner_type,  # noqa: C901
+                                               task,
+                                               options_dict):
+    """
+    Fill in values specific to voting learners in the given template.
+
+    Parameters
+    ----------
+    learner_type : str
+        One of "classifier" or "regressor".
+    task : str
+        The voting learner task for which we are filling the values.
+    options_dict : BoolDict
+        A dictionary containing various boolean options which will
+        be used to fill the values based on whether they are set
+        to ``True`` or ``False`.
+
+    Returns
+    -------
+    res : a 12-tuple
+        A tuple containing the following items as determined by the options
+        specified in ``options_dict``:
+        - the path to the filled-in configuration file
+        - the names of the underlying estimators used for the voting learner
+        - a job prefix constructed using the experiment name, the task, the
+          featureset name, and the learner name.
+        - the path to any custom learner file used, if any
+        - the names of the objective functions used, if any
+        - the names of any output metrics used, if any
+        - the list of fixed parameters used for the underlying estimators, if any
+        - the list of parameter grids used for the underlying estimators, if any
+        - the list of samplers used for the underlying estimators, if any
+        - the number of cross-validation folds used (6 or 10)
+        - the number of learning curve cross-validation folds (10 or 20)
+        - the list of learning curve training sizes
+    """
+
+    # setup learner-type specific values based on configuration options
+    custom_learner = ''
+    objectives = None
+    output_metrics = []
+    model_kwargs_list = None
+    param_grid_list = None
+    sampler_list = None
+    num_cv_folds = learning_curve_cv_folds = 10
+    learning_curve_train_sizes = [0.1, 0.325, 0.55, 0.775, 1.0]
+    if learner_type == "classifier":
+        learner_name = "VotingClassifier"
+        estimator_names = ["LogisticRegression", "SVC", "MultinomialNB"]
+        fixed_parameters = [{'estimator_names': estimator_names}]
+
+        if options_dict["with_model_kwargs_list"]:
+            model_kwargs_list = [{}, {"gamma": "auto"}, {"alpha": 0.01}]
+            fixed_parameters[0].update({"estimator_fixed_parameters": model_kwargs_list})
+
+        if options_dict["with_param_grid_list"]:
+            param_grid_list = [{"penalty": ["l1", "l2"]}, {}, {}]
+            fixed_parameters[0].update({"estimator_param_grids": param_grid_list})
+
+        if options_dict["with_sampler_list"]:
+            sampler_list = ["SkewedChi2Sampler", "Nystroem", ""]
+            fixed_parameters[0].update({"estimator_samplers": sampler_list})
+
+        if options_dict["with_soft_voting"]:
+            fixed_parameters[0].update({"voting_type": "soft"})
+
+        if options_dict["with_grid_search"]:
+            objectives = (["accuracy", "f1_score_macro"] if options_dict["with_multiple_objectives"]
+                          else ["accuracy"])
+
+        if options_dict["with_output_metrics"]:
+            output_metrics = ["f05", "f1_score_macro"]
+
+    else:
+        learner_name = "VotingRegressor"
+        estimator_names = ["LinearRegression", "SVR", "RandomForestRegressor"]
+        fixed_parameters = [{"estimator_names": estimator_names}]
+
+        if options_dict["with_model_kwargs_list"]:
+            model_kwargs_list = [{}, {"kernel": "poly"}, {"n_estimators": 200}]
+            fixed_parameters[0].update({"estimator_fixed_parameters": model_kwargs_list})
+
+        if options_dict["with_param_grid_list"]:
+            param_grid_list = [{}, {"degree": [3, 4, 5]}, {}]
+            fixed_parameters[0].update({"estimator_param_grids": param_grid_list})
+
+        if options_dict["with_sampler_list"]:
+            sampler_list = ["", "AdditiveChi2Sampler", ""]
+            fixed_parameters[0].update({"estimator_samplers": sampler_list})
+
+        if options_dict["with_grid_search"]:
+            objectives = (["pearson", "neg_mean_squared_error"] if options_dict["with_multiple_objectives"]
+                          else ["pearson"])
+
+        if options_dict["with_output_metrics"]:
+            output_metrics = ["spearman", "kendall_tau"]
+
+    # create the dictionary that we will use to fill our config template
+    experiment_name = "test_voting_learner"
+    sub_prefix = task
+    featureset_name = "f0"
+    train_path = join(train_dir, f"{featureset_name}.jsonlines")
+    job_name = f"{experiment_name}_{sub_prefix}_{featureset_name}_{learner_name}"
+    values_to_fill_dict = {"experiment_name": f"{experiment_name}_{sub_prefix}",
+                           "train_file": train_path,
+                           "task": task,
+                           "learners": str([learner_name]),
+                           "grid_search": fix_json(str(options_dict["with_grid_search"])),
+                           "featureset_names": str([featureset_name]),
+                           "fixed_parameters": str(fixed_parameters)}
+
+    # insert additional values in this dictionary
+    if task in ["evaluate", "predict"]:
+        test_path = join(test_dir, f"{featureset_name}.jsonlines")
+        values_to_fill_dict["test_file"] = test_path
+
+    if options_dict["with_grid_search"]:
+        values_to_fill_dict["objectives"] = str(objectives)
+
+    if options_dict["with_gs_folds"]:
+        values_to_fill_dict["grid_search_folds"] = '4'
+
+    if options_dict["with_shuffle"]:
+        values_to_fill_dict["shuffle"] = "true"
+
+    if options_dict["with_centering"]:
+        values_to_fill_dict["feature_scaling"] = "with_mean"
+
+    if options_dict["with_min_feature_count"]:
+        values_to_fill_dict["min_feature_count"] = "2"
+
+    if options_dict["with_custom_learner_path"]:
+        custom_learner = join(other_dir, "custom_logistic_wrapper.py")
+        values_to_fill_dict["custom_learner_path"] = custom_learner
+
+    if options_dict["with_pos_label_str"]:
+        values_to_fill_dict["pos_label_str"] = "dog"
+
+    if options_dict["with_individual_predictions"]:
+        values_to_fill_dict["save_votes"] = "true"
+
+    if options_dict["with_output_metrics"]:
+        values_to_fill_dict["metrics"] = str(output_metrics)
+
+    if options_dict["with_prediction_prefix"]:
+        values_to_fill_dict["predictions"] = output_dir
+
+    if options_dict["with_cv_folds"]:
+        num_cv_folds = 6
+        values_to_fill_dict["num_cv_folds"] = str(num_cv_folds)
+
+    if options_dict["with_save_cv_folds"]:
+        values_to_fill_dict["save_cv_folds"] = "true"
+
+    if options_dict["with_save_cv_models"]:
+        values_to_fill_dict["save_cv_models"] = "true"
+
+    if options_dict["with_learning_curve_cv_folds"]:
+        learning_curve_cv_folds = 20
+        values_to_fill_dict["learning_curve_cv_folds_list"] = str([learning_curve_cv_folds])
+
+    if options_dict["with_learning_curve_train_sizes"]:
+        learning_curve_train_sizes = [0.1, 0.5, 1.0]
+        values_to_fill_dict["learning_curve_train_sizes"] = str(learning_curve_cv_folds)
+
+    if task != "learning_curve":
+        values_to_fill_dict["models"] = (other_dir if options_dict["with_existing_model"]
+                                         else output_dir)
+
+    # locate the voting learner config template and instantiate it
+    config_template_path = join(config_dir, f"{experiment_name}.template.cfg")
+    config_path = fill_in_config_options(config_template_path,
+                                         values_to_fill_dict,
+                                         sub_prefix)
+
+    return (config_path,
+            estimator_names,
+            job_name,
+            custom_learner,
+            objectives,
+            output_metrics,
+            model_kwargs_list,
+            param_grid_list,
+            sampler_list,
+            num_cv_folds,
+            learning_curve_cv_folds,
+            learning_curve_train_sizes)
 
 
 def create_jsonlines_feature_files(path):
@@ -509,5 +711,204 @@ def make_sparse_data(use_feature_hashing=False):
     test_fs = FeatureSet('test_sparse', ids,
                          features=features, labels=y,
                          vectorizer=vectorizer)
+
+    return train_fs, test_fs
+
+
+def make_digits_data(num_examples=None, test_size=0.2, use_digit_names=False):
+    """
+    Create train/test featuresets from the digits dataset.
+
+    Parameters
+    ----------
+    num_examples : int, optional
+        Number of total examples to use. 80% of these examples
+        will be in the training set and the remaining 20% in
+        the test set. If ``None``, it will use all of the
+        examples in the dataset.
+        Defaults to ``None``.
+    test_size : float, optional
+        Fraction of ``num_examples`` to use for the test
+        featureset. Should be between 0 and 1. If this is 0,
+        the training featureset will contain all of the
+        examples and the test featureset will be ``None``.
+        Defaults to 0.2.
+    use_digit_names : bool, optional
+        If ``True``, use the names of the digits ("zero", "one", etc.) as the
+        labels in the featuresets rather than the integer-valued targets
+        (0, 1, etc.).
+        Defaults to ``False``.
+
+    Returns
+    -------
+    fs_tuple : tuple
+        A 2-tuple containing the created train and test featuresets.
+        The test featureset will be ``None`` if ``test_size`` is 0.
+
+    Raises
+    ------
+    ValueError
+        If ``num_examples`` is greater than the number of available
+        examples.
+    """
+    # load the digits data
+    digits = load_digits(as_frame=True)
+    df_digits = digits.frame
+
+    # use all examples if ``num_examples`` was ``None``
+    num_examples = len(df_digits) if num_examples is None else num_examples
+
+    # raise an exception if the number of desired examples is greater
+    # than the number of available examples in the data
+    if num_examples > len(df_digits):
+        raise ValueError(f"invalid value {num_examples} for 'num_examples', "
+                         f"only {len(df_digits)} examples are available.")
+
+    # select the desired number of examples
+    row_indices = np.arange(len(df_digits))
+    prng = np.random.default_rng(123456789)
+    if num_examples < len(df_digits):
+        chosen_row_indices = prng.choice(row_indices,
+                                         size=num_examples,
+                                         replace=False,
+                                         shuffle=False)
+    else:
+        chosen_row_indices = row_indices
+
+    # now split the chosen indices into train and test indices
+    # assuming ``test_size`` > 0
+    if test_size > 0:
+        splitter = ShuffleSplit(n_splits=1, test_size=test_size, random_state=123456789)
+        train_indices, test_indices = list(splitter.split(chosen_row_indices))[0]
+    else:
+        train_indices = chosen_row_indices
+        test_indices = np.array([])
+
+    # by default, we will use the "target" column of the frame as our labels
+    label_column = "target"
+
+    # if we are asked to use digit names instead of integers
+    if use_digit_names:
+
+        # create a dictionary mapping integer labels to fake class names
+        label_dict = {0: "zero", 1: "one", 2: "two", 3: "three", 4: "four",
+                      5: "five", 6: "six", 7: "seven", 8: "eight", 9: "nine"}
+
+        # add a new class column that contains the class names
+        df_digits["class"] = df_digits.apply(lambda row: label_dict[row["target"]],
+                                             axis=1)
+
+        # drop the target column and use "class" as the label column
+        df_digits.drop(columns=["target"], axis=1, inplace=True)
+        label_column = "class"
+
+    # now subset the training and test rows from the data frame
+    df_train = df_digits.iloc[train_indices].copy()
+    df_test = df_digits.iloc[test_indices].copy()
+
+    # now create the train and test feature sets from the data frames
+    train_fs = FeatureSet.from_data_frame(df_train,
+                                          "digits_train",
+                                          labels_column=label_column)
+    if len(df_test) > 0:
+        test_fs = FeatureSet.from_data_frame(df_test,
+                                             "digits_test",
+                                             labels_column=label_column,
+                                             vectorizer=train_fs.vectorizer)
+    else:
+        test_fs = None
+
+    return train_fs, test_fs
+
+
+def make_california_housing_data(num_examples=None, test_size=0.2):
+    """
+    Create train/test featuresets from the California housing dataset.
+
+    All columns are standardized into z-scores before creating the
+    two feature sets.
+
+    Parameters
+    ----------
+    num_examples : int, optional
+        Number of total examples to use. 80% of these examples
+        will be in the training set and the remaining 20% in
+        the test set. If ``None``, it will use all of the
+        examples in the dataset.
+        Defaults to ``None``.
+    test_size : float, optional
+        Fraction of ``num_examples`` to use for the test
+        featureset. Should be between 0 and 1. If this is 0,
+        the training featureset will contain all of the
+        examples and the test featureset will be ``None``.
+        Defaults to 0.2.
+
+    Returns
+    -------
+    fs_tuple : tuple
+        A 2-tuple containing the created train and test featuresets.
+        The test featureset will be ``None`` if ``test_size`` is 0.
+
+    Raises
+    ------
+    ValueError
+        If ``num_examples`` is greater than the number of available
+        examples.
+    """
+
+    # load the housing data
+    other_dir = join(_my_dir, 'other')
+    housing = fetch_california_housing(data_home=other_dir,
+                                       download_if_missing=False,
+                                       as_frame=True)
+    df_housing = housing.frame
+
+    # standardize all of the values to get them on the same scale
+    df_housing = (df_housing - df_housing.mean()) / df_housing.std()
+
+    # use all examples if ``num_examples`` was ``None``
+    num_examples = len(df_housing) if num_examples is None else num_examples
+
+    # raise an exception if the number of desired examples is greater
+    # than the number of available examples in the data
+    if num_examples > len(df_housing):
+        raise ValueError(f"invalid value {num_examples} for 'num_examples', "
+                         f"only {len(df_housing)} examples are available.")
+
+    # select the desired number of examples
+    row_indices = np.arange(len(df_housing))
+    prng = np.random.default_rng(123456789)
+    if num_examples < len(df_housing):
+        chosen_row_indices = prng.choice(row_indices,
+                                         size=num_examples,
+                                         replace=False,
+                                         shuffle=False)
+    else:
+        chosen_row_indices = row_indices
+
+    # now split the chosen indices into train and test indices
+    # assuming ``test_size`` > 0
+    if test_size > 0:
+        splitter = ShuffleSplit(n_splits=1, test_size=test_size, random_state=123456789)
+        train_indices, test_indices = list(splitter.split(chosen_row_indices))[0]
+    else:
+        train_indices = chosen_row_indices
+        test_indices = np.array([])
+
+    # now subset the training and test rows from the data frame
+    df_train = df_housing.iloc[train_indices].copy()
+    df_test = df_housing.iloc[test_indices].copy()
+
+    # now create the train and test feature sets from the data frames
+    train_fs = FeatureSet.from_data_frame(df_train,
+                                          "housing_train",
+                                          labels_column="MedHouseVal")
+    if len(df_test) > 0:
+        test_fs = FeatureSet.from_data_frame(df_test,
+                                             "housing_test",
+                                             labels_column="MedHouseVal",
+                                             vectorizer=train_fs.vectorizer)
+    else:
+        test_fs = None
 
     return train_fs, test_fs

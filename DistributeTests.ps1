@@ -35,9 +35,12 @@ if ($agentNumber -eq 1) {
 }
 elseif ($agentNumber -eq 2) {
     $testsToRun = $testsToRun + "tests/test_output.py"
+    $testsToRun = $testsToRun + "tests/test_voting_learners_api_4.py"
+    $testsToRun = $testsToRun + "tests/test_voting_learners_api_5.py"
 }
 elseif ($agentNumber -eq 3) {
     $testsToRun = $testsToRun + "tests/test_regression.py"
+    $testsToRun = $testsToRun + "tests/test_voting_learners_api_2.py"
 }
 elseif ($agentNumber -eq 4) {
     $testsToRun = $testsToRun + "tests/test_input.py"
@@ -46,11 +49,20 @@ elseif ($agentNumber -eq 4) {
     $testsToRun = $testsToRun + "tests/test_custom_learner.py"
     $testsToRun = $testsToRun + "tests/test_logging_utils.py"
     $testsToRun = $testsToRun + "tests/test_examples.py"
+    $testsToRun = $testsToRun + "tests/test_voting_learners_api_1.py"
+    $testsToRun = $testsToRun + "tests/test_voting_learners_expts_1.py"
 }
 elseif ($agentNumber -eq 5) {
     $testsToRun = $testsToRun + "tests/test_classification.py"
     $testsToRun = $testsToRun + "tests/test_cv.py"
     $testsToRun = $testsToRun + "tests/test_ablation.py"
+    $testsToRun = $testsToRun + "tests/test_voting_learners_expts_4.py"
+}
+elseif ($agentNumber -eq 6) {
+    $testsToRun = $testsToRun + "tests/test_voting_learners_api_3.py"
+    $testsToRun = $testsToRun + "tests/test_voting_learners_expts_2.py"
+    $testsToRun = $testsToRun + "tests/test_voting_learners_expts_3.py"
+    $testsToRun = $testsToRun + "tests/test_voting_learners_expts_5.py"
 }
 
 # join all test files seperated by space. pytest runs multiple test files in following format pytest test1.py test2.py test3.py

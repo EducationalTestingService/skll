@@ -22,6 +22,7 @@ from sklearn.metrics import SCORERS
 from skll.config import parse_config_file
 from skll.config.utils import _munge_featureset_name
 from skll.learner import MAX_CONCURRENT_PROCESSES, Learner, load_custom_learner
+from skll.learner.voting import VotingLearner
 from skll.metrics import _CUSTOM_METRICS, register_custom_metric
 from skll.utils.logging import close_and_remove_logger_handlers, get_skll_logger
 from skll.version import __version__
@@ -128,6 +129,7 @@ def _classify_featureset(args):  # noqa: C901
     quiet = args.pop('quiet', False)
     learning_curve_cv_folds = args.pop("learning_curve_cv_folds")
     learning_curve_train_sizes = args.pop("learning_curve_train_sizes")
+    save_votes = args.pop("save_votes")
 
     if args:
         raise ValueError("Extra arguments passed to _classify_featureset: "
@@ -233,18 +235,47 @@ def _classify_featureset(args):  # noqa: C901
             train_set_size = len(train_examples.ids)
             if not train_examples.has_labels:
                 raise ValueError('Training examples do not have labels')
-            # initialize a classifer object
-            learner = Learner(learner_name,
-                              probability=probability,
-                              pipeline=pipeline,
-                              feature_scaling=feature_scaling,
-                              model_kwargs=fixed_parameters,
-                              pos_label_str=pos_label_str,
-                              min_feature_count=min_feature_count,
-                              sampler=sampler,
-                              sampler_kwargs=sampler_parameters,
-                              custom_learner_path=custom_learner_path,
-                              logger=logger)
+
+            # set up some keyword arguments for instantiating the learner
+            # object; note that these are shared by all types of learners
+            # supported by SKLL (regular and voting)
+            common_learner_kwargs = {"custom_learner_path": custom_learner_path,
+                                     "feature_scaling": feature_scaling,
+                                     "pos_label_str": pos_label_str,
+                                     "min_feature_count": min_feature_count,
+                                     "logger": logger}
+
+            # instantiate the right type of learner object
+            if learner_name in ["VotingClassifier", "VotingRegressor"]:
+                # the fixed parameters dictionary must at least
+                # contains the estimator names for the voting;
+                # the rest can be set to default values
+                try:
+                    learner_names = fixed_parameters["estimator_names"]
+                except KeyError:
+                    raise ValueError("'estimator names' must be specified as "
+                                     "fixed parameters for voting classifiers "
+                                     "and/or regressors.") from None
+                else:
+                    voting_type = fixed_parameters.get("voting_type", "hard")
+                    model_kwargs_list = fixed_parameters.get("estimator_fixed_parameters")
+                    sampler_list = fixed_parameters.get("estimator_samplers")
+                    sampler_kwargs_list = fixed_parameters.get("estimator_sampler_parameters")
+                    param_grids_list = fixed_parameters.get("estimator_param_grids")
+                    learner = VotingLearner(learner_names,
+                                            voting=voting_type,
+                                            model_kwargs_list=model_kwargs_list,
+                                            sampler_list=sampler_list,
+                                            sampler_kwargs_list=sampler_kwargs_list,
+                                            **common_learner_kwargs)
+            else:
+                learner = Learner(learner_name,
+                                  model_kwargs=fixed_parameters,
+                                  pipeline=pipeline,
+                                  sampler=sampler,
+                                  sampler_kwargs=sampler_parameters,
+                                  probability=probability,
+                                  **common_learner_kwargs)
 
         # load the model if it already exists
         else:
@@ -253,13 +284,15 @@ def _classify_featureset(args):  # noqa: C901
             if custom_learner_path:
                 globals()[learner_name] = load_custom_learner(custom_learner_path, learner_name)
             train_set_size = 'unknown'
+
+            # load the non-custom learner from disk
             if exists(modelfile) and not overwrite:
                 logger.info(f"Loading pre-existing {learner_name} model: "
                             f"{modelfile}")
-            learner = Learner.from_file(modelfile)
-
-            # attach the job logger to this learner
-            learner.logger = logger
+            if learner_name in ["VotingClassifier", "VotingRegressor"]:
+                learner = VotingLearner.from_file(modelfile, logger=logger)
+            else:
+                learner = Learner.from_file(modelfile, logger=logger)
 
         # Load test set if there is one
         if task == 'evaluate' or task == 'predict':
@@ -325,28 +358,55 @@ def _classify_featureset(args):  # noqa: C901
         task_results = None
         if task == 'cross_validate':
             logger.info('Cross-validating')
-            (task_results,
-             grid_scores,
-             grid_search_cv_results_dicts,
-             skll_fold_ids,
-             models) = learner.cross_validate(train_examples,
-                                              shuffle=shuffle,
-                                              stratified=stratified_folds,
-                                              prediction_prefix=prediction_prefix,
-                                              grid_search=grid_search,
-                                              grid_search_folds=grid_search_folds,
-                                              cv_folds=cv_folds,
-                                              grid_objective=grid_objective,
-                                              output_metrics=output_metrics,
-                                              param_grid=param_grid,
-                                              grid_jobs=grid_search_jobs,
-                                              save_cv_folds=save_cv_folds,
-                                              save_cv_models=save_cv_models,
-                                              use_custom_folds_for_grid_search=use_folds_file_for_grid_search)
+
+            # set up the keyword arguments for learner cross-validation;
+            # note that most are shared by all types of learners
+            # supported by SKLL (regular and voting)
+            xval_kwargs = {"shuffle": shuffle,
+                           "stratified": stratified_folds,
+                           "prediction_prefix": prediction_prefix,
+                           "grid_search": grid_search,
+                           "grid_search_folds": grid_search_folds,
+                           "cv_folds": cv_folds,
+                           "grid_objective": grid_objective,
+                           "output_metrics": output_metrics,
+                           "grid_jobs": grid_search_jobs,
+                           "save_cv_folds": save_cv_folds,
+                           "save_cv_models": save_cv_models,
+                           "use_custom_folds_for_grid_search": use_folds_file_for_grid_search}
+
+            # voting learners require an optional list of parameter grids
+            # passed as fixed parameters whereas regular learners only need
+            # a single parameter grid
+            if isinstance(learner, VotingLearner):
+                xval_kwargs["param_grid_list"] = param_grids_list
+                xval_kwargs["individual_predictions"] = save_votes
+            else:
+                xval_kwargs["param_grid"] = param_grid
+
+            # cross-validate the learner
+            results = learner.cross_validate(train_examples, **xval_kwargs)
+
+            # voting learners return only a subset of the results
+            # for cross-validation (no grid search results)
+            if isinstance(learner, Learner):
+                (task_results,
+                 grid_scores,
+                 grid_search_cv_results_dicts,
+                 skll_fold_ids,
+                 models) = results
+            else:
+                (task_results,
+                 skll_fold_ids,
+                 models) = results
+                grid_scores = [None] * cv_folds
+                grid_search_cv_results_dicts = [None] * cv_folds
+
             if models:
                 for index, m in enumerate(models, start=1):
                     modelfile = join(model_path, f'{job_name}_fold{index}.model')
                     m.save(modelfile)
+
         elif task == 'learning_curve':
             logger.info("Generating learning curve(s)")
             (curve_train_scores,
@@ -356,55 +416,79 @@ def _classify_featureset(args):  # noqa: C901
                                                                   cv_folds=learning_curve_cv_folds,
                                                                   train_sizes=learning_curve_train_sizes)
         else:
-            # if we have do not have a saved model, we need to train one.
+            # if we do not have a saved model, we need to train one
+            grid_scores = [None]
+            grid_search_cv_results_dicts = [None]
             if not exists(modelfile) or overwrite:
                 logger.info(f"Featurizing and training new {learner_name} "
                             "model")
 
-                (best_score,
-                 grid_search_cv_results) = learner.train(train_examples,
-                                                         shuffle=shuffle,
-                                                         grid_search=grid_search,
-                                                         grid_search_folds=grid_search_folds,
-                                                         grid_objective=grid_objective,
-                                                         param_grid=param_grid,
-                                                         grid_jobs=grid_search_jobs)
-                grid_scores = [best_score]
-                grid_search_cv_results_dicts = [grid_search_cv_results]
+                # set up the keyword arguments for learner training;
+                # note that most are shared by all types of learners
+                # supported by SKLL (regular and voting)
+                train_kwargs = {"grid_search": grid_search,
+                                "grid_search_folds": grid_search_folds,
+                                "grid_objective": grid_objective,
+                                "grid_jobs": grid_search_jobs,
+                                "shuffle": shuffle}
 
-                # save model
+                # voting learners require an optional list of parameter grids
+                # passed as fixed parameters whereas regular learners only need
+                # a single parameter grid
+                if isinstance(learner, VotingLearner):
+                    train_kwargs["param_grid_list"] = param_grids_list
+                else:
+                    train_kwargs["param_grid"] = param_grid
+
+                # train the model
+                results = learner.train(train_examples, **train_kwargs)
+
+                # regular learners return a grid score and results
+                if isinstance(learner, Learner):
+                    grid_scores = [results[0]]
+                    grid_search_cv_results_dicts = [results[1]]
+                    if grid_search:
+                        logger.info(f"Best {grid_objective} grid search score: "
+                                    f"{round(results[0], 3)}")
+
+                # save model, if asked
                 if model_path:
                     learner.save(modelfile)
 
-                if grid_search:
-                    logger.info(f"Best {grid_objective} grid search score: "
-                                f"{round(best_score, 3)}")
-            else:
-                grid_scores = [None]
-                grid_search_cv_results_dicts = [None]
-
-            # print out the parameters
+            # print out the model parameters; note that for
+            # voting learners, we exclude the parameters for
+            # the underlying estimators
+            params = learner.model.get_params(deep=isinstance(learner, Learner))
             param_out = (f'{param_name}: {param_value}' for
-                         param_name, param_value in
-                         learner.model.get_params().items())
+                         param_name, param_value in params.items())
             logger.info(f"Hyperparameters: {', '.join(param_out)}")
 
-            # run on test set or cross-validate on training data,
-            # depending on what was asked for
+            # evaluate the model on the test set;
             if task == 'evaluate':
                 logger.info("Evaluating predictions")
+                # voting learners have an extra keyword argument indicating
+                # whether we want to save the individual predictions (or votes)
+                extra_kwargs = {}
+                if isinstance(learner, VotingLearner):
+                    extra_kwargs["individual_predictions"] = save_votes
                 task_results = [learner.evaluate(test_examples,
                                                  prediction_prefix=prediction_prefix,
                                                  grid_objective=grid_objective,
-                                                 output_metrics=output_metrics)]
+                                                 output_metrics=output_metrics,
+                                                 **extra_kwargs)]
             elif task == 'predict':
                 logger.info("Writing predictions")
                 # we set `class_labels` to `False` so that if the learner is
-                # probabilistic, probabilities are written instead of labels
+                # probabilistic, probabilities are written instead of labels;
+                # voting learners have an extra keyword argument indicating
+                # whether we want to save the individual predictions (or votes)
+                extra_kwargs = {}
+                if isinstance(learner, VotingLearner):
+                    extra_kwargs["individual_predictions"] = save_votes
                 learner.predict(test_examples,
                                 prediction_prefix=prediction_prefix,
-                                class_labels=False)
-            # do nothing here for train
+                                class_labels=False,
+                                **extra_kwargs)
 
         end_timestamp = datetime.datetime.now()
         learner_result_dict_base['end_timestamp'] = end_timestamp.strftime(
@@ -551,9 +635,9 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',  
          save_cv_folds, save_cv_models, use_folds_file_for_grid_search,
          do_stratified_folds, fixed_parameter_list, param_grid_list, featureset_names,
          learners, prediction_dir, log_path, train_path, test_path, ids_to_floats,
-         class_map, custom_learner_path, custom_metric_path, learning_curve_cv_folds_list,
-         learning_curve_train_sizes, output_metrics) = parse_config_file(config_file,
-                                                                         log_level=log_level)
+         class_map, custom_learner_path, custom_metric_path,
+         learning_curve_cv_folds_list, learning_curve_train_sizes,
+         output_metrics, save_votes) = parse_config_file(config_file, log_level=log_level)
 
         # get the main experiment logger that will already have been
         # created by the configuration parser so we don't need anything
@@ -717,6 +801,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',  
                     job_args["log_level"] = log_level
                     job_args["probability"] = probability
                     job_args["pipeline"] = pipeline
+                    job_args["save_votes"] = save_votes
                     job_args["results_path"] = results_path
                     job_args["sampler_parameters"] = (fixed_sampler_parameters
                                                       if fixed_sampler_parameters

@@ -6,11 +6,19 @@ notifications:
   slack:
     secure: d+NSaR+cfRkcJfX/uEVwdyQDlayZO6c8QV96grl1stmWxG3XOXvXg1tM6v7EBeb9VRw5T4VglnnJGNJA62j1ReEJ0XyWr5XtaNWiF6Lc4UOty/TTG36IQdkWS1vQA8v2Hre73YbvOhtBb6biNneVAk+rrfRSgomEa+ec22cjgUo=
 env:
+  global:
+  - BINDIR=${HOME}/miniconda3/envs/sklldev/bin
+  - MPLBACKEND=Agg
+  - NOSE_WITH_COV=1
+  - NOSE_COVER_PACKAGE=skll
+  - LOGCAPTURE_LEVEL=WARNING
+  matrix:
   - TESTFILES="tests/test_featureset.py tests/test_commandline_utils.py tests/test_custom_metrics.py"
-  - TESTFILES="tests/test_output.py"
-  - TESTFILES="tests/test_regression.py"
-  - TESTFILES="tests/test_input.py tests/test_preprocessing.py tests/test_metrics.py tests/test_custom_learner.py tests/test_logging_utils.py tests/test_examples.py"
-  - TESTFILES="tests/test_classification.py tests/test_cv.py tests/test_ablation.py"
+  - TESTFILES="tests/test_output.py tests/test_voting_learners_api_4.py tests/test_voting_learners_api_5.py"
+  - TESTFILES="tests/test_regression.py tests/test_voting_learners_api_2.py"
+  - TESTFILES="tests/test_input.py tests/test_preprocessing.py tests/test_metrics.py tests/test_custom_learner.py tests/test_logging_utils.py tests/test_examples.py tests/test_voting_learners_api_1.py tests/test_voting_learners_expts_1.py"
+  - TESTFILES="tests/test_classification.py tests/test_cv.py tests/test_ablation.py tests/test_voting_learners_expts_4.py"
+  - TESTFILES="tests/test_voting_learners_api_3.py tests/test_voting_learners_expts_2.py tests/test_voting_learners_expts_3.py tests/test_voting_learners_expts_5.py"
 
 # run on the new Travis infrastructure
 sudo: false
@@ -20,18 +28,16 @@ before_install:
   - wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
   - chmod +x miniconda.sh
   - ./miniconda.sh -b
-  - export PATH=/home/travis/miniconda3/bin:$PATH
-  - conda install -c anaconda --yes setuptools
+  - ${HOME}/miniconda3/bin/conda update conda --yes
 install:
-  - conda install --yes -c conda-forge python=$TRAVIS_PYTHON_VERSION codecov --file conda_requirements.txt
-  # Have to use pip for nose-cov because its entry points are not supported by conda yet
-  - pip install nose-cov
-  - python setup.py install
+  - ${HOME}/miniconda3/bin/conda create --name sklldev -c conda-forge --file conda_requirements.txt python=${TRAVIS_PYTHON_VERSION} codecov --yes --quiet
+  - ${HOME}/miniconda3/envs/sklldev/bin/pip install nose-cov
+  - ${HOME}/miniconda3/envs/sklldev/bin/pip install -e .
 
 # Run test
 script:
-  - MPLBACKEND=Agg nosetests -v --with-cov --cov skll --cov-config .coveragerc --logging-level=DEBUG ${TESTFILES}
+  - ${HOME}/miniconda3/envs/sklldev/bin/nosetests ${TESTFILES}
 
 # Calculate coverage
 after_success:
-  - codecov
+  - ${HOME}/miniconda3/envs/sklldev/bin/codecov

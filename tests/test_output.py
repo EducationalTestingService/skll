@@ -26,7 +26,6 @@ from numpy.testing import (
     assert_array_almost_equal,
     assert_array_equal,
 )
-from sklearn.datasets import load_digits
 from sklearn.model_selection import ShuffleSplit, learning_curve
 from sklearn.naive_bayes import MultinomialNB
 
@@ -51,6 +50,7 @@ from tests.utils import (
     fill_in_config_paths,
     fill_in_config_paths_for_single_file,
     make_classification_data,
+    make_digits_data,
     make_regression_data,
     remove_jsonlines_feature_files,
     unlink,
@@ -142,42 +142,20 @@ def make_summary_data():
 # Generate and write out data for the test that checks learning curve outputs
 def make_learning_curve_data():
 
-    # Load in the digits data set
-    digits = load_digits()
-    X, y = digits.data, digits.target
-
-    # create featureset with all features
-    feature_names = [f'f{n:02}' for n in range(X.shape[1])]
-    features = []
-    for row in X:
-        features.append(dict(zip(feature_names, row)))
-    fs1 = FeatureSet(
-        'train1',
-        features=features,
-        labels=y,
-        ids=list(range(X.shape[0]))
-    )
+    # create a featureset with the digits data
+    fs_digits, _ = make_digits_data(test_size=0)
 
     # Write this feature set to file
     train_path = join(train_dir, 'test_learning_curve1.jsonlines')
-    writer = NDJWriter(train_path, fs1)
+    writer = NDJWriter(train_path, fs_digits)
     writer.write()
 
-    # create featureset with all except the last feature
-    feature_names = [f'f{n:02}' for n in range(X.shape[1])]
-    features = []
-    for row in X:
-        features.append(dict(zip(feature_names[:-1], row)))
-    fs2 = FeatureSet(
-        'train2',
-        features=features,
-        labels=y,
-        ids=list(range(X.shape[0]))
-    )
+    # create featureset with all except the last feature called "pixel_7_7"
+    fs_digits.filter(features="pixel_7_7", inverse=True)
 
     # Write this feature set to file
     train_path = join(train_dir, 'test_learning_curve2.jsonlines')
-    writer = NDJWriter(train_path, fs2)
+    writer = NDJWriter(train_path, fs_digits)
     writer.write()
 
 
@@ -623,19 +601,19 @@ def test_multiple_featuresets_and_featurehasher_throws_warning():
     # make a simple config file for feature hasher warning test
     values_to_fill_dict = {
         'experiment_name': 'test_warning_multiple_featuresets',
-        'train_directory': train_dir,
-        'task': 'train',
-        'grid_search': 'false',
-        'objectives': "['f1_score_micro']",
-        'learners': "['LogisticRegression']",
+                           'train_directory': train_dir,
+                           'task': 'train',
+                           'grid_search': 'false',
+                           'objectives': "['f1_score_micro']",
+                           'learners': "['LogisticRegression']",
         'featuresets':
             "[['test_input_3examples_1', 'test_input_3examples_2']]",
-        "featureset_names": "['feature_hasher']",
-        'suffix': '.jsonlines',
-        'log': output_dir,
-        'models': output_dir,
-        'feature_hasher': "true",
-        "hasher_features": "4"
+                           "featureset_names": "['feature_hasher']",
+                           'suffix': '.jsonlines',
+                           'log': output_dir,
+                           'models': output_dir,
+                           'feature_hasher': "true",
+                           "hasher_features": "4"
     }
 
     config_template_path = join(
@@ -703,9 +681,8 @@ def check_learning_curve_implementation(with_probability):
     # diverges from the scikit-learn implementation. This test essentially
     # serves as a regression test as well.
 
-    # Load in the digits data set
-    digits = load_digits()
-    X, y = digits.data, digits.target
+    # create a single featureset from the digits data
+    fs_digits, _ = make_digits_data(test_size=0)
 
     # get the learning curve results from scikit-learn for this data
     cv_folds = 10
@@ -714,19 +691,11 @@ def check_learning_curve_implementation(with_probability):
     estimator = MultinomialNB()
     train_sizes = np.linspace(.1, 1.0, 5)
     train_sizes1, train_scores1, test_scores1 = learning_curve(estimator,
-                                                               X,
-                                                               y,
+                                                               fs_digits.features,
+                                                               fs_digits.labels,
                                                                cv=cv,
                                                                train_sizes=train_sizes,
                                                                scoring='accuracy')
-
-    # get the features from this data into a FeatureSet instance we can use
-    # with the SKLL API
-    feature_names = [f'f{n:02}' for n in range(X.shape[1])]
-    features = []
-    for row in X:
-        features.append(dict(zip(feature_names, row)))
-    fs = FeatureSet('train', features=features, labels=y, ids=list(range(X.shape[0])))
 
     # we don't want to filter out any features since scikit-learn
     # does not do that either
@@ -735,7 +704,7 @@ def check_learning_curve_implementation(with_probability):
                       probability=with_probability)
     (train_scores2,
      test_scores2,
-     train_sizes2) = learner.learning_curve(fs,
+     train_sizes2) = learner.learning_curve(fs_digits,
                                             cv_folds=cv_folds,
                                             train_sizes=train_sizes,
                                             metric='accuracy')
@@ -962,16 +931,16 @@ def test_learning_curve_min_examples_check_override():
     learner = Learner('LogisticRegression', logger=logger)
 
     # this must throw an error because `examples` has less than 500 items
-    _ = learner.learning_curve(examples=train_fs_less_than_500, metric='accuracy',
+    _ = learner.learning_curve(examples=train_fs_less_than_500,
+                               metric='accuracy',
                                override_minimum=True)
 
     # checks that the learning_curve warning message is contained in the log file
     with open(log_file_path) as tf:
         log_text = tf.read()
         learning_curve_warning_re = re.compile(
-            r'Because the number of training examples provided - \d+ - is '
-            r'less than the ideal minimum - \d+ - learning curve generation '
-            r'is unreliable and might break'
+            r"Learning curves can be unreliable for examples fewer than "
+            r"500. You provided \d+\."
         )
         assert learning_curve_warning_re.search(log_text)
 

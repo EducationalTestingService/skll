@@ -590,7 +590,7 @@ def check_sparse_predict_sampler(use_feature_hashing=False):
     learner.train(train_fs, grid_search=False)
     test_score = learner.evaluate(test_fs)[1]
 
-    expected_score = 0.48 if use_feature_hashing else 0.45
+    expected_score = 0.48 if use_feature_hashing else 0.53
     assert_almost_equal(test_score, expected_score)
 
 

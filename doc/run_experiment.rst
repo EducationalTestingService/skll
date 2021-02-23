@@ -313,6 +313,14 @@ Classifiers:
     *   **RidgeClassifier**: `Classification using Ridge Regression <https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.RidgeClassifier.html#sklearn.linear_model.RidgeClassifier>`__
     *   **SGDClassifier**: `Stochastic Gradient Descent Classification <https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDClassifier.html>`__
     *   **SVC**: `Support Vector Classification using LibSVM <https://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html#sklearn.svm.SVC>`__
+    *   **VotingClassifier**: `Soft Voting/Majority Rule classifier for unfitted estimators <https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.VotingClassifier.html>`__. Using this learner requires specifying the underlying estimators using the ``estimator_names`` fixed parameter in the :ref:`fixed_parameters <fixed_parameters>` list. By default, this learner uses "hard" voting, i.e., majority rule. To use "soft" voting, i.e., based on the argmax of the sums of the probabilities from the underlying classifiers, specify the ``voting_type`` fixed_parameter and set it to "soft". The following additional fixed parameters can also be supplied in the :ref:`fixed_parameters <fixed_parameters>` list:
+
+        *   ``estimator_fixed_parameters`` which takes a list of dictionaries to fix any parameters in the underlying learners to desired values,
+        *   ``estimator_param_grids`` which takes a list of dictionaries specifying the possible list of parameters to search for every underlying learner,
+        *   ``estimator_sampler_list`` which can be used to specify any feature sampling algorithms for the underlying learners, and
+        *   ``estimator_sampler_parameters`` which can be used to specify any additional parameters for any specified samplers.
+
+        Refer to this `example voting configuration file <https://github.com/EducationalTestingService/skll/blob/main/examples/iris/voting.cfg>`__ to see how these parameters are used.
 
 .. _regressors:
 
@@ -337,11 +345,21 @@ Regressors:
     *   **SGDRegressor**: `Stochastic Gradient Descent Regression <https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDRegressor.html>`__
     *   **SVR**: `Support Vector Regression using LibSVM <https://scikit-learn.org/stable/modules/generated/sklearn.svm.SVR.html#sklearn.svm.SVR>`__
     *   **TheilSenRegressor**: `Theil-Sen Regression <https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.TheilSenRegressor.html#sklearn.linear_model.TheilSenRegressor>`__
+    *   **VotingRegressor**: `Prediction voting regressor for unfitted estimators. <https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.VotingClassifier.html>`__. Using this learner requires specifying the underlying estimators using the ``estimator_names`` fixed parameter in the :ref:`fixed_parameters <fixed_parameters>` list. The following additional fixed parameters can also be supplied in this list:
 
-    For all regressors, you can also prepend ``Rescaled`` to the
-    beginning of the full name (e.g., ``RescaledSVR``) to get a version
-    of the regressor where predictions are rescaled and constrained to
-    better match the training set.
+        *   ``estimator_fixed_parameters`` which takes a list of dictionaries to fix any parameters in the underlying learners to desired values,
+        *   ``estimator_param_grids`` which takes a list of dictionaries specifying the possible list of parameters to search for every underlying learner,
+        *   ``estimator_sampler_list`` which can be used to specify any feature sampling algorithms for the underlying learners, and
+        *   ``estimator_sampler_parameters`` which can be used to specify any additional parameters for any specified samplers.
+
+        Refer to this `example voting configuration file <https://github.com/EducationalTestingService/skll/blob/main/examples/boston/voting.cfg>`__ to see how these parameters are used.
+
+    For all regressors *except* ``VotingRegressor``, you can also prepend
+    ``Rescaled`` to the beginning of the full name (e.g., ``RescaledSVR``)
+    to get a version of the regressor where predictions are rescaled and
+    constrained to better match the training set. Rescaled regressors
+    can, however, be used as underlying estimators for ``VotingRegressor``
+    learners.
 
 .. _featuresets:
 
@@ -1243,8 +1261,8 @@ Here's an example of how to use this attribute.
 
     from sklearn.preprocessing import LabelEncoder
 
-    from skll import Learner
     from skll.data import Reader
+    from skll.learner import Learner
 
     # train a classifier and a regressor using the SKLL API
     fs1 = Reader.for_path('examples/iris/train/example_iris_features.jsonlines').read()
@@ -1320,6 +1338,15 @@ save_cv_models *(Optional)*
 Whether to save each of the K :ref:`model files <output_model_files>` trained during
 each step of a K-fold cross-validation experiment.
 Defaults to ``False``.
+
+save_votes *(Optional)*
+"""""""""""""""""""""""
+
+Whether to save the predictions from the individual estimators underlying a
+``VotingClassifer`` or ``VotingRegressor``. Note that for this to work,
+:ref:`predictions <predictions>` must be set.
+Defaults to ``False``.
+
 
 .. _run_experiment:
 

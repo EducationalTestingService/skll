@@ -13,14 +13,17 @@ Load a ``FeatureSet`` from a file::
 
 Or, work with an existing ``pandas`` ``DataFrame``::
 
-    from skll import FeatureSet
+    from skll.data import FeatureSet
 
-    train_examples = FeatureSet.from_data_frame(my_data_frame, 'A Name for My Data', labels_column='name of the column containing the data labels')
+    # assuming the data labels are in a column called "y"
+    train_examples = FeatureSet.from_data_frame(my_data_frame,
+                                                "A Name for My Data",
+                                                labels_column="y")
 
 
-Train a linear svm (assuming we have ``train_examples``)::
+Train a linear svm (using the already loaded ``train_examples``)::
 
-    from skll import Learner
+    from skll.learner import Learner
 
     learner = Learner('LinearSVC')
     learner.train(train_examples)

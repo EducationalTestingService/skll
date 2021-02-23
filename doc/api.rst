@@ -7,7 +7,6 @@ API Documentation
    :maxdepth: 4
 
    api/quickstart
-   api/skll
    api/config
    api/data
    api/experiments
