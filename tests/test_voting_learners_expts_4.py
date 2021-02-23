@@ -152,7 +152,7 @@ def check_xval_task(learner_type, options_dict):
                                 "stratified": True,
                                 "cv_folds": num_cv_folds,
                                 "output_metrics": output_metrics,
-                                "save_cv_folds": options_dict["with_save_cv_folds"],
+                                "save_cv_folds": not options_dict["without_save_cv_folds"],
                                 "save_cv_models": options_dict["with_save_cv_models"],
                                 "individual_predictions": options_dict["with_individual_predictions"]}
 
@@ -219,7 +219,7 @@ def test_xval_task():
                     "with_gs_folds",
                     "with_cv_folds",
                     "with_output_metrics",
-                    "with_save_cv_folds",
+                    "without_save_cv_folds",
                     "with_save_cv_models",
                     "with_individual_predictions"]
 
