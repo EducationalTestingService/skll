@@ -223,7 +223,10 @@ def check_scaling_features(use_feature_hashing=False, use_scaling=False):
                       pos_label_str=1)
 
     # train the learner on the training set and test on the testing set
-    learner.train(train_fs, grid_search=True, grid_objective='f1_score_micro')
+    learner.train(train_fs,
+                  grid_search=True,
+                  grid_objective='f1_score_micro',
+                  grid_search_folds=3)
     test_output = learner.evaluate(test_fs)
     fmeasures = [test_output[2][0]['F-measure'],
                  test_output[2][1]['F-measure']]

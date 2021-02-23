@@ -79,7 +79,8 @@ def check_predict(learner_type,
                             voting=voting_type)
     skll_vl.train(train_fs,
                   grid_objective=objective,
-                  grid_search=with_grid_search)
+                  grid_search=with_grid_search,
+                  grid_search_folds=3)
 
     # get the overall and individual predictions from SKLL
     (skll_predictions,

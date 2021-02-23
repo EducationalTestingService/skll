@@ -260,7 +260,8 @@ def check_train(learner_type, with_grid_search):
     vl = VotingLearner(learner_names)
     vl.train(featureset,
              grid_objective=objective,
-             grid_search=with_grid_search)
+             grid_search=with_grid_search,
+             grid_search_folds=3)
 
     # check that the training worked
     assert_is_not_none(vl.model)

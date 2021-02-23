@@ -75,7 +75,8 @@ def check_evaluate(learner_type,
                             min_feature_count=0)
     skll_vl.train(train_fs,
                   grid_objective=objective,
-                  grid_search=with_grid_search)
+                  grid_search=with_grid_search,
+                  grid_search_folds=3)
 
     # evaluate on the test set
     res = skll_vl.evaluate(test_fs,

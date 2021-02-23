@@ -1110,15 +1110,15 @@ def test_cv_folds_and_grid_search_folds():
     # note: `fold_mapping` refers to the dictionary version of the folds file
 
     # task, cv_folds/folds_file, grid_search_folds, use_folds_file_for_grid_search -> cv_folds, grid_search_folds
-    # ('train', None, None, None) ->  (None, 3)
-    # ('train', None, None, True) ->  (None, 3)
-    # ('train', None, None, False) ->  (None, 3)
+    # ('train', None, None, None) ->  (None, 5)
+    # ('train', None, None, True) ->  (None, 5)
+    # ('train', None, None, False) ->  (None, 5)
     # ('train', None, 7, None) ->  (None, 7)
     # ('train', None, 7, True) ->  (None, 7)
     # ('train', None, 7, False) ->  (None, 7)
-    # ('train', 5, None, None) ->  (None, 3)
-    # ('train', 5, None, True) ->  (None, 3)
-    # ('train', 5, None, False) ->   (None, 3)
+    # ('train', 5, None, None) ->  (None, 5)
+    # ('train', 5, None, True) ->  (None, 5)
+    # ('train', 5, None, False) ->   (None, 5)
     # ('train', 5, 7, None) ->  (None, 7)
     # ('train', 5, 7, True) ->  (None, 7)
     # ('train', 5, 7, False) ->  (None, 7)
@@ -1128,15 +1128,15 @@ def test_cv_folds_and_grid_search_folds():
     # ('train', 'train/folds_file_test.csv', 7, None) ->  (None, fold_mapping)
     # ('train', 'train/folds_file_test.csv', 7, True) ->  (None, fold_mapping)
     # ('train', 'train/folds_file_test.csv', 7, False) ->  (None, fold_mapping)
-    # ('evaluate', None, None, None) ->  (None, 3)
-    # ('evaluate', None, None, True) ->  (None, 3)
-    # ('evaluate', None, None, False) ->  (None, 3)
+    # ('evaluate', None, None, None) ->  (None, 5)
+    # ('evaluate', None, None, True) ->  (None, 5)
+    # ('evaluate', None, None, False) ->  (None, 5)
     # ('evaluate', None, 7, None) ->  (None, 7)
     # ('evaluate', None, 7, True) ->  (None, 7)
     # ('evaluate', None, 7, False) ->  (None, 7)
-    # ('evaluate', 5, None, None) ->  (None, 3)
-    # ('evaluate', 5, None, True) ->  (None, 3)
-    # ('evaluate', 5, None, False) ->   (None, 3)
+    # ('evaluate', 5, None, None) ->  (None, 5)
+    # ('evaluate', 5, None, True) ->  (None, 5)
+    # ('evaluate', 5, None, False) ->   (None, 5)
     # ('evaluate', 5, 7, None) ->  (None, 7)
     # ('evaluate', 5, 7, True) ->  (None, 7)
     # ('evaluate', 5, 7, False) ->  (None, 7)
@@ -1146,15 +1146,15 @@ def test_cv_folds_and_grid_search_folds():
     # ('evaluate', 'train/folds_file_test.csv', 7, None) ->  (None, fold_mapping)
     # ('evaluate', 'train/folds_file_test.csv', 7, True) ->  (None, fold_mapping)
     # ('evaluate', 'train/folds_file_test.csv', 7, False) ->  (None, fold_mapping)
-    # ('predict', None, None, None) ->  (None, 3)
-    # ('predict', None, None, True) ->  (None, 3)
-    # ('predict', None, None, False) ->  (None, 3)
+    # ('predict', None, None, None) ->  (None, 5)
+    # ('predict', None, None, True) ->  (None, 5)
+    # ('predict', None, None, False) ->  (None, 5)
     # ('predict', None, 7, None) ->  (None, 7)
     # ('predict', None, 7, True) ->  (None, 7)
     # ('predict', None, 7, False) ->  (None, 7)
-    # ('predict', 5, None, None) ->  (None, 3)
-    # ('predict', 5, None, True) ->  (None, 3)
-    # ('predict', 5, None, False) ->   (None, 3)
+    # ('predict', 5, None, None) ->  (None, 5)
+    # ('predict', 5, None, True) ->  (None, 5)
+    # ('predict', 5, None, False) ->   (None, 5)
     # ('predict', 5, 7, None) ->  (None, 7)
     # ('predict', 5, 7, True) ->  (None, 7)
     # ('predict', 5, 7, False) ->  (None, 7)
@@ -1164,21 +1164,21 @@ def test_cv_folds_and_grid_search_folds():
     # ('predict', 'train/folds_file_test.csv', 7, None) ->  (None, fold_mapping)
     # ('predict', 'train/folds_file_test.csv', 7, True) ->  (None, fold_mapping)
     # ('predict', 'train/folds_file_test.csv', 7, False) ->  (None, fold_mapping)
-    # ('cross_validate', None, None, None) ->  (10, 3)
-    # ('cross_validate', None, None, True) ->  (10, 3)
-    # ('cross_validate', None, None, False) ->  (10, 3)
+    # ('cross_validate', None, None, None) ->  (10, 5)
+    # ('cross_validate', None, None, True) ->  (10, 5)
+    # ('cross_validate', None, None, False) ->  (10, 5)
     # ('cross_validate', None, 7, None) ->  (10, 7)
     # ('cross_validate', None, 7, True) ->  (10, 7)
     # ('cross_validate', None, 7, False) ->  (10, 7)
-    # ('cross_validate', 5, None, None) ->  (5, 3)
-    # ('cross_validate', 5, None, True) ->  (5, 3)
-    # ('cross_validate', 5, None, False) ->  (5, 3)
+    # ('cross_validate', 5, None, None) ->  (5, 5)
+    # ('cross_validate', 5, None, True) ->  (5, 5)
+    # ('cross_validate', 5, None, False) ->  (5, 5)
     # ('cross_validate', 5, 7, None) ->  (5, 7)
     # ('cross_validate', 5, 7, True) ->  (5, 7)
     # ('cross_validate', 5, 7, False) ->  (5, 7)
     # ('cross_validate', 'train/folds_file_test.csv', None, None) ->  (fold_mapping, fold_mapping)
     # ('cross_validate', 'train/folds_file_test.csv', None, True) ->  (fold_mapping, fold_mapping)
-    # ('cross_validate', 'train/folds_file_test.csv', None, False) ->  (fold_mapping, 3)
+    # ('cross_validate', 'train/folds_file_test.csv', None, False) ->  (fold_mapping, 5)
     # ('cross_validate', 'train/folds_file_test.csv', 7, None) ->  (fold_mapping, fold_mapping)
     # ('cross_validate', 'train/folds_file_test.csv', 7, True) ->  (fold_mapping, fold_mapping)
     # ('cross_validate', 'train/folds_file_test.csv', 7, False) ->  (fold_mapping, 7)
@@ -1195,33 +1195,33 @@ def test_cv_folds_and_grid_search_folds():
                                                     [None, 5, join(train_dir, 'folds_file_test.csv')],
                                                     [None, 7],
                                                     [None, True, False]),
-                                            [(None, 3), (None, 3), (None, 3),
+                                            [(None, 5), (None, 5), (None, 5),
                                              (None, 7), (None, 7), (None, 7),
-                                             (None, 3), (None, 3), (None, 3),
-                                             (None, 7), (None, 7), (None, 7),
-                                             (None, 'fold_mapping'), (None, 'fold_mapping'),
-                                             (None, 'fold_mapping'), (None, 'fold_mapping'),
-                                             (None, 'fold_mapping'), (None, 'fold_mapping'),
-                                             (None, 3), (None, 3), (None, 3),
-                                             (None, 7), (None, 7), (None, 7),
-                                             (None, 3), (None, 3), (None, 3),
+                                             (None, 5), (None, 5), (None, 5),
                                              (None, 7), (None, 7), (None, 7),
                                              (None, 'fold_mapping'), (None, 'fold_mapping'),
                                              (None, 'fold_mapping'), (None, 'fold_mapping'),
                                              (None, 'fold_mapping'), (None, 'fold_mapping'),
-                                             (None, 3), (None, 3), (None, 3),
+                                             (None, 5), (None, 5), (None, 5),
                                              (None, 7), (None, 7), (None, 7),
-                                             (None, 3), (None, 3), (None, 3),
+                                             (None, 5), (None, 5), (None, 5),
                                              (None, 7), (None, 7), (None, 7),
                                              (None, 'fold_mapping'), (None, 'fold_mapping'),
                                              (None, 'fold_mapping'), (None, 'fold_mapping'),
                                              (None, 'fold_mapping'), (None, 'fold_mapping'),
-                                             (10, 3), (10, 3), (10, 3), (10, 7),
-                                             (10, 7), (10, 7), (5, 3), (5, 3),
-                                             (5, 3), (5, 7), (5, 7), (5, 7),
+                                             (None, 5), (None, 5), (None, 5),
+                                             (None, 7), (None, 7), (None, 7),
+                                             (None, 5), (None, 5), (None, 5),
+                                             (None, 7), (None, 7), (None, 7),
+                                             (None, 'fold_mapping'), (None, 'fold_mapping'),
+                                             (None, 'fold_mapping'), (None, 'fold_mapping'),
+                                             (None, 'fold_mapping'), (None, 'fold_mapping'),
+                                             (10, 5), (10, 5), (10, 5), (10, 7),
+                                             (10, 7), (10, 7), (5, 5), (5, 5),
+                                             (5, 5), (5, 7), (5, 7), (5, 7),
                                              ('fold_mapping', 'fold_mapping'),
                                              ('fold_mapping', 'fold_mapping'),
-                                             ('fold_mapping', 3),
+                                             ('fold_mapping', 5),
                                              ('fold_mapping', 'fold_mapping'),
                                              ('fold_mapping', 'fold_mapping'),
                                              ('fold_mapping', 7)]):
