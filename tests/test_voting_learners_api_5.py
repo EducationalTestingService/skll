@@ -94,7 +94,6 @@ def check_cross_validate_with_grid_search(learner_type,
                                            cv_folds=3,
                                            prediction_prefix=prediction_prefix,
                                            output_metrics=[extra_metric],
-                                           save_cv_folds=True,
                                            save_cv_models=True,
                                            individual_predictions=with_individual_predictions)
 

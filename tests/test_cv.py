@@ -156,7 +156,8 @@ def test_specified_cv_folds():
             learner.cross_validate(cv_fs,
                                    cv_folds=folds,
                                    grid_search=True,
-                                   grid_objective='f1_score_micro')
+                                   grid_objective='f1_score_micro',
+                                   save_cv_folds=False)
         fold_test_scores = [t[-2] for t in grid_scores]
 
         overall_score = np.mean(fold_test_scores)
@@ -238,8 +239,7 @@ def test_retrieve_cv_folds():
                                                        cv_folds=num_folds,
                                                        grid_search=True,
                                                        grid_objective='f1_score_micro',
-                                                       shuffle=False,
-                                                       save_cv_folds=True)
+                                                       shuffle=False)
     eq_(skll_fold_ids, expected_fold_ids)
 
     # Test 2: if we pass in custom fold ids, those are also preserved.
@@ -248,8 +248,7 @@ def test_retrieve_cv_folds():
                                                        cv_folds=custom_cv_folds,
                                                        grid_search=True,
                                                        grid_objective='f1_score_micro',
-                                                       shuffle=False,
-                                                       save_cv_folds=True)
+                                                       shuffle=False)
     eq_(skll_fold_ids, custom_cv_folds)
 
     # Test 3: when learner.cross_validate() makes the folds but stratified=False
@@ -268,8 +267,7 @@ def test_retrieve_cv_folds():
                                                        stratified=False,
                                                        cv_folds=num_folds,
                                                        grid_search=False,
-                                                       shuffle=False,
-                                                       save_cv_folds=True)
+                                                       shuffle=False)
     eq_(skll_fold_ids, custom_cv_folds)
 
 

@@ -625,7 +625,7 @@ class VotingLearner(object):
                        prediction_prefix=None,
                        param_grid_list=None,
                        shuffle=False,
-                       save_cv_folds=False,
+                       save_cv_folds=True,
                        save_cv_models=False,
                        individual_predictions=False,
                        use_custom_folds_for_grid_search=True):
@@ -693,7 +693,7 @@ class VotingLearner(object):
             Defaults to ``False``.
         save_cv_folds : bool, optional
              Whether to save the cv fold ids or not?
-             Defaults to ``False``.
+             Defaults to ``True``.
         save_cv_models : bool, optional
             Whether to save the cv models or not?
             Defaults to ``False``.
