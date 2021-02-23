@@ -178,7 +178,7 @@ def fill_in_config_options(config_template_path,
                              'use_folds_file_for_grid_search', 'grid_search_folds',
                              'pos_label_str', 'param_grids', 'objectives',
                              'duplicate_option'],
-                  'Output': ['results', 'logs', 'models', 'metrics',
+                  'Output': ['results', 'log', 'logs', 'models', 'metrics',
                              'predictions', 'pipeline', 'save_cv_folds',
                              'save_cv_models', 'save_votes']}
 
