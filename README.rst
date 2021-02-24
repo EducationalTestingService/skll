@@ -3,7 +3,11 @@ SciKit-Learn Laboratory
 
 .. image:: https://img.shields.io/travis/EducationalTestingService/skll/main.svg
    :alt: Build status
-   :target: https://travis-ci.org/EducationalTestingService/skll
+   :target: https://travis-ci.com/EducationalTestingService/skll
+
+.. image:: https://dev.azure.com/EducationalTestingService/SKLL/_apis/build/status/EducationalTestingService.skll
+   :target: https://dev.azure.com/EducationalTestingService/SKLL/_build?view=runs
+   :alt: Build status
 
 .. image:: https://codecov.io/gh/EducationalTestingService/skll/branch/main/graph/badge.svg
   :target: https://codecov.io/gh/EducationalTestingService/skll
@@ -148,6 +152,10 @@ Talks
 
 -  *Simpler Machine Learning with SKLL 1.0*, Dan Blanchard, PyData NYC 2014 (`video <https://www.youtube.com/watch?v=VEo2shBuOrc&feature=youtu.be&t=1s>`__ | `slides <http://www.slideshare.net/DanielBlanchard2/py-data-nyc-2014>`__)
 -  *Simpler Machine Learning with SKLL*, Dan Blanchard, PyData NYC 2013 (`video <http://vimeo.com/79511496>`__ | `slides <http://www.slideshare.net/DanielBlanchard2/simple-machine-learning-with-skll>`__)
+
+Citing
+~~~~~~
+If you are using SKLL in your work, you can cite it as follows: "We used scikit-learn (Pedragosa et al, 2011) via the SKLL toolkit (https://github.com/EducationalTestingService/skll)."
 
 Books
 ~~~~~

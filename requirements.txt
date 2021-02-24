@@ -1,5 +1,5 @@
 beautifulsoup4
-joblib>=0.8
+joblib
 numpy
 pandas
 ruamel.yaml
