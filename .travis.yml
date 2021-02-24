@@ -31,7 +31,6 @@ before_install:
   - ${HOME}/miniconda3/bin/conda update conda --yes
 install:
   - ${HOME}/miniconda3/bin/conda create --name sklldev -c conda-forge --file conda_requirements.txt python=${TRAVIS_PYTHON_VERSION} codecov --yes --quiet
-  - ${HOME}/miniconda3/envs/sklldev/bin/pip install nose-cov
   - ${HOME}/miniconda3/envs/sklldev/bin/pip install -e .
 
 # Run test
