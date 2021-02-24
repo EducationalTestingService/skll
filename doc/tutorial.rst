@@ -98,7 +98,7 @@ metrics we want to compute in addition to the tuning objective via the
 :ref:`metrics <metrics>` option. The other options are directories
 where you'd like all of the relevant output from your experiment to go.
 :ref:`results <results>` refers to the results of the experiment in both
-human-readable and JSON forms.  :ref:`log <log>` specifies where to put log
+human-readable and JSON forms.  :ref:`logs <logs>` specifies where to put log
 files containing any status, warning, or error messages generated during
 model training and evaluation.  :ref:`predictions <predictions>` refers to
 where to store the individual predictions generated for the test set.

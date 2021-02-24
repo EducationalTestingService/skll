@@ -225,7 +225,7 @@ def test_config_parsing_no_name():
         'task': 'evaluate',
         'featuresets': "[['f1', 'f2', 'f3']]",
         'learners': "['LogisticRegression']",
-        'log': output_dir,
+        'logs': output_dir,
         'results': output_dir
     }
 
@@ -250,7 +250,7 @@ def test_config_parsing_bad_task():
         'test_directory': test_dir,
         'featuresets': "[['f1', 'f2', 'f3']]",
         'learners': "['LogisticRegression']",
-        'log': output_dir,
+        'logs': output_dir,
         'results': output_dir
     }
 
@@ -278,7 +278,7 @@ def test_config_parsing_bad_learner():
         'train_directory': train_dir,
         'test_directory': test_dir,
         'featuresets': "[['f1', 'f2', 'f3']]",
-        'log': output_dir,
+        'logs': output_dir,
         'results': output_dir
     }
 
@@ -312,7 +312,7 @@ def test_config_parsing_bad_sampler():
         'test_directory': test_dir,
         'featuresets': "[['f1', 'f2', 'f3']]",
         'learners': "['LogisticRegression']",
-        'log': output_dir,
+        'logs': output_dir,
         'results': output_dir,
         'sampler': 'RFBSampler'
     }
@@ -339,7 +339,7 @@ def test_config_parsing_bad_hashing():
         'test_directory': test_dir,
         'featuresets': "[['f1', 'f2', 'f3']]",
         'learners': "['LogisticRegression']",
-        'log': output_dir,
+        'logs': output_dir,
         'results': output_dir,
         'feature_hasher': 'True'
     }
@@ -364,7 +364,7 @@ def test_config_parsing_bad_featuresets():
         'train_directory': train_dir,
         'test_directory': test_dir,
         'learners': "['LogisticRegression']",
-        'log': output_dir,
+        'logs': output_dir,
         'results': output_dir
     }
 
@@ -395,7 +395,7 @@ def test_config_parsing_bad_featurenames():
         'test_directory': test_dir,
         'learners': "['LogisticRegression']",
         'featuresets': "[['f1', 'f2', 'f3'], ['f4', 'f5', 'f6']]",
-        'log': output_dir,
+        'logs': output_dir,
         'results': output_dir
     }
 
@@ -427,7 +427,7 @@ def test_config_parsing_bad_scaling():
         'test_directory': test_dir,
         'learners': "['LogisticRegression']",
         'featuresets': "[['f1', 'f2', 'f3'], ['f4', 'f5', 'f6']]",
-        'log': output_dir,
+        'logs': output_dir,
         'results': output_dir
     }
 
@@ -457,7 +457,7 @@ def test_config_parsing_bad_train():
         'test_directory': test_dir,
         'learners': "['LogisticRegression']",
         'featuresets': "[['f1', 'f2', 'f3'], ['f4', 'f5', 'f6']]",
-        'log': output_dir,
+        'logs': output_dir,
         'results': output_dir
     }
 
@@ -503,7 +503,7 @@ def test_config_parsing_bad_test():
         'train_directory': train_dir,
         'learners': "['LogisticRegression']",
         'featuresets': "[['f1', 'f2', 'f3'], ['f4', 'f5', 'f6']]",
-        'log': output_dir,
+        'logs': output_dir,
         'results': output_dir
     }
 
@@ -550,7 +550,7 @@ def test_config_parsing_grid_search_but_no_objectives():
         'test_directory': test_dir,
         'featuresets': "[['f1', 'f2', 'f3']]",
         'learners': "['LogisticRegression']",
-        'log': output_dir,
+        'logs': output_dir,
         'results': output_dir}
 
     config_template_path = join(config_dir,
@@ -577,7 +577,7 @@ def test_config_parsing_bad_objectives():
         'test_directory': test_dir,
         'featuresets': "[['f1', 'f2', 'f3']]",
         'learners': "['LogisticRegression']",
-        'log': output_dir,
+        'logs': output_dir,
         'results': output_dir,
         'grid_search': 'true',
         'objectives': "accuracy"
@@ -601,7 +601,7 @@ def test_config_parsing_bad_metric():
         'test_directory': test_dir,
         'featuresets': "[['f1', 'f2', 'f3']]",
         'learners': "['LogisticRegression']",
-        'log': output_dir,
+        'logs': output_dir,
         'results': output_dir,
         'metrics': "accuracy"
     }
@@ -628,7 +628,7 @@ def test_config_parsing_log_loss_no_probability():
         'featuresets': "[['f1', 'f2', 'f3']]",
         'learners': "['LogisticRegression']",
         'grid_search': 'true',
-        'log': output_dir,
+        'logs': output_dir,
         'results': output_dir,
         'objectives': "['neg_log_loss']"
     }
@@ -655,7 +655,7 @@ def test_config_parsing_roc_auc_no_probability():
         'featuresets': "[['f1', 'f2', 'f3']]",
         'learners': "['LogisticRegression']",
         'grid_search': 'false',
-        'log': output_dir,
+        'logs': output_dir,
         'results': output_dir,
         'metrics': "['roc_auc']"
     }
@@ -681,7 +681,7 @@ def test_config_parsing_bad_task_paths():
                            'learners': "['LogisticRegression']",
                            'featuresets':
                                "[['f1', 'f2', 'f3'], ['f4', 'f5', 'f6']]",
-                           'log': output_dir}
+                           'logs': output_dir}
 
     for sub_prefix in ['predict_no_test', 'evaluate_no_test',
                        'xv_with_test_path', 'train_with_test_path',
@@ -780,7 +780,7 @@ def test_config_parsing_bad_cv_folds():
         'num_cv_folds': 'random',
         'featuresets': "[['f1', 'f2', 'f3']]",
         'learners': "['LogisticRegression']",
-        'log': output_dir,
+        'logs': output_dir,
         'results': output_dir,
         'objectives': "['f1_score_macro']"
     }
@@ -809,7 +809,7 @@ def test_config_parsing_save_cv_models_no_models_path():
         'save_cv_models': 'True',
         'featuresets': "[['f1', 'f2', 'f3']]",
         'learners': "['LogisticRegression']",
-        'log': output_dir,
+        'logs': output_dir,
         'results': output_dir,
         'objectives': "['f1_score_macro']"
     }
@@ -833,7 +833,7 @@ def test_config_parsing_invalid_option():
         'bad_option': 'whatever',
         'featuresets': "[['f1', 'f2', 'f3']]",
         'learners': "['LogisticRegression']",
-        'log': output_dir,
+        'logs': output_dir,
         'results': output_dir,
         'objectives': "['f1_score_macro']"
     }
@@ -858,7 +858,7 @@ def test_config_parsing_duplicate_option():
         'duplicate_option': 'value',
         'featuresets': "[['f1', 'f2', 'f3']]",
         'learners': "['LogisticRegression']",
-        'log': output_dir,
+        'logs': output_dir,
         'results': output_dir,
         'objectives': "['f1_score_macro']"
     }
@@ -882,7 +882,7 @@ def test_config_parsing_option_in_wrong_section():
         'train_directory': train_dir,
         'featuresets': "[['f1', 'f2', 'f3']]",
         'learners': "['LogisticRegression']",
-        'log': output_dir,
+        'logs': output_dir,
         'results': output_dir,
         'probability': 'true',
         'objectives': "['f1_score_macro']"
@@ -907,7 +907,7 @@ def test_config_parsing_mislocated_input_path():
         'train_directory': 'train',
         'featuresets': "[['f1', 'f2', 'f3']]",
         'learners': "['LogisticRegression']",
-        'log': output_dir,
+        'logs': output_dir,
         'results': output_dir,
         'objectives': "['f1_score_macro']"
     }
@@ -935,7 +935,7 @@ def test_config_parsing_mse_throws_exception():
         'train_directory': train_dir,
         'featuresets': "[['f1', 'f2', 'f3']]",
         'learners': "['LogisticRegression']",
-        'log': output_dir,
+        'logs': output_dir,
         'results': output_dir,
         'grid_search': 'true',
         'objectives': "['mean_squared_error']"
@@ -962,7 +962,7 @@ def test_config_parsing_no_grid_objectives_needed_for_learning_curve():
         'train_directory': train_dir,
         'featuresets': "[['f1', 'f2', 'f3']]",
         'learners': "['LogisticRegression']",
-        'log': output_dir,
+        'logs': output_dir,
         'metrics': "['neg_mean_squared_error']",
         'results': output_dir
     }
@@ -1000,7 +1000,7 @@ def test_config_parsing_relative_input_path():
         'train_directory': train_dir,
         'featuresets': "[['f1', 'f2', 'f3']]",
         'learners': "['LogisticRegression']",
-        'log': output_dir,
+        'logs': output_dir,
         'results': output_dir,
         'objectives': "['f1_score_macro']"
     }
@@ -1040,7 +1040,7 @@ def test_config_parsing_relative_input_paths():
         'train_file': train_file,
         'test_file': test_file,
         'learners': "['LogisticRegression']",
-        'log': output_dir,
+        'logs': output_dir,
         'results': output_dir,
         'objectives': "['f1_score_micro']"
     }
@@ -1077,7 +1077,7 @@ def test_config_parsing_automatic_output_directory_creation():
         'train_file': train_file,
         'test_file': test_file,
         'learners': "['LogisticRegression']",
-        'log': new_log_path,
+        'logs': new_log_path,
         'results': new_results_path,
         'models': new_models_path,
         'predictions': new_predictions_path,
@@ -1255,7 +1255,7 @@ def check_cv_folds_and_grid_search_folds(task,
         'train_directory': train_dir,
         'featuresets': "[['f1', 'f2', 'f3']]",
         'learners': "['LogisticRegression']",
-        'log': output_dir,
+        'logs': output_dir,
         'objectives': "['f1_score_macro']"
     }
 
@@ -1313,7 +1313,7 @@ def test_default_number_of_cv_folds():
         'grid_search': 'true',
         'featuresets': "[['f1', 'f2', 'f3']]",
         'learners': "['LogisticRegression']",
-        'log': output_dir,
+        'logs': output_dir,
         'results': output_dir,
         'objectives': "['f1_score_macro']"
     }
@@ -1348,7 +1348,7 @@ def test_setting_number_of_cv_folds():
         'train_directory': train_dir,
         'featuresets': "[['f1', 'f2', 'f3']]",
         'learners': "['LogisticRegression']",
-        'log': output_dir,
+        'logs': output_dir,
         'results': output_dir,
         'grid_search': 'true',
         'num_cv_folds': "5",
@@ -1387,7 +1387,7 @@ def test_setting_param_grids():
         'test_directory': test_dir,
         'featuresets': "[['f1', 'f2', 'f3']]",
         'learners': "['LinearSVC']",
-        'log': output_dir,
+        'logs': output_dir,
         'results': output_dir,
         'grid_search': 'true',
         'param_grids': "[{'C': [1e-6, 0.001, 1, 10, 100, 1e5]}]",
@@ -1430,7 +1430,7 @@ def test_setting_fixed_parameters():
         'test_directory': test_dir,
         'featuresets': "[['f1', 'f2', 'f3']]",
         'learners': "['LinearSVC']",
-        'log': output_dir,
+        'logs': output_dir,
         'results': output_dir,
         'fixed_parameters': "[{'C': [1e-6, 0.001, 1, 10, 100, 1e5]}]",
         'grid_search': 'true',
@@ -1476,7 +1476,7 @@ def test_learning_curve_objectives_unsupported_error():
         'train_directory': train_dir,
         'featuresets': "[['f1', 'f2', 'f3']]",
         'learners': "['LogisticRegression', 'MultinomialNB']",
-        'log': output_dir,
+        'logs': output_dir,
         'results': output_dir,
         'grid_search': 'true',
         'objectives': "['f1_score_macro']"
@@ -1499,7 +1499,7 @@ def test_default_learning_curve_options():
         'train_directory': train_dir,
         'featuresets': "[['f1', 'f2', 'f3']]",
         'learners': "['LogisticRegression', 'MultinomialNB']",
-        'log': output_dir,
+        'logs': output_dir,
         'results': output_dir,
         'grid_search': 'true',
         'metrics': "['f1_score_macro']"
@@ -1535,7 +1535,7 @@ def test_setting_learning_curve_options():
         'train_directory': train_dir,
         'featuresets': "[['f1', 'f2', 'f3']]",
         'learners': "['LogisticRegression', 'MultinomialNB']",
-        'log': output_dir,
+        'logs': output_dir,
         'results': output_dir,
         'learning_curve_cv_folds_list': "[100, 10]",
         'learning_curve_train_sizes': "[10, 50, 100, 200, 500]",
@@ -1573,7 +1573,7 @@ def test_learning_curve_metrics_and_objectives_throw_error():
         'train_directory': train_dir,
         'featuresets': "[['f1', 'f2', 'f3']]",
         'learners': "['LogisticRegression', 'MultinomialNB']",
-        'log': output_dir,
+        'logs': output_dir,
         'results': output_dir,
         'objectives': "['f1_score_macro']",
         'metrics': '["accuracy", "f1_score_micro"]'
@@ -1610,7 +1610,7 @@ def test_learning_curve_metrics_and_no_objectives():
         'train_directory': train_dir,
         'featuresets': "[['f1', 'f2', 'f3']]",
         'learners': "['LogisticRegression', 'MultinomialNB']",
-        'log': output_dir,
+        'logs': output_dir,
         'results': output_dir,
         'metrics': '["accuracy", "unweighted_kappa"]'
     }
@@ -1646,7 +1646,7 @@ def test_learning_curve_metrics():
         'train_directory': train_dir,
         'featuresets': "[['f1', 'f2', 'f3']]",
         'learners': "['LogisticRegression', 'MultinomialNB']",
-        'log': output_dir,
+        'logs': output_dir,
         'results': output_dir,
         'metrics': '["accuracy"]'
     }
@@ -1683,7 +1683,7 @@ def test_learning_curve_pipeline_option():
         'train_directory': train_dir,
         'featuresets': "[['f1', 'f2', 'f3']]",
         'learners': "['LogisticRegression', 'MultinomialNB']",
-        'log': output_dir,
+        'logs': output_dir,
         'results': output_dir,
         'pipeline': 'true',
         'metrics': '["accuracy", "unweighted_kappa"]'
@@ -1720,7 +1720,7 @@ def test_learning_curve_no_metrics():
         'train_directory': train_dir,
         'featuresets': "[['f1', 'f2', 'f3']]",
         'learners': "['LogisticRegression', 'MultinomialNB']",
-        'log': output_dir,
+        'logs': output_dir,
         'results': output_dir
     }
 
@@ -1743,7 +1743,7 @@ def test_learning_curve_no_metrics_and_no_objectives():
         'train_directory': train_dir,
         'featuresets': "[['f1', 'f2', 'f3']]",
         'learners': "['LogisticRegression', 'MultinomialNB']",
-        'log': output_dir,
+        'logs': output_dir,
         'results': output_dir,
         'objectives': '[]'
     }
@@ -1769,7 +1769,7 @@ def test_learning_curve_bad_folds_specifications():
         'learning_curve_cv_folds_list': "[10]",
         'learners': "['LogisticRegression', 'MultinomialNB']",
         'metrics': "['accuracy', 'f1_score_macro']",
-        'log': output_dir,
+        'logs': output_dir,
         'results': output_dir
     }
 
@@ -1795,7 +1795,7 @@ def test_config_parsing_param_grids_no_grid_search():
         'train_directory': train_dir,
         'featuresets': "[['f1', 'f2', 'f3']]",
         'learners': "['LinearSVC']",
-        'log': output_dir,
+        'logs': output_dir,
         'models': output_dir,
         'grid_search': 'false',
         'param_grids': "[{'C': [1e-6, 0.001, 1, 10, 100, 1e5]}]"
@@ -1831,7 +1831,7 @@ def test_config_parsing_no_grid_search_but_objectives_specified():
         'train_directory': train_dir,
         'featuresets': "[['f1', 'f2', 'f3']]",
         'learners': "['LinearSVC']",
-        'log': output_dir,
+        'logs': output_dir,
         'models': output_dir,
         'grid_search': 'false',
         'objectives': "['f1_score_macro', 'accuracy']"
@@ -1882,7 +1882,7 @@ def test_config_parsing_param_grids_fixed_parameters_conflict():
         'train_directory': train_dir,
         'featuresets': "[['f1', 'f2', 'f3']]",
         'learners': "['LinearSVC']",
-        'log': output_dir,
+        'logs': output_dir,
         'models': output_dir,
         'grid_search': 'true',
         'objectives': "['f1_score_macro']",
@@ -1923,7 +1923,7 @@ def test_config_parsing_default_pos_label_str_value():
         'featuresets': "[['f1', 'f2', 'f3']]",
         'learners': "['LogisticRegression']",
         'objectives': "['accuracy']",
-        'log': output_dir,
+        'logs': output_dir,
         'results': output_dir
     }
 
@@ -1963,7 +1963,7 @@ def test_config_parsing_default_save_votes_value():
         'fixed_parameters': '[{"estimator_names": ["SVC", "LogisticRegression", "MultinomialNB"]}]',
         'learners': "['VotingClassifier']",
         'objectives': "['accuracy']",
-        'log': output_dir,
+        'logs': output_dir,
         'results': output_dir,
     }
 
@@ -2003,7 +2003,7 @@ def test_config_parsing_set_save_votes_value():
         'fixed_parameters': '[{"estimator_names": ["SVC", "LogisticRegression", "MultinomialNB"]}]',
         'learners': "['VotingClassifier']",
         'objectives': "['accuracy']",
-        'log': output_dir,
+        'logs': output_dir,
         'results': output_dir,
         'save_votes': 'true'
     }
@@ -2028,3 +2028,50 @@ def test_config_parsing_set_save_votes_value():
      learning_curve_train_sizes, output_metrics, save_votes) = parse_config_file(config_path)
 
     eq_(save_votes, True)
+
+
+def test_config_parsing_use_log_instead_of_logs():
+    """
+    Check that using 'log' instead of 'logs' raises a warning
+    """
+
+    values_to_fill_dict = {
+        'experiment_name': 'config_parsing_log_vs_logs',
+        'task': 'evaluate',
+        'train_directory': train_dir,
+        'test_directory': test_dir,
+        'featuresets': "[['f1', 'f2', 'f3']]",
+        'learners': "['LogisticRegression']",
+        'objectives': "['accuracy']",
+        'log': output_dir,
+        'results': output_dir
+    }
+
+    config_template_path = join(config_dir,
+                                'test_config_parsing.template.cfg')
+
+    config_path = fill_in_config_options(config_template_path,
+                                         values_to_fill_dict,
+                                         'use_log_vs_logs')
+
+    (experiment_name, task, sampler, fixed_sampler_parameters,
+     feature_hasher, hasher_features, id_col, label_col, train_set_name,
+     test_set_name, suffix, featuresets, do_shuffle, model_path,
+     do_grid_search, grid_objectives, probability, pipeline, results_path,
+     pos_label_str, feature_scaling, min_feature_count, folds_file,
+     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
+     save_cv_models, use_folds_file_for_grid_search, do_stratified_folds,
+     fixed_parameter_list, param_grid_list, featureset_names, learners,
+     prediction_dir, log_path, train_path, test_path, ids_to_floats,
+     class_map, custom_learner_path, custom_metric_path, learning_curve_cv_folds_list,
+     learning_curve_train_sizes, output_metrics, save_votes) = parse_config_file(config_path)
+
+    log_file_on_disk = join(output_dir, "config_parsing_log_vs_logs.log")
+    with open(log_file_on_disk) as f:
+        warning_pattern = re.compile(
+            r"The 'log' option in the \[Output\] section is deprecated"
+        )
+        matches = re.findall(warning_pattern, f.read())
+        eq_(len(matches), 1)
+
+    eq_(log_path, output_dir)
