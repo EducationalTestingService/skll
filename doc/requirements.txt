@@ -1,2 +1,4 @@
+ruamel.yaml
+beautifulsoup4
 numpy
 scikit-learn>=0.24.1,<=0.24.2
