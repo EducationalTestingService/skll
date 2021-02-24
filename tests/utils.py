@@ -57,7 +57,7 @@ def fill_in_config_paths(config_template_path):
 
     config.set("Input", "train_directory", train_dir)
 
-    to_fill_in = ['log']
+    to_fill_in = ['logs']
 
     if task != 'learning_curve':
         to_fill_in.append('predictions')
@@ -118,7 +118,7 @@ def fill_in_config_paths_for_single_file(config_template_path,
     if test_directory:
         config.set("Input", "test_directory", join(test_dir, test_directory))
 
-    to_fill_in = ['log']
+    to_fill_in = ['logs']
     if task != 'train':
         to_fill_in.append('predictions')
 
@@ -178,7 +178,7 @@ def fill_in_config_options(config_template_path,
                              'use_folds_file_for_grid_search', 'grid_search_folds',
                              'pos_label_str', 'param_grids', 'objectives',
                              'duplicate_option'],
-                  'Output': ['results', 'log', 'models', 'metrics',
+                  'Output': ['results', 'log', 'logs', 'models', 'metrics',
                              'predictions', 'pipeline', 'save_cv_folds',
                              'save_cv_models', 'save_votes']}
 
@@ -214,7 +214,7 @@ def fill_in_config_paths_for_fancy_output(config_template_path):
     config.set("Input", "train_file", join(train_dir, "fancy_train.jsonlines"))
     config.set("Input", "test_file", join(test_dir, "fancy_test.jsonlines"))
     config.set("Output", "results", output_dir)
-    config.set("Output", "log", output_dir)
+    config.set("Output", "logs", output_dir)
     config.set("Output", "predictions", output_dir)
 
     config_prefix = re.search(r'^(.*)\.template\.cfg',
@@ -378,8 +378,8 @@ def fill_in_config_options_for_voting_learners(learner_type,  # noqa: C901
         num_cv_folds = 6
         values_to_fill_dict["num_cv_folds"] = str(num_cv_folds)
 
-    if options_dict["with_save_cv_folds"]:
-        values_to_fill_dict["save_cv_folds"] = "true"
+    if options_dict["without_save_cv_folds"]:
+        values_to_fill_dict["save_cv_folds"] = "false"
 
     if options_dict["with_save_cv_models"]:
         values_to_fill_dict["save_cv_models"] = "true"

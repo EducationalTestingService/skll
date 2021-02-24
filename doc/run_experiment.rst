@@ -1184,10 +1184,10 @@ by the experiment. The most common fields are ``logs``, ``models``,
 although they may be required in certain cases. A common option
 is to use the same directory for all of these fields.
 
-.. _log:
+.. _logs:
 
-log *(Optional)*
-""""""""""""""""
+logs *(Optional)*
+"""""""""""""""""
 
 Directory to store SKLL :ref:`log files <output_log_files>` in.
 If omitted, the current working directory is used.
@@ -1328,7 +1328,7 @@ save_cv_folds *(Optional)*
 """"""""""""""""""""""""""
 
 Whether to save the :ref:`folds file <output_folds_file>` containing the folds for a cross-validation experiment.
-Defaults to ``False``.
+Defaults to ``True``.
 
 .. _save_cv_models:
 

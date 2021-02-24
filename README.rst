@@ -94,7 +94,7 @@ like:
   # Also compute the area under the ROC curve as an additional metric
   metrics = ['roc_auc']
   # The following can also be absolute paths
-  log = output
+  logs = output
   results = output
   predictions = output
   probability = true
