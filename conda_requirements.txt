@@ -1,10 +1,11 @@
 beautifulsoup4
-joblib>=0.8
+joblib
 numpy
+nose-cov
 pandas
 pre-commit
 ruamel.yaml
-scikit-learn==0.24.1
+scikit-learn>=0.24.1,<=0.24.2
 scipy
 seaborn
 tabulate

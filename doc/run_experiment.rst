@@ -1301,8 +1301,8 @@ predictions *(Optional)*
 """"""""""""""""""""""""
 
 Directory in which to store :ref:`prediction files <output_prediction_files>`.
-Can be omitted to not store predictions. Must *not* be specified for the
-:ref:`learning_curve <learning_curve>` and :ref:`train <train>` tasks.
+Must *not* be specified for the :ref:`learning_curve <learning_curve>` and
+:ref:`train <train>` tasks. If omitted, the current working directory is used.
 
 .. _probability:
 
