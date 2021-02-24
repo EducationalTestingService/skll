@@ -1,5 +1,5 @@
-ruamel.yaml
 beautifulsoup4
+ruamel.yaml
 seaborn
-numpy
+tabulate
 scikit-learn>=0.24.1,<=0.24.2
