@@ -4,6 +4,7 @@ This module exists solely for version information so I only have to change it
 in one place. Based on the suggestion `here. <http://bit.ly/16LbuJF>`_
 
 :author: Dan Blanchard (dblanchard@ets.org)
+:author: Nitin Madnani (nmadnani@ets.org)
 :organization: ETS
 """
 
