@@ -1,60 +1,60 @@
 package:
   name: skll
-  version: 2.1
+  version: 2.5
 
 source:
   path: ../../../skll
 
 build:
   number: 0
-  noarch: python
   script:
     - cd $SRC_DIR
     - "{{ PYTHON }} -m pip install . --no-deps -vv"
   entry_points:
-    - compute_eval_from_predictions = skll.utilities.compute_eval_from_predictions:main
-    - filter_features = skll.utilities.filter_features:main
-    - generate_predictions = skll.utilities.generate_predictions:main
-    - join_features = skll.utilities.join_features:main
-    - plot_learning_curves = skll.utilities.plot_learning_curves:main
-    - print_model_weights = skll.utilities.print_model_weights:main
-    - run_experiment = skll.utilities.run_experiment:main
-    - skll_convert = skll.utilities.skll_convert:main
-    - summarize_results = skll.utilities.summarize_results:main
-    - compute_eval_from_predictions = skll.utilities.compute_eval_from_predictions:main
-    - filter_features = skll.utilities.filter_features:main
-    - generate_predictions = skll.utilities.generate_predictions:main
-    - join_features = skll.utilities.join_features:main
-    - plot_learning_curves = skll.utilities.plot_learning_curves:main
-    - print_model_weights = skll.utilities.print_model_weights:main
-    - run_experiment = skll.utilities.run_experiment:main
-    - skll_convert = skll.utilities.skll_convert:main
-    - summarize_results = skll.utilities.summarize_results:main
+    - compute_eval_from_predictions = skll.utils.commandline.compute_eval_from_predictions:main
+    - filter_features = skll.utils.commandline.filter_features:main
+    - generate_predictions = skll.utils.commandline.generate_predictions:main
+    - join_features = skll.utils.commandline.join_features:main
+    - plot_learning_curves = skll.utils.commandline.plot_learning_curves:main
+    - print_model_weights = skll.utils.commandline.print_model_weights:main
+    - run_experiment = skll.utils.commandline.run_experiment:main
+    - skll_convert = skll.utils.commandline.skll_convert:main
+    - summarize_results = skll.utils.commandline.summarize_results:main
+    - compute_eval_from_predictions = skll.utils.commandline.compute_eval_from_predictions:main
+    - filter_features = skll.utils.commandline.filter_features:main
+    - generate_predictions = skll.utils.commandline.generate_predictions:main
+    - join_features = skll.utils.commandline.join_features:main
+    - plot_learning_curves = skll.utils.commandline.plot_learning_curves:main
+    - print_model_weights = skll.utils.commandline.print_model_weights:main
+    - run_experiment = skll.utils.commandline.run_experiment:main
+    - skll_convert = skll.utils.commandline.skll_convert:main
+    - summarize_results = skll.utils.commandline.summarize_results:main
 
 requirements:
   build:
+    - python
+    - pip
+    - setuptools
     - beautifulsoup4
-    - joblib >=0.8
-    - numpy
+    - joblib
+    - numpy {{ numpy }}
     - pandas
-    - python >=3.6
     - ruamel.yaml
-    - scikit-learn >=0.23.1,<=0.23.2
+    - scikit-learn >=0.24.1,<=0.24.2
     - scipy
     - seaborn
-    - setuptools
     - tabulate
 
   run:
+    - python
     - beautifulsoup4
-    - joblib >=0.8
+    - joblib
     - numpy
     - pandas
-    - python >=3.6
     - ruamel.yaml
-    - scikit-learn >=0.23.1,<=0.23.2
-    - seaborn
+    - scikit-learn >=0.24.1,<=0.24.2
     - scipy
+    - seaborn
     - tabulate
 
 test:
@@ -75,6 +75,6 @@ test:
 
 about:
   home: http://github.com/EducationalTestingService/skll
-  license: BSD-3-Clause
+  license: BSD
   license_file: LICENSE.txt
   summary: SciKit-Learn Laboratory makes it easier to run machine learning experiments with scikit-learn.
