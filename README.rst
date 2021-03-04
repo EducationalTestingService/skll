@@ -1,13 +1,13 @@
 SciKit-Learn Laboratory
 -----------------------
 
-.. image:: https://img.shields.io/travis/EducationalTestingService/skll/main.svg
-   :alt: Build status
-   :target: https://travis-ci.com/EducationalTestingService/skll
+.. image:: https://gitlab.com/EducationalTestingService/skll/badges/main/pipeline.svg
+   :target: https://gitlab.com/EducationalTestingService/skll/-/pipelines
+   :alt: Gitlab CI status
 
 .. image:: https://dev.azure.com/EducationalTestingService/SKLL/_apis/build/status/EducationalTestingService.skll
    :target: https://dev.azure.com/EducationalTestingService/SKLL/_build?view=runs
-   :alt: Build status
+   :alt: Azure Pipelines status
 
 .. image:: https://codecov.io/gh/EducationalTestingService/skll/branch/main/graph/badge.svg
   :target: https://codecov.io/gh/EducationalTestingService/skll
@@ -49,7 +49,7 @@ You can install using either ``pip`` or ``conda``. See details `here <https://sk
 Requirements
 ~~~~~~~~~~~~
 
--  Python 3.6+
+-  Python 3.7, 3.8, or 3.9
 -  `beautifulsoup4 <http://www.crummy.com/software/BeautifulSoup/>`__
 -  `gridmap <https://pypi.org/project/gridmap/>`__ (only required if you plan
    to run things in parallel on a DRMAA-compatible cluster)
