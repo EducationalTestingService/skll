@@ -24,42 +24,42 @@ variables:
 
 # first set of test files
 testset1:
-  extends: ".runtest"
+  extends: ".runtests"
   variables:
     TESTFILES: "tests/test_featureset.py tests/test_commandline_utils.py tests/test_custom_metrics.py"
   stage: "test"
 
 # second set of test files
 testset2:
-  extends: ".runtest"
+  extends: ".runtests"
   variables:
     TESTFILES: "tests/test_output.py tests/test_voting_learners_api_4.py tests/test_voting_learners_api_5.py"
   stage: "test"
 
 # third set of test files
 testset3:
-  extends: ".runtest"
+  extends: ".runtests"
   variables:
     TESTFILES: "tests/test_regression.py tests/test_voting_learners_api_2.py"
   stage: "test"
 
 # fourth set of test files
 testset4:
-  extends: ".runtest"
+  extends: ".runtests"
   variables:
     TESTFILES: "tests/test_input.py tests/test_preprocessing.py tests/test_metrics.py tests/test_custom_learner.py tests/test_logging_utils.py tests/test_examples.py tests/test_voting_learners_api_1.py tests/test_voting_learners_expts_1.py"
   stage: "test"
 
 # fifth set of test files
 testset5:
-  extends: ".runtest"
+  extends: ".runtests"
   variables:
     TESTFILES: "tests/test_classification.py tests/test_cv.py tests/test_ablation.py tests/test_voting_learners_expts_4.py"
   stage: "test"
 
 # sixth set of test files
 testset6:
-  extends: ".runtest"
+  extends: ".runtests"
   variables:
     TESTFILES: "tests/test_voting_learners_api_3.py tests/test_voting_learners_expts_2.py tests/test_voting_learners_expts_3.py tests/test_voting_learners_expts_5.py"
   stage: "test"
