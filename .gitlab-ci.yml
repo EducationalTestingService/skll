@@ -1,3 +1,5 @@
+image: continuumio/miniconda3:latest
+
 stages:
   - test
 
@@ -8,16 +10,13 @@ variables:
   NOSE_WITH_COV: "1"
   NOSE_COVER_PACKAGE: "skll"
   LOGCAPTURE_LEVEL: "WARNING"
+  CODECOV_TOKEN: "e2cce606-b88b-415d-a106-5c7da6e7eb6e"
 
 # set up 6 jobs to run in parallel, for different groups of test files
 runtests:
   stage: test
   before_script:
-    - wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
-    - chmod +x miniconda.sh
-    - ./miniconda.sh -b -f
-    - /root/miniconda3/bin/conda update conda --yes
-    - "/root/miniconda3/bin/conda create --name sklldev -c conda-forge --file conda_requirements.txt python=${PYVERSION} codecov --yes --quiet"
+    - "conda create --name sklldev -c conda-forge --file conda_requirements.txt python=${PYVERSION} codecov --yes --quiet"
     - /root/miniconda3/envs/sklldev/bin/pip install -e .
   script:
     - "/root/miniconda3/envs/sklldev/bin/nosetests ${TESTFILES}"
