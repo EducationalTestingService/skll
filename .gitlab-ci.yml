@@ -1,0 +1,34 @@
+stages:
+  - test
+
+variables:
+  PYVERSION: "3.7"
+  BINDIR: "/root/miniconda3/envs/sklldev/bin"
+  MPLBACKEND: "Agg"
+  NOSE_WITH_COV: "1"
+  NOSE_COVER_PACKAGE: "skll"
+  LOGCAPTURE_LEVEL: "WARNING"
+
+# set up 6 jobs to run in parallel, for different groups of test files
+runtests:
+  stage: test
+  before_script:
+    - wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+    - chmod +x miniconda.sh
+    - ./miniconda.sh -b -f
+    - /root/miniconda3/bin/conda update conda --yes
+    - "/root/miniconda3/bin/conda create --name sklldev -c conda-forge --file conda_requirements.txt python=${PYVERSION} codecov --yes --quiet"
+    - /root/miniconda3/envs/sklldev/bin/pip install -e .
+  script:
+    - "/root/miniconda3/envs/sklldev/bin/nosetests ${TESTFILES}"
+  parallel:
+    matrix:
+      - TESTFILES:
+        - "tests/test_featureset.py tests/test_commandline_utils.py tests/test_custom_metrics.py"
+        - "tests/test_output.py tests/test_voting_learners_api_4.py tests/test_voting_learners_api_5.py"
+        - "tests/test_regression.py tests/test_voting_learners_api_2.py"
+        - "tests/test_input.py tests/test_preprocessing.py tests/test_metrics.py tests/test_custom_learner.py tests/test_logging_utils.py tests/test_examples.py tests/test_voting_learners_api_1.py tests/test_voting_learners_expts_1.py"
+        - "tests/test_classification.py tests/test_cv.py tests/test_ablation.py tests/test_voting_learners_expts_4.py"
+        - "tests/test_voting_learners_api_3.py tests/test_voting_learners_expts_2.py tests/test_voting_learners_expts_3.py tests/test_voting_learners_expts_5.py"
+  after_script:
+    - /root/miniconda3/envs/sklldev/bin/codecov
