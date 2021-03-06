@@ -6,7 +6,7 @@
     It is adapted from the script in this repository:
     https://github.com/PBoraMSFT/ParallelTestingSample-Python/blob/master/DistributeTests.ps1
 
-    The distribution is basically identical to the way we do it in .travis.yaml
+    The distribution is basically identical to the way we do it in .gitlab-ci.yaml
 #>
 
 $tests = Get-ChildItem .\tests\ -Filter "test*.py" # search for test files with specific pattern.

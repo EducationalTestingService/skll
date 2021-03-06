@@ -101,7 +101,7 @@ following rules before submitting a pull request:
 -  All methods and functions should have informative docstrings.
 
 -  All existing tests should pass when everything is rebuilt from scratch. You
-   should be able to see this by running ``nosetests`` locally, or looking at the Travis CI build status after you create your pull request.
+   should be able to see this by running ``nosetests`` locally, or looking at the Gitlab CI build status after you create your pull request.
 
 -  All new functionality must be covered by unit tests.
 
