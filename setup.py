@@ -30,6 +30,10 @@ setup(name='skll',
       author_email='nmadnani@ets.org',
       license='BSD 3 clause',
       packages=find_packages(exclude=['tests', 'examples']),
+      package_data={'':
+                    ['*.rst', 'LICENSE.txt', 'requirements.txt']},
+      exclude_package_data={'doc': ['*'], 'tests': ['*'], 'examples': ['*']},
+      include_package_data=True,
       entry_points={'console_scripts':
                     ['filter_features = skll.utils.commandline.filter_features:main',
                      'generate_predictions = skll.utils.commandline.generate_predictions:main',
