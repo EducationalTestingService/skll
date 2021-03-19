@@ -258,8 +258,10 @@ def parse_config_file(config_path, log_level=logging.INFO):  # noqa: C901
     config_path : str
         The path to the configuration file.
 
-    log_level : logging level, optional, default=logging.INFO
-        The logging level to use.
+    log_level : int, default=logging.INFO
+        Determines which messages should be logged. You can either pass
+        an integer or one of the corresponding `logging` parameters, such
+        as `logging.INFO` or `logging.WARNING`.
 
     Returns
     -------
@@ -923,7 +925,7 @@ def _setup_config_parser(config_path, validate=True):
     config_path : str
         The path to the configuration file.
 
-    validate : bool, optional, default=True
+    validate : bool, default=True
         Whether to validate the configuration file.
 
     Returns
