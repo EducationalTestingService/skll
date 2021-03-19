@@ -260,8 +260,8 @@ def parse_config_file(config_path, log_level=logging.INFO):  # noqa: C901
 
     log_level : int, default=logging.INFO
         Determines which messages should be logged. You can either pass
-        an integer or one of the corresponding `logging` parameters, such
-        as `logging.INFO` or `logging.WARNING`.
+        an integer or one of the corresponding ``logging`` parameters, such
+        as ``logging.INFO`` or ``logging.WARNING``.
 
     Returns
     -------
