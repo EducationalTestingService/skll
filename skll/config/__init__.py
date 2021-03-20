@@ -184,6 +184,7 @@ class SKLLConfigParser(configparser.ConfigParser):
         -------
         incorrectly_specified_options : list of str
             A list of incorrectly specified options.
+
         multiply_specified_options : list of str
             A list of options specified more than once.
 
@@ -225,8 +226,10 @@ class SKLLConfigParser(configparser.ConfigParser):
         ------
         KeyError
             If configuration file contains unrecognized options.
+
         KeyError
             If any options are defined in multiple sections.
+
         KeyError
             If any options are not defined in the appropriate sections.
         """
@@ -254,9 +257,11 @@ def parse_config_file(config_path, log_level=logging.INFO):  # noqa: C901
     ----------
     config_path : str
         The path to the configuration file.
-    log_level : logging level, optional
-        The logging level to use.
-        Defaults to ``logging.INFO``.
+
+    log_level : int, default=logging.INFO
+        Determines which messages should be logged. You can either pass
+        an integer or one of the corresponding ``logging`` parameters, such
+        as ``logging.INFO`` or ``logging.WARNING``.
 
     Returns
     -------
@@ -264,105 +269,150 @@ def parse_config_file(config_path, log_level=logging.INFO):  # noqa: C901
         A string used to identify this particular experiment configuration.
         When generating result summary files, this name helps prevent
         overwriting previous summaries.
+
     task : str
         The types of experiment we're trying to run (e.g. 'cross_validate').
+
     sampler : str
         The name of a sampler to perform non-linear transformations of the input.
+
     fixed_sampler_parameters : dict
-        A dictionary containing parameters you want to have fixed for the sampler
+        A dictionary containing parameters you want to have fixed for the sampler.
+
     feature_hasher : bool
         If True, this enables a high-speed, low-memory vectorizer that uses
         feature hashing for converting feature dictionaries into NumPy arrays
         instead of using a DictVectorizer.
+
     hasher_features : int
         The number of features used by the FeatureHasher if the feature_hasher
         flag is enabled.
+
     id_col : str
         The column with IDs.
+
     label_col : str
         The column with labels.
+
     train_set_name : str
         The name of the training set.
+
     test_set_name : str
         The name of the test set.
+
     suffix : str
         The file format the training/test files are in.
+
     featuresets : list of str
         A list of lists of prefixes for the files containing
         the features you would like to train/test on.
+
     do_shuffle : bool
         Whether to shuffle the data.
+
     model_path : str
         The path to the model file(s).
+
     do_grid_search : bool
         Whether to perform grid search.
+
     grid_objectives : list of str
         A list of scoring functions to use for tuning.
+
     probability : bool
         Whether to output probabilities for each class.
+
     pipeline : bool
         Whether to include the `pipeline` attribute in the
         trained model. This will increase the size of the
         model file.
+
     results_path : str
         Path to store result files in.
+
     pos_label_str : str
         The string label for the positive class in the binary
         classification setting.
+
     feature_scaling : str
         How to scale features (e.g. 'with_mean').
+
     min_feature_count : int
         The minimum number of examples for which the value of a
         feature must be nonzero to be included in the model.
+
     folds_file : str
         The path to the folds_file, if specified.
+
     grid_search_jobs : int
         Number of folds to run in parallel when using grid search.
+
     grid_search_folds : int
         The number of folds to use for grid search.
+
     cv_folds : dict or int
         The specified folds mapping, or the number of folds.
+
     save_cv_folds : bool
         Whether to save CV Folds to file.
+
     save_cv_models : bool
         Whether to save CV models.
+
     use_folds_file_for_grid_search : bool
         Whether to use folds file for grid search.
+
     do_stratified_folds : bool
         Whether to use random folds for cross-validation.
+
     fixed_parameter_list : list of dict
         List of dicts containing parameters you want to have fixed for
         each classifier in learners list.
+
     param_grid_list : list of dict
         List of parameter grids to search, one dict for each learner.
+
     featureset_names : list of str
         The names of the featuresets used for each job.
+
     learners : list of str
         A list of learners to try using.
+
     prediction_dir : str
         The directories where predictions are saved.
+
     log_path : str
         The path to the log file.
+
     train_path : str
         The path to a file containing feature to train on.
+
     test_path : str
         The path to a file containing features to test on.
+
     ids_to_floats : bool
         Whether to convert IDs to floats.
+
     class_map : dict
         A class map collapsing several labels into one.
+
     custom_learner_path : str
         Path to a .py file that defines a custom learner.
+
     custom_metric_path : str
         Path to a .py file that defines a custom metric.
+
     learning_curve_cv_folds_list : list of int
         A list of integers specifying the number of folds to use for CV.
+
     learning_curve_train_sizes : list of float or list of int
         List of floats or integers representing relative or absolute numbers
         of training examples that will be used to generate the learning
         curve respectively.
+
     output_metrics : list
         A list of output metrics to use.
+
     save_votes : bool
         Whether to save the individual predictions from voting learners.
 
@@ -370,6 +420,7 @@ def parse_config_file(config_path, log_level=logging.INFO):  # noqa: C901
     ------
     IOError
         If configuration file name is empty
+
     ValueError
         If various configuration parameters are incorrectly specified,
         or cause conflicts.
@@ -873,9 +924,9 @@ def _setup_config_parser(config_path, validate=True):
     ----------
     config_path : str
         The path to the configuration file.
-    validate : bool, optional
+
+    validate : bool, default=True
         Whether to validate the configuration file.
-        Defaults to ``True``.
 
     Returns
     -------
