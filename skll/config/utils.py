@@ -111,7 +111,7 @@ def locate_file(file_path, config_dir):
 
 def _munge_featureset_name(featureset):
     """
-    Joins features in ``featureset`` by '+' if ``featureset`` is not a string.
+    Joins features in ``featureset`` with a '+' if ``featureset`` is not a string.
     Otherwise, returns ``featureset``.
 
     Parameters
