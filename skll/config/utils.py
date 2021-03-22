@@ -116,7 +116,7 @@ def _munge_featureset_name(featureset):
 
     Parameters
     ----------
-    featureset : SKLL.FeatureSet
+    featureset : skll.data.FeatureSet
         A SKLL ``FeatureSet`` object.
 
     Returns
