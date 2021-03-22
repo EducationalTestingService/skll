@@ -45,9 +45,9 @@ def load_cv_folds(folds_file, ids_to_floats=False):
     ----------
     folds_file : str
         The path to a folds file to read.
-    ids_to_floats : bool, optional
+
+    ids_to_floats : bool, default=False
         Whether to convert IDs to floats.
-        Defaults to ``False``.
 
     Returns
     -------
@@ -84,6 +84,7 @@ def locate_file(file_path, config_dir):
     ----------
     file_path : str
         The file to locate. Path may be absolute or relative.
+
     config_dir : str
         The path to the configuration file directory.
 
@@ -110,18 +111,18 @@ def locate_file(file_path, config_dir):
 
 def _munge_featureset_name(featureset):
     """
-    Joins features in featureset by '+' if featureset is not a string, and just
-    returns featureset otherwise.
+    Joins features in ``featureset`` with a '+' if ``featureset`` is not a string.
+    Otherwise, returns ``featureset``.
 
     Parameters
     ----------
-    featureset : SKLL.FeatureSet
-        A SKLL feature_set object.
+    featureset : skll.data.FeatureSet
+        A SKLL ``FeatureSet`` object.
 
     Returns
     -------
     res : str
-        feature_set names joined with '+', if feature_set is not a string.
+        ``featureset`` names joined with '+', if ``featureset`` is not a string.
     """
     if isinstance(featureset, str):
         return featureset
@@ -139,12 +140,13 @@ def _parse_and_validate_metrics(metrics, option_name, logger=None):
     Parameters
     ----------
     metrics : str
-        A string containing a list of metrics
+        A string containing a list of metrics.
+
     option_name : str
         The name of the option with which the metrics are associated.
-    logger : logging.Logger, optional
-        A logging object
-        Defaults to ``None``.
+
+    logger : logging.Logger, default=None
+        A logging object.
 
     Returns
     -------
@@ -155,6 +157,7 @@ def _parse_and_validate_metrics(metrics, option_name, logger=None):
     ------
     TypeError
         If the given string cannot be converted to a list.
+
     ValueError
         If "mean_squared_error" is specified as a metric.
     """
