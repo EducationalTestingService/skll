@@ -40,15 +40,16 @@ class DictVectorizer(OldDictVectorizer):
     dtype : callable, optional
         The type of feature values. Passed to Numpy array/scipy.sparse matrix
         constructors as the dtype argument.
+
     separator : string, optional
         Separator string used when constructing new features for one-hot
         coding.
-    sparse : boolean, optional.
+
+    sparse : boolean, default=True
         Whether transform should produce scipy.sparse matrices.
-        True by default.
-    sort : boolean, optional.
+
+    sort : boolean, default=True
         Whether `feature_names_` and `vocabulary_` should be sorted when fitting.
-        True by default.
 
     Attributes
     ----------
