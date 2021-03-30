@@ -34,7 +34,7 @@ class FeatureSet(object):
     labels : np.array of shape (n_labels,), default=None
         labels for this set.
 
-    feature : list of dict or array-like, default=None
+    feature : list of dict or an array-like of shape (n_samples, n_features), default=None
         The features for each instance represented as either a
         list of dictionaries or an array-like (if ``vectorizer`` is
         also specified).
