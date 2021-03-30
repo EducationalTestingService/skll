@@ -21,34 +21,35 @@ class FeatureSet(object):
 
     """
     Encapsulation of all of the features, values, and metadata about a given
-    set of data. This replaces `ExamplesTuple` from older versions of SKLL.
+    set of data. This replaces ``ExamplesTuple`` from older versions of SKLL.
 
     Parameters
     ----------
     name : str
         The name of this feature set.
-    ids : np.array
+
+    ids : np.array of shape (n_ids,)
         Example IDs for this set.
-    labels : np.array, optional
+
+    labels : np.array of shape (n_labels,), default=None
         labels for this set.
-        Defaults to ``None``.
-    feature : list of dict or array-like, optional
+
+    feature : list of dict or array-like, default=None
         The features for each instance represented as either a
-        list of dictionaries or an array-like (if `vectorizer` is
+        list of dictionaries or an array-like (if ``vectorizer`` is
         also specified).
-        Defaults to ``None``.
-    vectorizer : DictVectorizer or FeatureHasher, optional
+
+    vectorizer : DictVectorizer or FeatureHasher, default=None
         Vectorizer which will be used to generate the feature matrix.
-        Defaults to ``None``.
 
     Warnings
     --------
     FeatureSets can only be equal if the order of the instances is
     identical because these are stored as lists/arrays. Since scikit-learn's
-    `DictVectorizer` automatically sorts the underlying feature matrix
+    ``DictVectorizer`` automatically sorts the underlying feature matrix
     if it is sparse, we do not do any sorting before checking for equality.
     This is not a problem because we _always_ use sparse matrices with
-    `DictVectorizer` when creating FeatureSets.
+    ``DictVectorizer`` when creating FeatureSets.
 
     Notes
     -----
@@ -106,7 +107,7 @@ class FeatureSet(object):
 
         Parameters
         ----------
-        other : skll.FeatureSet
+        other : skll.data.FeatureSet
             The other ``FeatureSet`` to check equivalence with.
 
         Note
@@ -161,17 +162,20 @@ class FeatureSet(object):
 
         Parameters
         ----------
-        other : skll.FeatureSet
+        other : skll.data.FeatureSet
             The other ``FeatureSet`` to add to this one.
 
         Raises
         ------
         ValueError
             If IDs are not in the same order in each ``FeatureSet`` instance.
+
         ValueError
             If vectorizers are different between the two ``FeatureSet`` instances.
+
         ValueError
             If there are duplicate feature names.
+
         ValueError
             If there are conflicting labels.
         """
@@ -241,29 +245,28 @@ class FeatureSet(object):
 
         Parameters
         ----------
-        ids : list of str/float, optional
-            Examples to keep in the FeatureSet. If `None`, no ID
+        ids : list of str/float, default=None
+            Examples to keep in the FeatureSet. If ``None``, no ID
             filtering takes place.
-            Defaults to ``None``.
-        labels : list of str/float, optional
-            Labels that we want to retain examples for. If `None`,
+
+        labels : list of str/float, default=None
+            Labels that we want to retain examples for. If ``None``,
             no label filtering takes place.
-            Defaults to ``None``.
-        features : list of str, optional
+
+        features : list of str, default=None
             Features to keep in the FeatureSet. To help with
             filtering string-valued features that were converted
             to sequences of boolean features when read in, any
-            features in the FeatureSet that contain a `=` will be
+            features in the FeatureSet that contain a ``=`` will be
             split on the first occurrence and the prefix will be
-            checked to see if it is in `features`.
-            If `None`, no feature filtering takes place.
+            checked to see if it is in ``features``.
+            If ``None``, no feature filtering takes place.
             Cannot be used if FeatureSet uses a FeatureHasher for
             vectorization.
-            Defaults to ``None``.
-        inverse : bool, optional
+
+        inverse : bool, default=False
             Instead of keeping features and/or examples in lists,
             remove them.
-            Defaults to ``False``.
 
         Raises
         ------
@@ -311,15 +314,15 @@ class FeatureSet(object):
 
         Parameters
         ----------
-        ids : list of str/float, optional
+        ids : list of str/float, default=None
             Examples to keep in the ``FeatureSet``. If ``None``, no ID
             filtering takes place.
-            Defaults to ``None``.
-        labels : list of str/float, optional
+
+        labels : list of str/float, default=None
             Labels that we want to retain examples for. If ``None``,
             no label filtering takes place.
-            Defaults to ``None``.
-        features : list of str, optional
+
+        features : list of str, default=None
             Features to keep in the ``FeatureSet``. To help with
             filtering string-valued features that were converted
             to sequences of boolean features when read in, any
@@ -329,18 +332,19 @@ class FeatureSet(object):
             If `None`, no feature filtering takes place.
             Cannot be used if ``FeatureSet`` uses a FeatureHasher for
             vectorization.
-            Defaults to ``None``.
-        inverse : bool, optional
+
+        inverse : bool, default=False
             Instead of keeping features and/or examples in lists,
             remove them.
-            Defaults to ``False``.
 
         Yields
         ------
         id_ : str
             The ID of the example.
+
         label_ : str
             The label of the example.
+
         feat_dict : dict
             The feature dictionary, with feature name as the key
             and example value as the value.
@@ -348,7 +352,7 @@ class FeatureSet(object):
         Raises
         ------
         ValueError
-            If the vectorizer is not a `DictVectorizer`.
+            If the vectorizer is not a ``DictVectorizer``.
         """
         if self.features is not None and not isinstance(self.vectorizer,
                                                         DictVectorizer):
@@ -384,13 +388,13 @@ class FeatureSet(object):
 
         Parameters
         ----------
-        other : skll.FeatureSet
+        other : skll.data.FeatureSet
             The other ``FeatureSet`` containing the features that should
             be removed from this ``FeatureSet``.
 
         Returns
         -------
-        A copy of `self` with all features in `other` removed.
+        A copy of ``self`` with all features in ``other`` removed.
         """
         new_set = deepcopy(self)
         new_set.filter(features=other.vectorizer.feature_names_,
@@ -468,14 +472,16 @@ class FeatureSet(object):
 
         Parameters
         ----------
-        fs : skll.FeatureSet
+        fs : skll.data.FeatureSet
             The ``FeatureSet`` instance to split.
+
         ids_for_split1 : list of int
             A list of example IDs which will be split out into
             the first ``FeatureSet`` instance. Note that the
             FeatureSet instance will respect the order of the
             specified IDs.
-        ids_for_split2 : list of int, optional
+
+        ids_for_split2 : list of int, default=None
             An optional ist of example IDs which will be
             split out into the second ``FeatureSet`` instance.
             Note that the ``FeatureSet`` instance will respect
@@ -483,13 +489,13 @@ class FeatureSet(object):
             not specified, then the second ``FeatureSet``
             instance will contain the complement of the
             first set of IDs sorted in ascending order.
-            Defaults to ``None``.
 
         Returns
         -------
-        fs1 : skll.FeatureSet
+        fs1 : skll.data.FeatureSet
             The first ``FeatureSet``.
-        fs2 : skll.FeatureSet
+
+        fs2 : skll.data.FeatureSet
             The second ``FeatureSet``.
         """
 
@@ -534,18 +540,19 @@ class FeatureSet(object):
         ----------
         df : pd.DataFrame
             The pandas.DataFrame object to use as a ``FeatureSet``.
+
         name : str
             The name of the output ``FeatureSet`` instance.
-        labels_column : str, optional
+
+        labels_column : str, default=None
             The name of the column containing the labels (data to predict).
-            Defaults to ``None``.
-        vectorizer : DictVectorizer or FeatureHasher, optional
+
+        vectorizer : DictVectorizer or FeatureHasher, default=None
             Vectorizer which will be used to generate the feature matrix.
-            Defaults to ``None``.
 
         Returns
         -------
-        feature_set : skll.FeatureSet
+        feature_set : skll.data.FeatureSet
             A ``FeatureSet`` instance generated from from the given data frame.
         """
         if labels_column:
