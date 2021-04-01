@@ -67,48 +67,48 @@ class Reader(object):
     ----------
     path_or_list : str or list of dict
         Path or a list of example dictionaries.
-    quiet : bool, optional
+
+    quiet : bool, default=True
         Do not print "Loading..." status message to stderr.
-        Defaults to ``True``.
-    ids_to_floats : bool, optional
+
+    ids_to_floats : bool, default=False
         Convert IDs to float to save memory. Will raise error
         if we encounter an a non-numeric ID.
-        Defaults to ``False``.
-    label_col : str, optional
+
+    label_col : str, default='y'
         Name of the column which contains the class labels
         for ARFF/CSV/TSV files. If no column with that name
         exists, or ``None`` is specified, the data is
         considered to be unlabelled.
-        Defaults to ``'y'``.
-    id_col : str, optional
+
+    id_col : str, default='id'
         Name of the column which contains the instance IDs.
         If no column with that name exists, or ``None`` is
         specified, example IDs will be automatically generated.
-        Defaults to ``'id'``.
-    class_map : dict, optional
+
+    class_map : dict, default=None
         Mapping from original class labels to new ones. This is
         mainly used for collapsing multiple labels into a single
         class. Anything not in the mapping will be kept the same.
-        Defaults to ``None``.
-    sparse : bool, optional
+
+    sparse : bool, default=True
         Whether or not to store the features in a numpy CSR
         matrix when using a DictVectorizer to vectorize the
         features.
-        Defaults to ``True``.
-    feature_hasher : bool, optional
+
+    feature_hasher : bool, default=False
         Whether or not a FeatureHasher should be used to
         vectorize the features.
-        Defaults to ``False``.
-    num_features : int, optional
+
+    num_features : int, default=None
         If using a FeatureHasher, how many features should the
         resulting matrix have?  You should set this to a power
         of 2 greater than the actual number of features to
         avoid collisions.
-        Defaults to ``None``.
-    logger : logging.Logger, optional
+
+    logger : logging.Logger, default=None
         A logger instance to use to log messages instead of creating
         a new one by default.
-        Defaults to ``None``.
     """
 
     def __init__(self, path_or_list, quiet=True, ids_to_floats=False,
@@ -142,12 +142,13 @@ class Reader(object):
         ----------
         path_or_list : str or list of dicts
             A path or list of example dictionaries.
+
         kwargs : dict, optional
             The arguments to the Reader object being instantiated.
 
         Returns
         -------
-        reader : skll.Reader
+        reader : skll.data.Reader
             A new instance of the Reader sub-class that is
             appropriate for the given path.
 
@@ -170,11 +171,11 @@ class Reader(object):
     def _sub_read(self, file):
         """
         Does the actual reading of the given file or list.
-        For `Reader` objects that do not rely on `pandas`
+        For ``Reader`` objects that do not rely on ``pandas``
         (and therefore read row-by-row), this function will
-        be called by  `_sub_read_rows()` and will take a file
+        be called by  ``_sub_read_rows()`` and will take a file
         buffer rather than a file path. Otherwise, it will
-        take a path and will be called directly in the `read()`
+        take a path and will be called directly in the ``read()``
         method.
 
         Parameters
@@ -200,10 +201,10 @@ class Reader(object):
         progress_num
             Progress indicator value. Usually either a line
             number or a percentage. Must be able to convert to string.
-        end : str, optional
+
+        end : str, default='\r'
             The string to put at the end of the line.  "\\r" should be
             used for every update except for the final one.
-            Defaults to ``'\r'``.
         """
         # Print out status
         if not self.quiet:
@@ -214,11 +215,11 @@ class Reader(object):
     def _sub_read_rows(self, file):
         """
         Read the file in row-by-row. This method is used for
-        `Reader` objects that do not rely on `pandas`, and are
+        ``Reader`` objects that do not rely on ``pandas``, and are
         instead read line-by-line into a FeatureSet object, unlike
         pandas-based reader object, which will read everything
         into memory in a data frame object before converting to
-        a `FeatureSet`.
+        a ``FeatureSet``.
 
         Parameters
         ----------
@@ -227,10 +228,12 @@ class Reader(object):
 
         Returns
         -------
-        ids : np.array
+        ids : np.array of shape (n_ids,)
             The ids array.
-        labels : np.array
+
+        labels : np.array of shape (n_labels,)
             The labels array.
+
         features : list of dicts
             The features dictionary.
 
@@ -238,8 +241,10 @@ class Reader(object):
         ------
         ValueError
             If ``ids_to_floats`` is True, but IDs cannot be converted.
+
         ValueError
             If no features are found.
+
         ValueError
             If the example IDs are not unique.
         """
@@ -295,40 +300,43 @@ class Reader(object):
                          drop_blanks=False):
         """
         Parse the data frame into ids, labels, and features.
-        For `Reader` objects that rely on `pandas`, this function
-        will be called in the `_sub_read()` method to parse the
+        For ``Reader`` objects that rely on ``pandas``, this function
+        will be called in the ``_sub_read()`` method to parse the
         data frame into the expected format. It will not be used
-        by `Reader` classes that read row-by-row (and therefore
-        use the `_sub_read_rows()` function).
+        by ``Reader`` classes that read row-by-row (and therefore
+        use the ``_sub_read_rows()`` function).
 
         Parameters
         ----------
         df : pd.DataFrame
             The pandas data frame to parse.
+
         id_col : str or None
             The id column.
+
         label_col : str or None
             The label column.
-        replace_blanks_with : value, ``dict``, or ``None``, optional
+
+        replace_blanks_with : value, ``dict``, or ``None``, default=None
             Specifies a new value with which to replace blank values.
             Options are ::
 
-                -  value = A (numeric) value with which to replace blank values.
-                -  ``dict`` = A dictionary specifying the replacement value for each column.
-                -  ``None`` = Blank values will be left as blanks, and not replaced.
+                -    value   = A (numeric) value with which to replace blank values.
+                -  ``dict``  = A dictionary specifying the replacement value for each column.
+                -  ``None``  = Blank values will be left as blanks, and not replaced.
 
-            Defaults to ``None``.
-        drop_blanks : bool, optional
+        drop_blanks : bool, default=False
             If ``True``, remove lines/rows that have any blank
             values.
-            Defaults to ``False``.
 
         Returns
         -------
-        ids : np.array
+        ids : np.array of shape (n_ids,)
             The ids for the feature set.
-        labels : np.array
+
+        labels : np.array of shape (n_labels,)
             The labels for the feature set.
+
         features : list of dicts
             The features for the feature set.
         """
@@ -395,20 +403,22 @@ class Reader(object):
 
     def read(self):
         """
-        Loads examples in the `.arff`, `.csv`, `.jsonlines`, `.libsvm`,
-        `.ndj`, or `.tsv` formats.
+        Loads examples in the ``.arff``, ``.csv``, ``.jsonlines``, ``.libsvm``,
+        ``.ndj``, or ``.tsv`` formats.
 
         Returns
         -------
-        feature_set : skll.FeatureSet
+        feature_set : skll.data.FeatureSet
             ``FeatureSet`` instance representing the input file.
 
         Raises
         ------
         ValueError
             If ``ids_to_floats`` is True, but IDs cannot be converted.
+
         ValueError
             If no features are found.
+
         ValueError
             If the example IDs are not unique.
         """
@@ -456,7 +466,7 @@ class DictListReader(Reader):
 
         Returns
         -------
-        feature_set : skll.FeatureSet
+        feature_set : skll.data.FeatureSet
             FeatureSet representing the list of dictionaries we read in.
         """
         ids = []
@@ -523,8 +533,10 @@ class NDJReader(Reader):
         ------
         curr_id : str
             The current ID for the example.
+
         class_name : float or str
             The name of the class label for the example.
+
         example : dict
             The example valued in dictionary format, with 'x'
             as list of features.
@@ -602,6 +614,7 @@ class LibSVMReader(Reader):
         -------
         name : str
             The name of the feature.
+
         value
             The value of the example.
         """
@@ -622,8 +635,10 @@ class LibSVMReader(Reader):
         ------
         curr_id : str
             The current ID for the example.
+
         class_name : float or str
             The name of the class label for the example.
+
         example : dict
             The example valued in dictionary format, with 'x'
             as list of features.
@@ -695,25 +710,26 @@ class CSVReader(Reader):
     ----------
     path_or_list : str
         The path to a comma-delimited file.
-    replace_blanks_with : value, ``dict``, or ``None``, optional
+
+    replace_blanks_with : value, ``dict``, or ``None``, default=None
         Specifies a new value with which to replace blank values.
         Options are ::
 
-            -  value = A (numeric) value with which to replace blank values.
-            -  dict = A dictionary specifying the replacement value for each column.
-            -  None = Blank values will be left as blanks, and not replaced.
+            -    value   = A (numeric) value with which to replace blank values.
+            -  ``dict``  = A dictionary specifying the replacement value for each column.
+            -  ``None``  = Blank values will be left as blanks, and not replaced.
 
-        The replacement occurs after the data set is read into a `pd.DataFrame`.
-        Defaults to ``None``.
-    drop_blanks : bool, optional
+        The replacement occurs after the data set is read into a ``pd.DataFrame``.
+
+    drop_blanks : bool, default=False
         If ``True``, remove lines/rows that have any blank
         values. These lines/rows are removed after the
-        the data set is read into a `pd.DataFrame`.
-        Defaults to ``False``.
-    pandas_kwargs : dict or None, optional
+        the data set is read into a ``pd.DataFram`e`.
+
+    pandas_kwargs : dict or None, default=None
         Arguments that will be passed directly
-        to the `pandas` I/O reader.
-        Defaults to None.
+        to the ``pandas`` I/O reader.
+-
     kwargs : dict, optional
         Other arguments to the Reader object.
     """
@@ -741,10 +757,12 @@ class CSVReader(Reader):
 
         Returns
         -------
-        ids : np.array
+        ids : np.array of shape (n_ids,)
             The ids for the feature set.
-        labels : np.array
+
+        labels : np.array of shape (n_labels,)
             The labels for the feature set.
+
         features : list of dicts
             The features for the features set.
         """
@@ -769,25 +787,26 @@ class TSVReader(CSVReader):
     ----------
     path_or_list : str
         The path to a comma-delimited file.
-    replace_blanks_with : value, ``dict``, or ``None``, optional
+
+    replace_blanks_with : value, ``dict``, or ``None``, default=None
         Specifies a new value with which to replace blank values.
         Options are ::
 
-            -  value = A (numeric) value with which to replace blank values.
-            -  dict = A dictionary specifying the replacement value for each column.
-            -  None = Blank values will be left as blanks, and not replaced.
+            -    value  = A (numeric) value with which to replace blank values.
+            -  ``dict`` = A dictionary specifying the replacement value for each column.
+            -  ``None`` = Blank values will be left as blanks, and not replaced.
 
-        The replacement occurs after the data set is read into a `pd.DataFrame`.
-        Defaults to ``None``.
-    drop_blanks : bool, optional
+        The replacement occurs after the data set is read into a ``pd.DataFrame``.
+
+    drop_blanks : bool, default=False
         If ``True``, remove lines/rows that have any blank
         values. These lines/rows are removed after the
-        the data set is read into a `pd.DataFrame`.
-        Defaults to ``False``.
-    pandas_kwargs : dict or None, optional
+        the data set is read into a ``pd.DataFrame``.
+
+    pandas_kwargs : dict or None, default=None
         Arguments that will be passed directly
-        to the `pandas` I/O reader.
-        Defaults to None.
+        to the ``pandas`` I/O reader.
+-
     kwargs : dict, optional
         Other arguments to the Reader object.
     """
@@ -820,9 +839,10 @@ class DelimitedReader(Reader):
     ----------
     path_or_list : str
         The path to a delimited file.
-    dialect : str
+
+    dialect : str, default='excel-tab'
         The dialect of to pass on to the underlying CSV reader.
-        Defaults to ``'excel-tab'``.
+
     kwargs : dict, optional
         Other arguments to the Reader object.
     """
@@ -842,8 +862,10 @@ class DelimitedReader(Reader):
         ------
         curr_id : str
             The current ID for the example.
+
         class_name : float or str
             The name of the class label for the example.
+
         example : dict
             The example valued in dictionary format, with 'x'
             as list of features.
@@ -896,6 +918,7 @@ class ARFFReader(DelimitedReader):
     ----------
     path_or_list : str
         The path to the ARFF file.
+
     kwargs : dict, optional
         Other arguments to the Reader object.
     """
@@ -916,15 +939,15 @@ class ARFFReader(DelimitedReader):
         ----------
         string : str
             The string with quotes to split
-        delimiter : str, optional
+
+        delimiter : str, default=' '
             The delimiter to split on.
-            Defaults to ``' '``.
-        quote_char : str, optional
+
+        quote_char : str, default="'"
             The quote character to ignore.
-            Defaults to ``"'"``.
-        escape_char : str, optional
+
+        escape_char : str, default='\\'
             The escape character.
-            Defaults to ``'\\'``.
         """
         return next(csv.reader([string],
                                delimiter=delimiter,
@@ -942,8 +965,10 @@ class ARFFReader(DelimitedReader):
         ------
         curr_id : str
             The current ID for the example.
+
         class_name : float or str
             The name of the class label for the example.
+
         example : dict
             The example valued in dictionary format, with 'x'
             as list of features.
@@ -1005,17 +1030,17 @@ def safe_float(text, replace_dict=None, logger=None):
     ----------
     text : str
         The text to convert.
-    replace_dict : dict, optional
+
+    replace_dict : dict, default=None
         Mapping from text to replacement text values. This is
         mainly used for collapsing multiple labels into a
         single class. Replacing happens before conversion to
         floats. Anything not in the mapping will be kept the
         same.
-        Defaults to ``None``.
-    logger : logging.Logger
+-
+    logger : logging.Logger, default=None
         The Logger instance to use to log messages. Used instead of
         creating a new Logger instance by default.
-        Defaults to ``None``.
 
     Returns
     -------
