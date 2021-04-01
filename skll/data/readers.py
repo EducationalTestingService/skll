@@ -319,11 +319,11 @@ class Reader(object):
 
         replace_blanks_with : value, ``dict``, or ``None``, default=None
             Specifies a new value with which to replace blank values.
-            Options are ::
+            Options are:
 
-                -    value   = A (numeric) value with which to replace blank values.
-                -  ``dict``  = A dictionary specifying the replacement value for each column.
-                -  ``None``  = Blank values will be left as blanks, and not replaced.
+                - value : A (numeric) value with which to replace blank values.
+                - ``dict`` : A dictionary specifying the replacement value for each column.
+                - ``None`` : Blank values will be left as blanks, and not replaced.
 
         drop_blanks : bool, default=False
             If ``True``, remove lines/rows that have any blank
@@ -711,25 +711,25 @@ class CSVReader(Reader):
     path_or_list : str
         The path to a comma-delimited file.
 
-    replace_blanks_with : value, ``dict``, or ``None``, default=None
+    replace_blanks_with : value, ``dict``, or ``None``, default=``None``
         Specifies a new value with which to replace blank values.
-        Options are ::
+        Options are:
 
-            -    value   = A (numeric) value with which to replace blank values.
-            -  ``dict``  = A dictionary specifying the replacement value for each column.
-            -  ``None``  = Blank values will be left as blanks, and not replaced.
+        - value : A (numeric) value with which to replace blank values.
+        - ``dict`` : A dictionary specifying the replacement value for each column.
+        - ``None`` : Blank values will be left as blanks, and not replaced.
 
         The replacement occurs after the data set is read into a ``pd.DataFrame``.
 
     drop_blanks : bool, default=False
         If ``True``, remove lines/rows that have any blank
         values. These lines/rows are removed after the
-        the data set is read into a ``pd.DataFram`e`.
+        the data set is read into a ``pd.DataFrame``.
 
     pandas_kwargs : dict or None, default=None
         Arguments that will be passed directly
         to the ``pandas`` I/O reader.
--
+
     kwargs : dict, optional
         Other arguments to the Reader object.
     """
@@ -790,11 +790,11 @@ class TSVReader(CSVReader):
 
     replace_blanks_with : value, ``dict``, or ``None``, default=None
         Specifies a new value with which to replace blank values.
-        Options are ::
+        Options are:
 
-            -    value  = A (numeric) value with which to replace blank values.
-            -  ``dict`` = A dictionary specifying the replacement value for each column.
-            -  ``None`` = Blank values will be left as blanks, and not replaced.
+            - value : A (numeric) value with which to replace blank values.
+            - ``dict`` : A dictionary specifying the replacement value for each column.
+            - ``None`` : Blank values will be left as blanks, and not replaced.
 
         The replacement occurs after the data set is read into a ``pd.DataFrame``.
 
@@ -806,7 +806,7 @@ class TSVReader(CSVReader):
     pandas_kwargs : dict or None, default=None
         Arguments that will be passed directly
         to the ``pandas`` I/O reader.
--
+
     kwargs : dict, optional
         Other arguments to the Reader object.
     """
@@ -932,8 +932,8 @@ class ARFFReader(DelimitedReader):
     @staticmethod
     def split_with_quotes(string, delimiter=' ', quote_char="'", escape_char='\\'):
         """
-        A replacement for string.split that won't split delimiters enclosed in
-        quotes.
+        A replacement for ``string.split()`` that won't split delimiters
+        enclosed in quotes.
 
         Parameters
         ----------
@@ -946,7 +946,7 @@ class ARFFReader(DelimitedReader):
         quote_char : str, default="'"
             The quote character to ignore.
 
-        escape_char : str, default='\\'
+        escape_char : str, default='\\\\'
             The escape character.
         """
         return next(csv.reader([string],
@@ -1037,7 +1037,7 @@ def safe_float(text, replace_dict=None, logger=None):
         single class. Replacing happens before conversion to
         floats. Anything not in the mapping will be kept the
         same.
--
+
     logger : logging.Logger, default=None
         The Logger instance to use to log messages. Used instead of
         creating a new Logger instance by default.
