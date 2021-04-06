@@ -334,11 +334,13 @@ Regressors:
     *   **GradientBoostingRegressor**: `Gradient Boosting Regressor <https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingRegressor.html#sklearn.ensemble.GradientBoostingRegressor>`__
     *   **HuberRegressor**: `Huber Regression <https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.HuberRegressor.html#sklearn.linear_model.HuberRegressor>`__
     *   **KNeighborsRegressor**: `K-Nearest Neighbors Regression <https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.KNeighborsRegressor.html#sklearn.neighbors.KNeighborsRegressor>`__
+    *   **LAD**: `Least Absolute Deviation <https://pythonhosted.org/mord/reference.html#mord.LAD>`__
     *   **Lars**: `Least Angle Regression <https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Lars.html#sklearn.linear_model.Lars>`__
     *   **Lasso**: `Lasso Regression <https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Lasso.html#sklearn.linear_model.Lasso>`__
     *   **LinearRegression**: `Linear Regression <https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LinearRegression.html#sklearn.linear_model.LinearRegression>`__
     *   **LinearSVR**: `Support Vector Regression using LibLinear <https://scikit-learn.org/stable/modules/generated/sklearn.svm.LinearSVR.html#sklearn.svm.LinearSVR>`__
     *   **MLPRegressor**: `Multi-layer Perceptron Regression <https://scikit-learn.org/stable/modules/generated/sklearn.neural_network.MLPRegressor.html#sklearn.neural_network.MLPRegressor>`__
+    *   **OrdinalRidge**: `Ridge Regression with negative absolute error as score <https://pythonhosted.org/mord/reference.html#mord.OrdinalRidge>`__
     *   **RandomForestRegressor**: `Random Forest Regression <https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestRegressor.html#sklearn.ensemble.RandomForestRegressor>`__
     *   **RANSACRegressor**: `RANdom SAmple Consensus Regression <https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.RANSACRegressor.html#sklearn.linear_model.RANSACRegressor>`__. Note that the default base estimator is a ``LinearRegression``. A different base regressor can be used by specifying a ``base_estimator`` fixed parameter in the :ref:`fixed_parameters <fixed_parameters>` list.
     *   **Ridge**: `Ridge Regression <https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Ridge.html#sklearn.linear_model.Ridge>`__
@@ -354,11 +356,17 @@ Regressors:
 
         Refer to this `example voting configuration file <https://github.com/EducationalTestingService/skll/blob/main/examples/boston/voting.cfg>`__ to see how these parameters are used.
 
-    For all regressors *except* ``VotingRegressor``, you can also prepend
-    ``Rescaled`` to the beginning of the full name (e.g., ``RescaledSVR``)
-    to get a version of the regressor where predictions are rescaled and
-    constrained to better match the training set. Rescaled regressors
-    can, however, be used as underlying estimators for ``VotingRegressor``
+    For all regressors *except* ``LAD``, ``OrdinalRidge``, and ``VotingRegressor``,
+    you can also prepend ``Rescaled`` to the beginning of the full name
+    (e.g., ``RescaledSVR``) to get a version of the regressor where predictions
+    are rescaled and constrained to better match the training set.
+
+    ``Rescaled`` version of ``LAD`` and ``OrdinalRidge`` regressors are not available
+    because predictions of these models are already transformed in the range zero to
+    maximum of the labels, and rescaling of the predictions won't correlate to
+    the original.
+
+    Rescaled regressors can, however, be used as underlying estimators for ``VotingRegressor``
     learners.
 
 .. _featuresets:
@@ -611,7 +619,7 @@ Lasso:
 
        {'random_state': 123456789}
 
-LinearSVC and LinearSVR
+LAD, LinearSVC and LinearSVR
     .. code-block:: python
 
        {'random_state': 123456789}
@@ -638,7 +646,7 @@ RANSACRegressor
 
        {'loss': 'squared_loss', 'random_state': 123456789}
 
-Ridge and RidgeClassifier
+OrdinalRidge, Ridge and RidgeClassifier
     .. code-block:: python
 
        {'random_state': 123456789}

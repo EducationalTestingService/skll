@@ -131,6 +131,10 @@ def check_rescaling(name, grid_search=False):
 
 
 def test_rescaling():
+    """test to make sure the rescaled model gives same performance as original"""
+    # we are not using LAD and OrdinalRidge because they
+    # does some clipping of the predictions, and thus
+    # making predictions different.
     for regressor_name in ['BayesianRidge',
                            'ElasticNet',
                            'HuberRegressor',
@@ -236,7 +240,8 @@ def test_linear_models():
 # the utility function to run the non-linear tests
 def check_non_linear_models(name,
                             use_feature_hashing=False,
-                            use_rescaling=False):
+                            use_rescaling=False,
+                            expected_corr=0.95):
 
     # create a FeatureSet object with the data we want to use
     if use_feature_hashing:
@@ -269,7 +274,7 @@ def check_non_linear_models(name,
     # using make_regression_data. To do this, we just
     # make sure that they are correlated with pearson > 0.95
     cor, _ = pearsonr(predictions, test_fs.labels)
-    assert_greater(cor, 0.95)
+    assert_greater(cor, expected_corr)
 
 
 # the runner function for non-linear regression models
@@ -284,11 +289,23 @@ def test_non_linear_models():
         yield (check_non_linear_models,
                regressor_name,
                use_feature_hashing,
-               use_rescaling)
+               use_rescaling,
+               0.95)
+
+
+# the runner function for MORD regression models
+def test_mord_models():
+    for (regressor_name,
+         use_feature_hashing) in product(['OrdinalRidge', 'LAD'],
+                                         [False, True]):
+        yield (check_non_linear_models,
+               regressor_name,
+               use_feature_hashing,
+               False,
+               0.86)
+
 
 # the utility function to run the tree-based regression tests
-
-
 def check_tree_models(name,
                       use_feature_hashing=False,
                       use_rescaling=False):
@@ -696,8 +713,8 @@ def test_invalid_regression_grid_objective():
     for learner in ['AdaBoostRegressor', 'BayesianRidge',
                     'DecisionTreeRegressor', 'ElasticNet',
                     'GradientBoostingRegressor', 'HuberRegressor',
-                    'KNeighborsRegressor', 'Lars', 'Lasso',
-                    'LinearRegression', 'MLPRegressor',
+                    'KNeighborsRegressor', 'LAD', 'Lars', 'Lasso',
+                    'LinearRegression', 'MLPRegressor', 'OrdinalRidge'
                     'RandomForestRegressor', 'RANSACRegressor',
                     'Ridge', 'LinearSVR', 'SVR', 'SGDRegressor',
                     'TheilSenRegressor']:
@@ -721,8 +738,8 @@ def test_invalid_regression_metric():
     for learner in ['AdaBoostRegressor', 'BayesianRidge',
                     'DecisionTreeRegressor', 'ElasticNet',
                     'GradientBoostingRegressor', 'HuberRegressor',
-                    'KNeighborsRegressor', 'Lars', 'Lasso',
-                    'LinearRegression', 'MLPRegressor',
+                    'KNeighborsRegressor', 'LAD', 'Lars', 'Lasso',
+                    'LinearRegression', 'MLPRegressor', 'OrdinalRidge'
                     'RandomForestRegressor', 'RANSACRegressor',
                     'Ridge', 'LinearSVR', 'SVR', 'SGDRegressor',
                     'TheilSenRegressor']:

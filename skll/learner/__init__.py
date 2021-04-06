@@ -18,6 +18,7 @@ from multiprocessing import cpu_count
 import joblib
 import numpy as np
 import scipy.sparse as sp
+from mord import LAD, OrdinalRidge
 from sklearn.dummy import DummyClassifier, DummyRegressor  # noqa: F401
 from sklearn.ensemble import (
     AdaBoostClassifier,
@@ -274,16 +275,31 @@ class Learner(object):
             self._model_kwargs['multi_class'] = 'auto'
 
         if issubclass(self._model_type,
-                      (AdaBoostClassifier, AdaBoostRegressor,
-                       DecisionTreeClassifier, DecisionTreeRegressor,
-                       DummyClassifier, ElasticNet,
+                      (AdaBoostClassifier,
+                       AdaBoostRegressor,
+                       DecisionTreeClassifier,
+                       DecisionTreeRegressor,
+                       DummyClassifier,
+                       ElasticNet,
                        GradientBoostingClassifier,
-                       GradientBoostingRegressor, Lasso, LinearSVC,
-                       LinearSVR, LogisticRegression, MLPClassifier,
-                       MLPRegressor, RandomForestClassifier,
-                       RandomForestRegressor, RANSACRegressor, Ridge,
-                       RidgeClassifier, SGDClassifier, SGDRegressor,
-                       SVC, TheilSenRegressor)):
+                       GradientBoostingRegressor,
+                       LAD,
+                       Lasso,
+                       LinearSVC,
+                       LinearSVR,
+                       LogisticRegression,
+                       MLPClassifier,
+                       MLPRegressor,
+                       OrdinalRidge,
+                       RandomForestClassifier,
+                       RandomForestRegressor,
+                       RANSACRegressor,
+                       Ridge,
+                       RidgeClassifier,
+                       SGDClassifier,
+                       SGDRegressor,
+                       SVC,
+                       TheilSenRegressor)):
             self._model_kwargs['random_state'] = 123456789
 
         if sampler_kwargs:
@@ -612,7 +628,6 @@ class Learner(object):
         if default_param_grid is None:
             raise ValueError(f"{self._model_type.__name__} is not a valid "
                              "learner type.")
-
         estimator = self._model_type(**self._model_kwargs)
 
         return estimator, default_param_grid
