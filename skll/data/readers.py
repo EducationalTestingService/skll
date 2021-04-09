@@ -317,11 +317,11 @@ class Reader(object):
         label_col : str or None
             The label column.
 
-        replace_blanks_with : value, ``dict``, or ``None``, default=None
+        replace_blanks_with : Number, dict, or None, default=None
             Specifies a new value with which to replace blank values.
             Options are:
 
-                - value : A (numeric) value with which to replace blank values.
+                - ``Number`` : A (numeric) value with which to replace blank values.
                 - ``dict`` : A dictionary specifying the replacement value for each column.
                 - ``None`` : Blank values will be left as blanks, and not replaced.
 
@@ -711,11 +711,11 @@ class CSVReader(Reader):
     path_or_list : str
         The path to a comma-delimited file.
 
-    replace_blanks_with : value, ``dict``, or ``None``, default=``None``
+    replace_blanks_with : Number, dict, or None, default=None
         Specifies a new value with which to replace blank values.
         Options are:
 
-        - value : A (numeric) value with which to replace blank values.
+        - ``Number`` : A (numeric) value with which to replace blank values.
         - ``dict`` : A dictionary specifying the replacement value for each column.
         - ``None`` : Blank values will be left as blanks, and not replaced.
 
@@ -788,11 +788,11 @@ class TSVReader(CSVReader):
     path_or_list : str
         The path to a comma-delimited file.
 
-    replace_blanks_with : value, ``dict``, or ``None``, default=None
+    replace_blanks_with : Number, dict, or None, default=None
         Specifies a new value with which to replace blank values.
         Options are:
 
-            - value : A (numeric) value with which to replace blank values.
+            - ``Number`` : A (numeric) value with which to replace blank values.
             - ``dict`` : A dictionary specifying the replacement value for each column.
             - ``None`` : Blank values will be left as blanks, and not replaced.
 
