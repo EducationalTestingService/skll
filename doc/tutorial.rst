@@ -30,7 +30,7 @@ Get your data into the correct format
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The first step is to get the Titanic data. We have already downloaded the data files
-from Kaggle and included them in the SKLL repository. Next, we need to get the files
+from Kaggle and included them in the `SKLL repository <../examples/titanic>`. Next, we need to get the files
 and process them to get them in the right shape.
 
 The provided script, :download:`make_titanic_example_data.py <../examples/make_titanic_example_data.py>`, will split the train and test data files
