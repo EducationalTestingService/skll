@@ -2,7 +2,6 @@ beautifulsoup4
 joblib
 numpy
 pandas
-pre-commit
 ruamel.yaml
 scikit-learn>=0.24.1,<=0.24.2
 scipy
