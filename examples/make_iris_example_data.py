@@ -28,7 +28,7 @@ def main():
     X = iris_data['data']
     Y = [iris_data['target_names'][label] for label in iris_data['target']]
 
-    examples = [{'id': 'EXAMPLE_{}'.format(i),
+    examples = [{'id': f'EXAMPLE_{i}',
                  'y': y,
                  'x': {f'f{j}': x_val for j, x_val in enumerate(x)}}
                 for i, (x, y) in enumerate(zip(X, Y))]
