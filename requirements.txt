@@ -1,5 +1,6 @@
 beautifulsoup4
 joblib
+mord
 numpy
 pandas
 ruamel.yaml

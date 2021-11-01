@@ -37,6 +37,7 @@ requirements:
     - setuptools
     - beautifulsoup4
     - joblib
+    - mord
     - numpy {{ numpy }}
     - pandas
     - ruamel.yaml
@@ -49,6 +50,7 @@ requirements:
     - python
     - beautifulsoup4
     - joblib
+    - mord
     - numpy
     - pandas
     - ruamel.yaml
