@@ -636,7 +636,7 @@ RandomForestClassifier and RandomForestRegressor
 RANSACRegressor
     .. code-block:: python
 
-       {'loss': 'squared_loss', 'random_state': 123456789}
+       {'loss': 'squared_error', 'random_state': 123456789}
 
 Ridge and RidgeClassifier
     .. code-block:: python

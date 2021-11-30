@@ -264,7 +264,7 @@ class Learner(object):
             self._model_kwargs['max_iter'] = 1000
             self._model_kwargs['tol'] = 1e-3
         elif issubclass(self._model_type, RANSACRegressor):
-            self._model_kwargs['loss'] = 'squared_loss'
+            self._model_kwargs['loss'] = 'squared_error'
         elif issubclass(self._model_type, (MLPClassifier, MLPRegressor)):
             self._model_kwargs['learning_rate'] = 'invscaling'
             self._model_kwargs['max_iter'] = 500
