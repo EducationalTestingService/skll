@@ -73,7 +73,7 @@ def test_SelectByMinCount():
                          [0.0101, -200.0, 0.0]])
     assert_array_equal(feat_selector.fit_transform(np.array(m2)), expected)
     assert_array_equal(feat_selector.fit_transform(
-        sp.csr_matrix(m2)).todense(),
+        sp.csr_matrix(m2)).toarray(),
         expected)
 
     # keep features that happen 2+ times
@@ -84,7 +84,7 @@ def test_SelectByMinCount():
                          [0.0101, -200.0]])
     assert_array_equal(feat_selector.fit_transform(np.array(m2)), expected)
     assert_array_equal(
-        feat_selector.fit_transform(sp.csr_matrix(m2)).todense(),
+        feat_selector.fit_transform(sp.csr_matrix(m2)).toarray(),
         expected)
 
     # keep features that happen 3+ times
@@ -92,7 +92,7 @@ def test_SelectByMinCount():
     expected = np.array([[0.001], [0.00001], [0.001], [0.0101]])
     assert_array_equal(feat_selector.fit_transform(np.array(m2)), expected)
     assert_array_equal(
-        feat_selector.fit_transform(sp.csr_matrix(m2)).todense(),
+        feat_selector.fit_transform(sp.csr_matrix(m2)).toarray(),
         expected)
 
 

@@ -886,7 +886,7 @@ class Learner(object):
         # Convert to dense if necessary
         if self._use_dense_features:
             try:
-                xtrain = xtrain.todense()
+                xtrain = xtrain.toarray()
             except MemoryError:
                 if issubclass(self._model_type, _REQUIRES_DENSE):
                     reason = (f'{self._model_type.__name__} does not support '
@@ -922,7 +922,7 @@ class Learner(object):
             if isinstance(self.sampler, SkewedChi2Sampler):
                 self.logger.warning('SkewedChi2Sampler uses a dense matrix')
                 if sp.issparse(xtrain):
-                    xtrain = xtrain.todense()
+                    xtrain = xtrain.toarray()
             xtrain = self.sampler.fit_transform(xtrain)
 
         # use label dict transformed version of examples.labels if doing
@@ -1332,7 +1332,7 @@ class Learner(object):
         # Convert to dense if necessary
         if self._use_dense_features and not isinstance(xtest, np.ndarray):
             try:
-                xtest = xtest.todense()
+                xtest = xtest.toarray()
             except MemoryError:
                 if issubclass(self._model_type, _REQUIRES_DENSE):
                     reason = (f'{self._model_type.__name__} does not support '
@@ -1354,7 +1354,7 @@ class Learner(object):
             if isinstance(self.sampler, SkewedChi2Sampler):
                 self.logger.warning('SkewedChi2Sampler uses a dense matrix')
                 if sp.issparse(xtest):
-                    xtest = xtest.todense()
+                    xtest = xtest.toarray()
             xtest = self.sampler.transform(xtest)
 
         # get the various prediction from this learner on these features

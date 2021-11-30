@@ -777,8 +777,8 @@ def check_skll_convert(from_suffix, to_suffix, id_type):
     # explicit zeros that are in files (e.g., in CSVs and TSVs). There's an issue
     # open on scikit-learn: https://github.com/scikit-learn/scikit-learn/issues/14718
 
-    orig_fs.features = sp.sparse.csr_matrix(orig_fs.features.todense())
-    converted_fs.features = sp.sparse.csr_matrix(converted_fs.features.todense())
+    orig_fs.features = sp.sparse.csr_matrix(orig_fs.features.toarray())
+    converted_fs.features = sp.sparse.csr_matrix(converted_fs.features.toarray())
 
     eq_(orig_fs, converted_fs)
 
