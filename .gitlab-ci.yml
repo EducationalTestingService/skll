@@ -4,7 +4,7 @@ stages:
   - test
 
 variables:
-  PYVERSION: "3.7"
+  PYVERSION: "3.8"
   BINDIR: "/root/sklldev/bin"
   MPLBACKEND: "Agg"
   NOSE_WITH_COV: "1"
