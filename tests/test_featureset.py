@@ -564,7 +564,7 @@ def check_filter_features(inverse=False):
                                      train_test_ratio=1.0)
 
     # store the features in a separate matrix before filtering
-    X = fs.features.todense()
+    X = fs.features.toarray()
 
     # filter features f1 and f4 or their inverse
     fs.filter(features=['f01', 'f04'], inverse=inverse)
@@ -582,7 +582,7 @@ def check_filter_features(inverse=False):
     else:
         feature_columns = X[:, [0, 3]]
 
-    assert (fs.features.todense() == feature_columns).all()
+    assert (fs.features.toarray() == feature_columns).all()
 
     # make sure that the feature names that we kept are also correct
     feature_names = ['f02', 'f03', 'f05'] if inverse else ['f01', 'f04']
@@ -665,14 +665,14 @@ def test_feature_merging_order_invariance():
     assert_array_equal(merged_fs.ids, train_fs2.ids)
     assert_array_equal(merged_fs.ids, merged_fs_shuf.ids)
 
-    assert_array_equal(merged_fs.features[:, 0:2].todense(),
-                       train_fs1.features.todense())
-    assert_array_equal(merged_fs.features[:, 2:4].todense(),
-                       train_fs2.features.todense())
-    assert_array_equal(merged_fs.features.todense(),
-                       merged_fs_shuf.features.todense())
+    assert_array_equal(merged_fs.features[:, 0:2].toarray(),
+                       train_fs1.features.toarray())
+    assert_array_equal(merged_fs.features[:, 2:4].toarray(),
+                       train_fs2.features.toarray())
+    assert_array_equal(merged_fs.features.toarray(),
+                       merged_fs_shuf.features.toarray())
 
-    assert not np.all(merged_fs.features[:, 0:2].todense() == merged_fs.features[:, 2:4].todense())
+    assert not np.all(merged_fs.features[:, 0:2].toarray() == merged_fs.features[:, 2:4].toarray())
 
 
 # Tests related to loading featuresets and merging them

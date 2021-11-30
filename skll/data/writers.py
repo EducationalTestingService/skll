@@ -329,7 +329,7 @@ class Writer(object):
         # then, select only the columns that we want,
         # and give the columns their correct names
         if issparse(feature_set.features):
-            df_features = pd.DataFrame(feature_set.features.todense())
+            df_features = pd.DataFrame(feature_set.features.toarray())
         else:
             df_features = pd.DataFrame(feature_set.features)
         df_features = df_features.iloc[:, column_idxs].copy()

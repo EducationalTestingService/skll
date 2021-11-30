@@ -264,7 +264,7 @@ class Learner(object):
             self._model_kwargs['max_iter'] = 1000
             self._model_kwargs['tol'] = 1e-3
         elif issubclass(self._model_type, RANSACRegressor):
-            self._model_kwargs['loss'] = 'squared_loss'
+            self._model_kwargs['loss'] = 'squared_error'
         elif issubclass(self._model_type, (MLPClassifier, MLPRegressor)):
             self._model_kwargs['learning_rate'] = 'invscaling'
             self._model_kwargs['max_iter'] = 500
@@ -272,6 +272,23 @@ class Learner(object):
             self._model_kwargs['max_iter'] = 1000
             self._model_kwargs['solver'] = 'liblinear'
             self._model_kwargs['multi_class'] = 'auto'
+
+        #############################################
+        # FIXME when upgrading to scikit-learn v1.2 #
+        #############################################
+        # scikit-learn v1.0 will be deprecating the `normalize`
+        # attribute for linear models; this attribute
+        # is set to False by default in most scikit-learn
+        # linear models anyway and so no warnings are surfaced
+        # in SKLL. However, for `Lars`, the default value of
+        # `normalize` is still set to True and so we need to
+        # force it to False to avoid deprecation warnings. This
+        # code will actually lead to an execption in the
+        # `_create_estimator()` method when the `normalize`
+        # attribute  doesn't exist, so that will be the perfect
+        # reminder to excise this if block entirely.
+        if issubclass(self._model_type, Lars):
+            self._model_kwargs["normalize"] = False
 
         if issubclass(self._model_type,
                       (AdaBoostClassifier, AdaBoostRegressor,
@@ -886,7 +903,7 @@ class Learner(object):
         # Convert to dense if necessary
         if self._use_dense_features:
             try:
-                xtrain = xtrain.todense()
+                xtrain = xtrain.toarray()
             except MemoryError:
                 if issubclass(self._model_type, _REQUIRES_DENSE):
                     reason = (f'{self._model_type.__name__} does not support '
@@ -922,7 +939,7 @@ class Learner(object):
             if isinstance(self.sampler, SkewedChi2Sampler):
                 self.logger.warning('SkewedChi2Sampler uses a dense matrix')
                 if sp.issparse(xtrain):
-                    xtrain = xtrain.todense()
+                    xtrain = xtrain.toarray()
             xtrain = self.sampler.fit_transform(xtrain)
 
         # use label dict transformed version of examples.labels if doing
@@ -1332,7 +1349,7 @@ class Learner(object):
         # Convert to dense if necessary
         if self._use_dense_features and not isinstance(xtest, np.ndarray):
             try:
-                xtest = xtest.todense()
+                xtest = xtest.toarray()
             except MemoryError:
                 if issubclass(self._model_type, _REQUIRES_DENSE):
                     reason = (f'{self._model_type.__name__} does not support '
@@ -1354,7 +1371,7 @@ class Learner(object):
             if isinstance(self.sampler, SkewedChi2Sampler):
                 self.logger.warning('SkewedChi2Sampler uses a dense matrix')
                 if sp.issparse(xtest):
-                    xtest = xtest.todense()
+                    xtest = xtest.toarray()
             xtest = self.sampler.transform(xtest)
 
         # get the various prediction from this learner on these features

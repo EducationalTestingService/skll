@@ -774,6 +774,6 @@ def test_non_negative_regression():
     # just for good measure, train a non-negative learner directly
     # in sklearn space and check that it has the same weights
     sklearn_estimator = LinearRegression(positive=True)
-    X, y = train_fs.features.todense(), train_fs.labels
+    X, y = train_fs.features.toarray(), train_fs.labels
     _ = sklearn_estimator.fit(X, y)
     assert_array_equal(skll_estimator2.model.coef_, sklearn_estimator.coef_)

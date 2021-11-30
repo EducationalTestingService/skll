@@ -63,7 +63,7 @@ class Densifier(BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, X):
-        return X.todense()
+        return X.toarray()
 
 
 class FilteredLeaveOneGroupOut(LeaveOneGroupOut):
