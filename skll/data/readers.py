@@ -360,6 +360,13 @@ class Reader(object):
             self.logger.info('Rows/lines with any blank values will be dropped.')
             df = df.dropna().reset_index(drop=True)
 
+            # if the dataframe has no rows left after removing blanks,
+            # raise an exception here because downstream processing
+            # will run into issues
+            if df.empty:
+                raise ValueError("No rows/lines left in feature file "
+                                 "after dropping blank values.")
+
         # if the id column exists,
         # get them from the data frame and
         # delete the column; otherwise, just
