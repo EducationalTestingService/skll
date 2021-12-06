@@ -75,13 +75,15 @@ def main(argv=None):
                         default='y')
     parser.add_argument('-rb', '--replace_blanks_with',
                         help='Specifies a new value with which to replace '
-                             'blank values in all columns in the file. To '
+                             'blank values in all columns in a CSV/TSV file. To '
                              'replace blanks differently in each column, use '
                              'the SKLL Reader API directly.',
                         default=None)
     parser.add_argument('-db', '--drop_blanks',
                         action='store_true',
-                        help='Drop all lines/rows that have any blank values.',
+                        help='Drop all lines/rows in a CSV/TSV file that '
+                             'contain any blank values. If each row of the file '
+                             'contains a blank value, an exception will be raised.',
                         default=False)
     parser.add_argument('-q', '--quiet',
                         help='Suppress printing of "Loading..." messages.',
