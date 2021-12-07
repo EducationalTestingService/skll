@@ -1836,9 +1836,9 @@ def test_filter_features_with_drop_blanks():
 
 
 @raises(ValueError)
-def test_filter_features_with_drop_blanks_all_blanks():
+def test_filter_features_with_drop_blanks_all_blanks_csv():
     """
-    Test filter features with CSV and TSV readers
+    Test filter features with CSV readers
     using `drop_blanks` and blanks in each row
     """
     df = pd.DataFrame({'A': [1, 2, np.nan, 4, 5, 6],
@@ -1847,21 +1847,37 @@ def test_filter_features_with_drop_blanks_all_blanks():
                        'L': [1, np.nan, 1, 2, 1, np.nan]})
 
     csv_infile = join(other_dir, 'features', 'features_drop_blanks_all_blanks.csv')
-    tsv_infile = join(other_dir, 'features', 'features_drop_blanks_all_blanks.tsv')
 
     df.to_csv(csv_infile, index=False)
-    df.to_csv(tsv_infile, index=False, sep='\t')
 
     filter_features_csv_cmd = ['-i', csv_infile,
                                '-o', 'blah.csv',
                                '-l', 'L',
                                '--drop_blanks']
+
+    ff.main(filter_features_csv_cmd)
+
+
+@raises(ValueError)
+def test_filter_features_with_drop_blanks_all_blanks_tsv():
+    """
+    Test filter features with TSV readers
+    using `drop_blanks` and blanks in each row
+    """
+    df = pd.DataFrame({'A': [1, 2, np.nan, 4, 5, 6],
+                       'B': [5, 9, 7, 2, np.nan, 1],
+                       'C': [np.nan, 1.0, 1.0, np.nan, 1.0, 1.1],
+                       'L': [1, np.nan, 1, 2, 1, np.nan]})
+
+    tsv_infile = join(other_dir, 'features', 'features_drop_blanks_all_blanks.tsv')
+
+    df.to_csv(tsv_infile, index=False, sep='\t')
+
     filter_features_tsv_cmd = ['-i', tsv_infile,
                                '-o', 'blah.tsv',
                                '-l', 'L',
                                '--drop_blanks']
 
-    ff.main(filter_features_csv_cmd)
     ff.main(filter_features_tsv_cmd)
 
 
