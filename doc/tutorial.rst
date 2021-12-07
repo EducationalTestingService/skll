@@ -23,15 +23,16 @@ Titanic Example
 ---------------
 
 Let's see how we can apply the basic workflow above to a simple example using
-the `Titantic: Machine Learning from Disaster <https://www.kaggle.com/c/titanic/>`__
+the `Titanic: Machine Learning from Disaster <https://www.kaggle.com/c/titanic/>`__
 data from `Kaggle <https://www.kaggle.com>`__.
 
 Get your data into the correct format
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The first step is to get the Titanic data. We have already downloaded the data files
-from Kaggle and included them in the SKLL repository. Next, we need to get the files
-and process them to get them in the right shape.
+from Kaggle and included them in the
+`SKLL repository <https://github.com/EducationalTestingService/skll/tree/main/examples/titanic>`__.
+Next, we need to get the files and process them to get them in the right shape.
 
 The provided script, :download:`make_titanic_example_data.py <../examples/make_titanic_example_data.py>`, will split the train and test data files
 from Kaggle up into groups of related features and store them in
