@@ -364,7 +364,7 @@ class Reader(object):
             # raise an exception here because downstream processing
             # will run into issues
             if df.empty:
-                raise ValueError("No rows/lines left in feature file "
+                raise ValueError("No rows/lines left in the feature file "
                                  "after dropping blank values.")
 
         # if the id column exists,
