@@ -68,7 +68,6 @@ class SKLLConfigParser(configparser.ConfigParser):
                     'id_col': 'id',
                     'ids_to_floats': 'False',
                     'label_col': 'y',
-                    'log': '',
                     'logs': '',
                     'learning_curve_cv_folds_list': '[]',
                     'learning_curve_train_sizes': '[]',
@@ -113,7 +112,6 @@ class SKLLConfigParser(configparser.ConfigParser):
                                    'id_col': 'Input',
                                    'ids_to_floats': 'Input',
                                    'label_col': 'Input',
-                                   'log': 'Output',
                                    'logs': 'Output',
                                    'learning_curve_cv_folds_list': 'Input',
                                    'learning_curve_train_sizes': 'Input',
@@ -451,18 +449,6 @@ def parse_config_file(config_path, log_level=logging.INFO):  # noqa: C901
     # next, get the log path before anything else since we need to
     # save all logging messages to a log file in addition to displaying
     # them on the console
-
-    # if the user specified "log" instead of "logs", we need
-    # to show a warning and save its value in "logs" instead
-    log_value = config.get("Output", "log")
-    show_log_warning = False
-    if log_value:
-        # since we do not have a logger yet, we will show the warning later
-        show_log_warning = True
-        config.set('Output', 'logs', log_value)
-        config.remove_option('Output', 'log')
-
-    # now get the value from the 'logs' field
     log_value = config.get("Output", "logs")
 
     try:
@@ -482,13 +468,6 @@ def parse_config_file(config_path, log_level=logging.INFO):  # noqa: C901
     logger = get_skll_logger('experiment',
                              filepath=main_log_file,
                              log_level=log_level)
-
-    # now show the 'log' warning, if any, since we have the logger set up
-    if show_log_warning:
-        logger.warning("The 'log' option in the [Output] section is deprecated "
-                       "and will be removed in the next version. Use 'logs' "
-                       "instead.")
-        show_log_warning = False
 
     if config.has_option("General", "task"):
         task = config.get("General", "task")

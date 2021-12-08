@@ -448,7 +448,7 @@ def test_int_labels():
     config.set("Input", "train_file",
                join(other_dir, 'test_int_labels_cv.jsonlines'))
     config.set("Output", "results", output_dir)
-    config.set("Output", "log", output_dir)
+    config.set("Output", "logs", output_dir)
     config.set("Output", "predictions", output_dir)
 
     with open(config_path, 'w') as new_config_file:
