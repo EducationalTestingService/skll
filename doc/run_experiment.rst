@@ -932,7 +932,9 @@ SKLL provides the following metrics but you can also write your own :ref:`custom
     *   **precision_macro**: Macro-averaged |Precision link|_
     *   **precision_micro**: Micro-averaged |Precision link|_
     *   **precision_weighted**: Weighted average |Precision link|_
-    *   **quadratic_weighted_kappa**: `Quadratic weighted kappa <http://www.vassarstats.net/kappaexp.html>`__. (*Contiguous integer labels only*).
+    *   **quadratic_weighted_kappa**: `Quadratic weighted kappa <http://www.vassarstats.net/kappaexp.html>`__. (*Contiguous integer labels only*). If you wish to compute quadratic weighted kappa for continuous
+        values, you may want to use the `implementation provided by RSMTool <https://rsmtool.readthedocs.io/en/stable/evaluation.html#quadratic-weighted-kappa-qwk>`__.
+        To do so, `install the RSMTool Python package <https://rsmtool.readthedocs.io/en/stable/getting_started.html>`__ and create a :ref:`custom metric <custom_metrics>` that wraps ``rsmtool.utils.quadratic_weighted_kappa``.
     *   **qwk_off_by_one**: Same as ``quadratic_weighted_kappa``, but all
         ranking differences are discounted by one. (*Contiguous integer labels only*).
     *   **recall**: |Recall link|_ for binary classification
