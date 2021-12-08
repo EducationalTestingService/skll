@@ -68,13 +68,13 @@ class VotingLearner(object):
         -  "both": do both scaling as well as centering
         -  "none": do neither scaling nor centering
         Defaults to 'none'.
-    pos_label_str : str, optional
+    pos_label : str, optional
         A string denoting the label of the class to be
         treated as the positive class in a binary classification
         setting, for each estimator. If ``None``, the class represented
         by the label that appears second when sorted is chosen as the
         positive class. For example, if the two labels in data are "A"
-        and "B" and ``pos_label_str`` is not specified, "B" will
+        and "B" and ``pos_label`` is not specified, "B" will
         be chosen as the positive class.
         Defaults to ``None``.
     min_feature_count : int, optional
@@ -112,7 +112,7 @@ class VotingLearner(object):
                  voting="hard",
                  custom_learner_path=None,
                  feature_scaling="none",
-                 pos_label_str=None,
+                 pos_label=None,
                  min_feature_count=1,
                  model_kwargs_list=None,
                  sampler_list=None,
@@ -175,7 +175,7 @@ class VotingLearner(object):
                               min_feature_count=min_feature_count,
                               model_kwargs=model_kwargs,
                               pipeline=True,
-                              pos_label_str=pos_label_str,
+                              pos_label=pos_label,
                               probability=self.voting == "soft",
                               sampler=sampler,
                               sampler_kwargs=sampler_kwargs,
@@ -375,7 +375,7 @@ class VotingLearner(object):
 
         # get the training labels in the right format too
         # NOTE: technically, we could also use a `LabelEncoder` here but
-        # that may not account for passing `pos_label_str` above when
+        # that may not account for passing `pos_label` above when
         # instantiating the learners so we stick with the label dict
         if self.learner_type == "classifier":
             y_train = [self.label_dict[label] for label in examples.labels]

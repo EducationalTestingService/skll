@@ -49,7 +49,7 @@ def tearDown():
 def check_initialize(learner_type,
                      voting_type,
                      feature_scaling,
-                     pos_label_str,
+                     pos_label,
                      min_feature_count,
                      model_kwargs_list,
                      sampler_list):
@@ -60,8 +60,8 @@ def check_initialize(learner_type,
         kwargs["voting"] = voting_type
     if feature_scaling:
         kwargs["feature_scaling"] = feature_scaling
-    if pos_label_str:
-        kwargs["pos_label_str"] = pos_label_str
+    if pos_label:
+        kwargs["pos_label"] = pos_label
     if min_feature_count:
         kwargs["min_feature_count"] = min_feature_count
     if sampler_list is not None:
@@ -163,7 +163,7 @@ def test_initialize():
     for (learner_type,
          voting_type,
          feature_scaling,
-         pos_label_str,
+         pos_label,
          min_feature_count,
          model_kwargs_list,
          sampler_list) in product(["classifier", "regressor"],
@@ -177,7 +177,7 @@ def test_initialize():
                learner_type,
                voting_type,
                feature_scaling,
-               pos_label_str,
+               pos_label,
                min_feature_count,
                model_kwargs_list,
                sampler_list)

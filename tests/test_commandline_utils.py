@@ -84,7 +84,7 @@ def tearDown():
 
     for glob_pattern in [join(output_dir, 'test_print_model_weights.model*'),
                          join(output_dir, 'test_generate_predictions.model*'),
-                         join(output_dir, 'pos_label_str_predict*'),
+                         join(output_dir, 'pos_label_predict*'),
                          join(output_dir, 'test_generate_predictions_console.model*'),
                          join(other_dir, 'test_skll_convert*'),
                          join(other_dir, 'test_join_features*'),
@@ -304,7 +304,7 @@ def check_generate_predictions(use_regression=False,  # noqa: C901
                                string_labels=False,
                                num_labels=2,
                                use_probability=False,
-                               use_pos_label_str=False,
+                               use_pos_label=False,
                                test_on_subset=False,
                                use_threshold=False,
                                predict_labels=False,
@@ -319,7 +319,7 @@ def check_generate_predictions(use_regression=False,  # noqa: C901
 
     # generate the train and test featuresets
     if use_regression:
-        pos_label_str = None
+        pos_label = None
         train_fs, test_fs, _ = make_regression_data(num_examples=100,
                                                     num_features=5)
     else:
@@ -331,21 +331,21 @@ def check_generate_predictions(use_regression=False,  # noqa: C901
         # get the sorted list of unique class labels
         class_labels = np.unique(train_fs.labels).tolist()
 
-        # if we are using `pos_label_str`, then randomly pick a label
+        # if we are using `pos_label`, then randomly pick a label
         # as its value even for multi-class since we want to check that
         # it properly gets ignored; we also instantiate variables in the
         # binary case that contain the positive and negative class labels
         # since we need those to process our expected predictions we
         # are matching against
         prng = np.random.RandomState(123456789)
-        if use_pos_label_str:
-            pos_label_str = prng.choice(class_labels, size=1)[0]
+        if use_pos_label:
+            pos_label = prng.choice(class_labels, size=1)[0]
             if num_labels == 2:
-                positive_class_label = pos_label_str
+                positive_class_label = pos_label
                 negative_class_label = [label for label in class_labels if label != positive_class_label][0]
                 class_labels = [negative_class_label, positive_class_label]
         else:
-            pos_label_str = None
+            pos_label = None
             if num_labels == 2:
                 positive_class_label = class_labels[-1]
                 negative_class_label = [label for label in class_labels if label != positive_class_label][0]
@@ -371,7 +371,7 @@ def check_generate_predictions(use_regression=False,  # noqa: C901
     learner_name = 'SGDRegressor' if use_regression else 'SGDClassifier'
     learner = Learner(learner_name,
                       probability=enable_probability,
-                      pos_label_str=pos_label_str)
+                      pos_label=pos_label)
     learner.train(train_fs, grid_search=False)
     model_file = join(output_dir, 'test_generate_predictions.model')
     learner.save(model_file)
@@ -494,7 +494,7 @@ def test_generate_predictions():
          string_labels,
          num_labels,
          use_probability,
-         use_pos_label_str,
+         use_pos_label,
          test_on_subset,
          use_threshold,
          predict_labels,
@@ -520,7 +520,7 @@ def test_generate_predictions():
                string_labels,
                num_labels,
                use_probability,
-               use_pos_label_str,
+               use_pos_label,
                test_on_subset,
                use_threshold,
                predict_labels,

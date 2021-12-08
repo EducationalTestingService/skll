@@ -71,7 +71,7 @@ def setup():
 def tearDown():
 
     for path in [join(train_dir, 'train_single_file.jsonlines'),
-                 join(train_dir, 'pos_label_str_train.jsonlines'),
+                 join(train_dir, 'pos_label_train.jsonlines'),
                  join(test_dir, 'test_single_file.jsonlines'),
                  join(output_dir, 'rare_class_predictions.tsv'),
                  join(output_dir, 'float_class_predictions.tsv')]:
@@ -79,7 +79,7 @@ def tearDown():
 
     for glob_pattern in [join(output_dir, 'train_test_single_file_*'),
                          join(output_dir, 'clf_metric_value_*'),
-                         join(output_dir, 'pos_label_str_via_config*'),
+                         join(output_dir, 'pos_label_via_config*'),
                          join(output_dir, 'clf_metrics_objective_overlap*'),
                          join(output_dir, 'test_multinomialnb_loading*'),
                          join(output_dir, 'test_predict_return_and_write_predictions*')]:
@@ -92,7 +92,7 @@ def tearDown():
     config_files.extend(glob(join(config_dir,
                                   'test_metric_values_for_classification_*.cfg')))
     config_files.extend(glob(join(config_dir,
-                                  'test_fancy_pos_label_str*.cfg')))
+                                  'test_fancy_pos_label*.cfg')))
     config_files.extend(glob(join(config_dir,
                                   'test_fancy_metrics_objective_overlap*.cfg')))
 
@@ -158,16 +158,16 @@ def test_label_index_order():
         eq_(label_order_from_dict, correct_order)
 
 
-def check_label_index_order_with_pos_label_str(use_api=True):
+def check_label_index_order_with_pos_label(use_api=True):
     """
-    Test that only binary labels are sorted to satisfy `pos_label_str`
-    and that the sorting happens when `pos_label_str` is specified
+    Test that only binary labels are sorted to satisfy `pos_label`
+    and that the sorting happens when `pos_label` is specified
     both via the API as well as the configuration file.
     """
     train_fs, _ = make_classification_data()
     prng = np.random.RandomState(123456789)
     for (unique_label_list,
-         pos_label_str,
+         pos_label,
          correct_order) in zip([['B', 'C'],
                                 ['B', 'A', 'C'],
                                 [1, 2],
@@ -189,11 +189,11 @@ def check_label_index_order_with_pos_label_str(use_api=True):
         # if we are using the API, create a learner instance directly
         # otherwise run a configuration file to train a learner
         if use_api:
-            clf = Learner('LogisticRegression', pos_label_str=pos_label_str)
+            clf = Learner('LogisticRegression', pos_label=pos_label)
             clf.train(train_fs, grid_search=False)
         else:
 
-            train_file = join(train_dir, 'pos_label_str_train.jsonlines')
+            train_file = join(train_dir, 'pos_label_train.jsonlines')
 
             # write out the feature set we made to a file for use in config
             writer = NDJWriter.for_path(train_file, train_fs)
@@ -202,22 +202,22 @@ def check_label_index_order_with_pos_label_str(use_api=True):
             # get the config template
             config_template_path = join(config_dir, 'test_fancy.template.cfg')
 
-            values_to_fill_dict = {'experiment_name': 'pos_label_str_via_config',
+            values_to_fill_dict = {'experiment_name': 'pos_label_via_config',
                                    'task': 'train',
                                    'learners': '["LogisticRegression"]',
                                    'train_file': train_file,
                                    'grid_search': 'false',
-                                   'pos_label_str': str(pos_label_str),
+                                   'pos_label': str(pos_label),
                                    'logs': output_dir,
                                    'models': output_dir}
 
             config_path = fill_in_config_options(config_template_path,
                                                  values_to_fill_dict,
-                                                 'pos_label_str')
+                                                 'pos_label')
             _ = run_configuration(config_path, local=True, quiet=True)
             clf = Learner.from_file(
                 join(output_dir,
-                     "pos_label_str_via_config_train_pos_label_str_train."
+                     "pos_label_via_config_train_pos_label_train."
                      "jsonlines_LogisticRegression.model")
             )
 
@@ -227,42 +227,42 @@ def check_label_index_order_with_pos_label_str(use_api=True):
         eq_(clf.label_list, correct_order)
         eq_(label_order_from_dict, correct_order)
         if len(unique_label_list) != 2:
-            eq_(clf.pos_label_str, None)
+            eq_(clf.pos_label, None)
         else:
-            eq_(clf.pos_label_str, pos_label_str)
+            eq_(clf.pos_label, pos_label)
 
 
-def test_label_index_order_with_pos_label_str():
-    yield check_label_index_order_with_pos_label_str, True
-    yield check_label_index_order_with_pos_label_str, False
+def test_label_index_order_with_pos_label():
+    yield check_label_index_order_with_pos_label, True
+    yield check_label_index_order_with_pos_label, False
 
 
-def check_binary_predictions_for_pos_label_str(label_list,
-                                               use_pos_label_str=True,
-                                               probability=True,
-                                               use_api=True):
+def check_binary_predictions_for_pos_label(label_list,
+                                           use_pos_label=True,
+                                           probability=True,
+                                           use_api=True):
     """
     This tests whether binary predictions and probabilities
     obtained from SKLL (via the API as well as the config)
     match the predictions from scikit-learn on the same data
-    for when `pos_label_str` is set and also when it is not set.
+    for when `pos_label` is set and also when it is not set.
     """
 
     if label_list == ['B', 'C']:
-        pos_label_str, other_label_str = 'B', 'C'
+        pos_label, other_label_str = 'B', 'C'
     elif label_list == [1, 2]:
-        pos_label_str, other_label_str = 2, 1
+        pos_label, other_label_str = 2, 1
     else:
-        pos_label_str, other_label_str = 'FRAG', 'NONE'
+        pos_label, other_label_str = 'FRAG', 'NONE'
 
     # create the mapping from class indices to class labels
     # manually so that they match our expectations for what
-    # is supposed to happen when `pos_label_str` is specified
+    # is supposed to happen when `pos_label` is specified
     # and when it is not
-    if use_pos_label_str:
-        index_label_dict = {0: other_label_str, 1: pos_label_str}
+    if use_pos_label:
+        index_label_dict = {0: other_label_str, 1: pos_label}
     else:
-        sorted_label_list = sorted([pos_label_str, other_label_str])
+        sorted_label_list = sorted([pos_label, other_label_str])
         index_label_dict = dict(enumerate(sorted_label_list))
 
     # initialize a random number generator
@@ -296,14 +296,14 @@ def check_binary_predictions_for_pos_label_str(label_list,
     # train a SKLL LogisticRegression learner on the same data;
     # predict the class indices/probabilities for the test set
     # we train+predict either using the API or using a config
-    pos_label_str = pos_label_str if use_pos_label_str else None
+    pos_label = pos_label if use_pos_label else None
     if use_api:
         clf_skll = Learner('LogisticRegression',
-                           pos_label_str=pos_label_str,
+                           pos_label=pos_label,
                            probability=probability)
         clf_skll.train(train_fs, grid_search=False)
     else:
-        train_file = join(train_dir, 'pos_label_str_train.jsonlines')
+        train_file = join(train_dir, 'pos_label_train.jsonlines')
 
         # write out the feature set we made to a file for use in config
         writer = NDJWriter.for_path(train_file, train_fs)
@@ -312,25 +312,25 @@ def check_binary_predictions_for_pos_label_str(label_list,
         # get the config template
         config_template_path = join(config_dir, 'test_fancy.template.cfg')
 
-        values_to_fill_dict = {'experiment_name': 'pos_label_str_predict',
+        values_to_fill_dict = {'experiment_name': 'pos_label_predict',
                                'task': 'train',
                                'learners': '["LogisticRegression"]',
                                'train_file': train_file,
                                'grid_search': 'false',
-                               'pos_label_str': str(pos_label_str),
+                               'pos_label': str(pos_label),
                                'logs': output_dir,
                                'models': output_dir,
                                'probability': 'true' if probability else 'false'}
 
         config_path = fill_in_config_options(config_template_path,
                                              values_to_fill_dict,
-                                             'pos_label_str_predict',
+                                             'pos_label_predict',
                                              good_probability_option=True)
 
         _ = run_configuration(config_path, local=True, quiet=True)
         clf_skll = Learner.from_file(
             join(output_dir,
-                 "pos_label_str_predict_train_pos_label_str_train.jsonlines"
+                 "pos_label_predict_train_pos_label_train.jsonlines"
                  "_LogisticRegression.model")
         )
 
@@ -340,10 +340,10 @@ def check_binary_predictions_for_pos_label_str(label_list,
     assert_array_equal(sklearn_predictions, skll_predictions)
 
 
-def test_binary_predictions_for_pos_label_str():
+def test_binary_predictions_for_pos_label():
 
     for (unique_label_list,
-         use_pos_label_str,
+         use_pos_label,
          probability,
          use_api) in product([['B', 'C'],
                               [1, 2],
@@ -352,9 +352,9 @@ def test_binary_predictions_for_pos_label_str():
                              [True, False],
                              [True, False]):
 
-        yield (check_binary_predictions_for_pos_label_str,
+        yield (check_binary_predictions_for_pos_label,
                unique_label_list,
-               use_pos_label_str,
+               use_pos_label,
                probability,
                use_api)
 

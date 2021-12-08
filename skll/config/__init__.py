@@ -77,7 +77,7 @@ class SKLLConfigParser(configparser.ConfigParser):
                     'metrics': "[]",
                     'objectives': "[]",
                     'param_grids': '[]',
-                    'pos_label_str': '',
+                    'pos_label': '',
                     'pipeline': 'False',
                     'predictions': '',
                     'probability': 'False',
@@ -121,7 +121,7 @@ class SKLLConfigParser(configparser.ConfigParser):
                                    'num_cv_folds': 'Input',
                                    'objectives': 'Tuning',
                                    'param_grids': 'Tuning',
-                                   'pos_label_str': 'Tuning',
+                                   'pos_label': 'Tuning',
                                    'pipeline': 'Output',
                                    'predictions': 'Output',
                                    'probability': 'Output',
@@ -328,7 +328,7 @@ def parse_config_file(config_path, log_level=logging.INFO):  # noqa: C901
     results_path : str
         Path to store result files in.
 
-    pos_label_str : str
+    pos_label : str
         The string label for the positive class in the binary
         classification setting.
 
@@ -592,10 +592,10 @@ def parse_config_file(config_path, log_level=logging.INFO):  # noqa: C901
     fixed_sampler_parameters = yaml.safe_load(fixed_sampler_parameters)
     param_grid_list = yaml.safe_load(fix_json(config.get("Tuning", "param_grids")))
 
-    # read and normalize the value of `pos_label_str`
-    pos_label_str = safe_float(config.get("Tuning", "pos_label_str"))
-    if pos_label_str == '':
-        pos_label_str = None
+    # read and normalize the value of `pos_label`
+    pos_label = safe_float(config.get("Tuning", "pos_label"))
+    if pos_label == '':
+        pos_label = None
 
     # ensure that feature_scaling is specified only as one of the
     # four available choices
@@ -884,7 +884,7 @@ def parse_config_file(config_path, log_level=logging.INFO):  # noqa: C901
             feature_hasher, hasher_features, id_col, label_col, train_set_name,
             test_set_name, suffix, featuresets, do_shuffle, model_path,
             do_grid_search, grid_objectives, probability, pipeline, results_path,
-            pos_label_str, feature_scaling, min_feature_count, folds_file,
+            pos_label, feature_scaling, min_feature_count, folds_file,
             grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
             save_cv_models, use_folds_file_for_grid_search, do_stratified_folds,
             fixed_parameter_list, param_grid_list, featureset_names, learners,

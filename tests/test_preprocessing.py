@@ -220,7 +220,7 @@ def check_scaling_features(use_feature_hashing=False, use_scaling=False):
     # create a Linear SVM with the value of scaling as specified
     feature_scaling = 'both' if use_scaling else 'none'
     learner = Learner('SGDClassifier', feature_scaling=feature_scaling,
-                      pos_label_str=1)
+                      pos_label="1")
 
     # train the learner on the training set and test on the testing set
     learner.train(train_fs,

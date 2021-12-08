@@ -123,7 +123,7 @@ def check_learning_curve_task(learner_type, options_dict):
         expected_init_kwargs = {"voting": "soft" if options_dict["with_soft_voting"] else "hard",
                                 "custom_learner_path": custom_learner,
                                 "feature_scaling": "none",
-                                "pos_label_str": None,
+                                "pos_label": None,
                                 "min_feature_count": 1,
                                 "model_kwargs_list": model_kwargs_list,
                                 "sampler_list": sampler_list,

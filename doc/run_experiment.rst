@@ -1146,17 +1146,17 @@ SVR
     experiment and are best left up to the user.
 
 
-.. _pos_label_str:
+.. _pos_label:
 
-pos_label_str *(Optional)*
-""""""""""""""""""""""""""
+pos_label *(Optional)*
+""""""""""""""""""""""
 
 A string denoting the label of the class to be
 treated as the positive class in a binary classification
 setting. If unspecified, the class represented by the label
 that appears second when sorted is chosen as the positive
 class. For example, if the two labels in data are "A" and
-"B" and ``pos_label_str`` is not specified, "B" will be chosen
+"B" and ``pos_label`` is not specified, "B" will be chosen
 as the positive class.
 
 .. _use_folds_file_for_grid_search:
@@ -1550,7 +1550,7 @@ in these files, where N is the number of classes in the training
 data. The header for the column containing IDs is still "id" and the
 labels themselves are the headers for the columns containing their
 respective probabilities. In the special case of binary classification,
-the :ref:`positive class <pos_label_str>` probabilities are always in
+the :ref:`positive class <pos_label>` probabilities are always in
 the last column.
 
 .. _output_summary_file:
