@@ -2030,9 +2030,10 @@ def test_config_parsing_set_save_votes_value():
     eq_(save_votes, True)
 
 
+@raises(KeyError)
 def test_config_parsing_use_log_instead_of_logs():
     """
-    Check that using 'log' instead of 'logs' raises a warning
+    Check that using 'log' instead of 'logs' raises an error
     """
 
     values_to_fill_dict = {
@@ -2054,24 +2055,4 @@ def test_config_parsing_use_log_instead_of_logs():
                                          values_to_fill_dict,
                                          'use_log_vs_logs')
 
-    (experiment_name, task, sampler, fixed_sampler_parameters,
-     feature_hasher, hasher_features, id_col, label_col, train_set_name,
-     test_set_name, suffix, featuresets, do_shuffle, model_path,
-     do_grid_search, grid_objectives, probability, pipeline, results_path,
-     pos_label_str, feature_scaling, min_feature_count, folds_file,
-     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
-     save_cv_models, use_folds_file_for_grid_search, do_stratified_folds,
-     fixed_parameter_list, param_grid_list, featureset_names, learners,
-     prediction_dir, log_path, train_path, test_path, ids_to_floats,
-     class_map, custom_learner_path, custom_metric_path, learning_curve_cv_folds_list,
-     learning_curve_train_sizes, output_metrics, save_votes) = parse_config_file(config_path)
-
-    log_file_on_disk = join(output_dir, "config_parsing_log_vs_logs.log")
-    with open(log_file_on_disk) as f:
-        warning_pattern = re.compile(
-            r"The 'log' option in the \[Output\] section is deprecated"
-        )
-        matches = re.findall(warning_pattern, f.read())
-        eq_(len(matches), 1)
-
-    eq_(log_path, output_dir)
+    parse_config_file(config_path)
