@@ -349,7 +349,7 @@ def check_xval_fancy_results_file(do_grid_search,
                            'num_cv_folds': '6',
                            'grid_search_folds': '4',
                            'learners': "['LogisticRegression']",
-                           'log': output_dir,
+                           'logs': output_dir,
                            'predictions': output_dir,
                            'results': output_dir}
 
@@ -458,7 +458,7 @@ def check_grid_search_cv_results(task, do_grid_search):  # noqa: C901
                            'objectives': "['f1_score_micro']",
                            'featureset_names': "['f0']",
                            'learners': json.dumps(learners),
-                           'log': output_dir,
+                           'logs': output_dir,
                            'results': output_dir}
     if task == 'train':
         values_to_fill_dict['models'] = output_dir
@@ -611,7 +611,7 @@ def test_multiple_featuresets_and_featurehasher_throws_warning():
             "[['test_input_3examples_1', 'test_input_3examples_2']]",
                            "featureset_names": "['feature_hasher']",
                            'suffix': '.jsonlines',
-                           'log': output_dir,
+                           'logs': output_dir,
                            'models': output_dir,
                            'feature_hasher': "true",
                            "hasher_features": "4"
