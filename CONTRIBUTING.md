@@ -86,7 +86,7 @@ How to contribute
 
 10. After making sure all tests pass, you are ready to push your branch/fork to GitHub with:
 
-          $ git push feature/my-new-addition
+          $ git push -u origin feature/my-new-addition
 
 Finally, go to the web page of (your fork of) the SKLL repo,
 and click 'Pull request' to send your changes to the maintainers for
