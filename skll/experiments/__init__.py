@@ -108,7 +108,7 @@ def _classify_featureset(args):  # noqa: C901
     fixed_parameters = args.pop("fixed_parameters")
     sampler_parameters = args.pop("sampler_parameters")
     param_grid = args.pop("param_grid")
-    pos_label_str = args.pop("pos_label_str")
+    pos_label = args.pop("pos_label")
     overwrite = args.pop("overwrite")
     feature_scaling = args.pop("feature_scaling")
     min_feature_count = args.pop("min_feature_count")
@@ -241,7 +241,7 @@ def _classify_featureset(args):  # noqa: C901
             # supported by SKLL (regular and voting)
             common_learner_kwargs = {"custom_learner_path": custom_learner_path,
                                      "feature_scaling": feature_scaling,
-                                     "pos_label_str": pos_label_str,
+                                     "pos_label": pos_label,
                                      "min_feature_count": min_feature_count,
                                      "logger": logger}
 
@@ -630,7 +630,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',  
         (experiment_name, task, sampler, fixed_sampler_parameters, feature_hasher,
          hasher_features, id_col, label_col, train_set_name, test_set_name, suffix,
          featuresets, do_shuffle, model_path, do_grid_search, grid_objectives,
-         probability, pipeline, results_path, pos_label_str, feature_scaling,
+         probability, pipeline, results_path, pos_label, feature_scaling,
          min_feature_count, folds_file, grid_search_jobs, grid_search_folds, cv_folds,
          save_cv_folds, save_cv_models, use_folds_file_for_grid_search,
          do_stratified_folds, fixed_parameter_list, param_grid_list, featureset_names,
@@ -811,7 +811,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',  
                                                     else dict())
                     job_args["param_grid"] = (param_grid_list[learner_num]
                                               if param_grid_list else None)
-                    job_args["pos_label_str"] = pos_label_str
+                    job_args["pos_label"] = pos_label
                     job_args["overwrite"] = overwrite
                     job_args["feature_scaling"] = feature_scaling
                     job_args["min_feature_count"] = min_feature_count

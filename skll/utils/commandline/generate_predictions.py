@@ -98,18 +98,18 @@ def main(argv=None):
     estimator_type = learner.model_type._estimator_type
 
     # if we are using a binary classification model, get the positive
-    # class label string if from the `pos_label_str` attribute, and if
+    # class label string if from the `pos_label` attribute, and if
     # that is `None`, get it from the learner's label dictionary; also
     # get the string denoting the negative label which is just the other
     # label in the list
     if estimator_type == 'classifier':
         if len(learner.label_list) == 2:
-            if learner.pos_label_str is not None:
-                pos_label_str = learner.pos_label_str
+            if learner.pos_label is not None:
+                pos_label = learner.pos_label
             else:
-                pos_label_str = [label for label in learner.label_dict if learner.label_dict[label] == 1][0]
-            neg_label_str = [label for label in learner.label_list if label != pos_label_str][0]
-            logger.info(f"{pos_label_str} is the label for the positive "
+                pos_label = [label for label in learner.label_dict if learner.label_dict[label] == 1][0]
+            neg_label = [label for label in learner.label_list if label != pos_label][0]
+            logger.info(f"{pos_label} is the label for the positive "
                         "class.")
 
     # if we want to choose labels by thresholding the probabilities,
@@ -180,7 +180,7 @@ def main(argv=None):
             if args.threshold is not None:
                 predictions = []
                 for neg_label_prob, pos_label_prob in original_predictions:
-                    chosen_label = pos_label_str if pos_label_prob >= args.threshold else neg_label_str
+                    chosen_label = pos_label if pos_label_prob >= args.threshold else neg_label
                     predictions.append(chosen_label)
 
             # For everything else, we can just use the original predictions

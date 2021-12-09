@@ -102,7 +102,7 @@ def check_train_task(learner_type, options_dict):
         expected_init_kwargs = {"voting": "soft" if options_dict["with_soft_voting"] else "hard",
                                 "custom_learner_path": custom_learner,
                                 "feature_scaling": "with_mean" if options_dict["with_centering"] else "none",
-                                "pos_label_str": "dog" if options_dict["with_pos_label_str"] else None,
+                                "pos_label": "dog" if options_dict["with_pos_label"] else None,
                                 "min_feature_count": 2 if options_dict["with_min_feature_count"] else 1,
                                 "model_kwargs_list": model_kwargs_list,
                                 "sampler_list": sampler_list,
@@ -160,7 +160,7 @@ def test_train_task():
                     "with_centering",
                     "with_min_feature_count",
                     "with_custom_learner_path",
-                    "with_pos_label_str",
+                    "with_pos_label",
                     "with_model_kwargs_list",
                     "with_sampler_list",
                     "with_grid_search",
@@ -190,9 +190,9 @@ def test_train_task():
         # a dictionary class that returns `False` for non-existent keys
         options_dict = BoolDict(zip(option_names, option_values[1:]))
 
-        # voting regressors do not support soft voting or `pos_label_str`
+        # voting regressors do not support soft voting or `pos_label`
         if (learner_type == "regressor" and
-                (options_dict["with_soft_voting"] or options_dict["with_pos_label_str"])):
+                (options_dict["with_soft_voting"] or options_dict["with_pos_label"])):
             continue
 
         yield check_train_task, learner_type, options_dict

@@ -176,7 +176,7 @@ def fill_in_config_options(config_template_path,
                             'suffix'],
                   'Tuning': ['grid_search', 'objective', 'min_feature_count',
                              'use_folds_file_for_grid_search', 'grid_search_folds',
-                             'pos_label_str', 'param_grids', 'objectives',
+                             'pos_label', 'param_grids', 'objectives',
                              'duplicate_option'],
                   'Output': ['results', 'log', 'logs', 'models', 'metrics',
                              'predictions', 'pipeline', 'save_cv_folds',
@@ -362,8 +362,8 @@ def fill_in_config_options_for_voting_learners(learner_type,  # noqa: C901
         custom_learner = join(other_dir, "custom_logistic_wrapper.py")
         values_to_fill_dict["custom_learner_path"] = custom_learner
 
-    if options_dict["with_pos_label_str"]:
-        values_to_fill_dict["pos_label_str"] = "dog"
+    if options_dict["with_pos_label"]:
+        values_to_fill_dict["pos_label"] = "dog"
 
     if options_dict["with_individual_predictions"]:
         values_to_fill_dict["save_votes"] = "true"

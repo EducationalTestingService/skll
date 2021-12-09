@@ -978,7 +978,7 @@ def test_config_parsing_no_grid_objectives_needed_for_learning_curve():
      feature_hasher, hasher_features, id_col, label_col, train_set_name,
      test_set_name, suffix, featuresets, do_shuffle, model_path,
      do_grid_search, grid_objectives, probability, pipeline, results_path,
-     pos_label_str, feature_scaling, min_feature_count, folds_file,
+     pos_label, feature_scaling, min_feature_count, folds_file,
      grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
      save_cv_models, use_folds_file_for_grid_search, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
@@ -1016,7 +1016,7 @@ def test_config_parsing_relative_input_path():
      feature_hasher, hasher_features, id_col, label_col, train_set_name,
      test_set_name, suffix, featuresets, do_shuffle, model_path,
      do_grid_search, grid_objectives, probability, pipeline, results_path,
-     pos_label_str, feature_scaling, min_feature_count, folds_file,
+     pos_label, feature_scaling, min_feature_count, folds_file,
      grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
      save_cv_models, use_folds_file_for_grid_search, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
@@ -1290,7 +1290,7 @@ def check_cv_folds_and_grid_search_folds(task,
      feature_hasher, hasher_features, id_col, label_col, train_set_name,
      test_set_name, suffix, featuresets, do_shuffle, model_path,
      do_grid_search, grid_objectives, probability, pipeline, results_path,
-     pos_label_str, feature_scaling, min_feature_count, folds_file,
+     pos_label, feature_scaling, min_feature_count, folds_file,
      grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
      save_cv_models, use_folds_file_for_grid_search, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
@@ -1328,7 +1328,7 @@ def test_default_number_of_cv_folds():
      feature_hasher, hasher_features, id_col, label_col, train_set_name,
      test_set_name, suffix, featuresets, do_shuffle, model_path,
      do_grid_search, grid_objectives, probability, pipeline, results_path,
-     pos_label_str, feature_scaling, min_feature_count, folds_file,
+     pos_label, feature_scaling, min_feature_count, folds_file,
      grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
      save_cv_models, use_folds_file_for_grid_search, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
@@ -1365,7 +1365,7 @@ def test_setting_number_of_cv_folds():
      feature_hasher, hasher_features, id_col, label_col, train_set_name,
      test_set_name, suffix, featuresets, do_shuffle, model_path,
      do_grid_search, grid_objectives, probability, pipeline, results_path,
-     pos_label_str, feature_scaling, min_feature_count, folds_file,
+     pos_label, feature_scaling, min_feature_count, folds_file,
      grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
      save_cv_models, use_folds_file_for_grid_search, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
@@ -1404,7 +1404,7 @@ def test_setting_param_grids():
      feature_hasher, hasher_features, id_col, label_col, train_set_name,
      test_set_name, suffix, featuresets, do_shuffle, model_path,
      do_grid_search, grid_objectives, probability, pipeline, results_path,
-     pos_label_str, feature_scaling, min_feature_count, folds_file,
+     pos_label, feature_scaling, min_feature_count, folds_file,
      grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
      save_cv_models, use_folds_file_for_grid_search, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
@@ -1447,7 +1447,7 @@ def test_setting_fixed_parameters():
      feature_hasher, hasher_features, id_col, label_col, train_set_name,
      test_set_name, suffix, featuresets, do_shuffle, model_path,
      do_grid_search, grid_objectives, probability, pipeline, results_path,
-     pos_label_str, feature_scaling, min_feature_count, folds_file,
+     pos_label, feature_scaling, min_feature_count, folds_file,
      grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
      save_cv_models, use_folds_file_for_grid_search, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
@@ -1515,7 +1515,7 @@ def test_default_learning_curve_options():
      feature_hasher, hasher_features, id_col, label_col, train_set_name,
      test_set_name, suffix, featuresets, do_shuffle, model_path,
      do_grid_search, grid_objectives, probability, pipeline, results_path,
-     pos_label_str, feature_scaling, min_feature_count, folds_file,
+     pos_label, feature_scaling, min_feature_count, folds_file,
      grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
      save_cv_models, use_folds_file_for_grid_search, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
@@ -1552,7 +1552,7 @@ def test_setting_learning_curve_options():
      feature_hasher, hasher_features, id_col, label_col, train_set_name,
      test_set_name, suffix, featuresets, do_shuffle, model_path,
      do_grid_search, grid_objectives, probability, pipeline, results_path,
-     pos_label_str, feature_scaling, min_feature_count, folds_file,
+     pos_label, feature_scaling, min_feature_count, folds_file,
      grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
      save_cv_models, use_folds_file_for_grid_search, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
@@ -1591,7 +1591,7 @@ def test_learning_curve_metrics_and_objectives_throw_error():
      feature_hasher, hasher_features, id_col, label_col, train_set_name,
      test_set_name, suffix, featuresets, do_shuffle, model_path,
      do_grid_search, grid_objectives, probability, pipeline, results_path,
-     pos_label_str, feature_scaling, min_feature_count, folds_file,
+     pos_label, feature_scaling, min_feature_count, folds_file,
      grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
      save_cv_models, use_folds_file_for_grid_search, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
@@ -1627,7 +1627,7 @@ def test_learning_curve_metrics_and_no_objectives():
      feature_hasher, hasher_features, id_col, label_col, train_set_name,
      test_set_name, suffix, featuresets, do_shuffle, model_path,
      do_grid_search, grid_objectives, probability, pipeline, results_path,
-     pos_label_str, feature_scaling, min_feature_count, folds_file,
+     pos_label, feature_scaling, min_feature_count, folds_file,
      grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
      save_cv_models, use_folds_file_for_grid_search, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
@@ -1663,7 +1663,7 @@ def test_learning_curve_metrics():
      feature_hasher, hasher_features, id_col, label_col, train_set_name,
      test_set_name, suffix, featuresets, do_shuffle, model_path,
      do_grid_search, grid_objectives, probability, pipeline, results_path,
-     pos_label_str, feature_scaling, min_feature_count, folds_file,
+     pos_label, feature_scaling, min_feature_count, folds_file,
      grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
      save_cv_models, use_folds_file_for_grid_search, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
@@ -1701,7 +1701,7 @@ def test_learning_curve_pipeline_option():
      feature_hasher, hasher_features, id_col, label_col, train_set_name,
      test_set_name, suffix, featuresets, do_shuffle, model_path,
      do_grid_search, grid_objectives, probability, pipeline, results_path,
-     pos_label_str, feature_scaling, min_feature_count, folds_file,
+     pos_label, feature_scaling, min_feature_count, folds_file,
      grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
      save_cv_models, use_folds_file_for_grid_search, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
@@ -1847,7 +1847,7 @@ def test_config_parsing_no_grid_search_but_objectives_specified():
      feature_hasher, hasher_features, id_col, label_col, train_set_name,
      test_set_name, suffix, featuresets, do_shuffle, model_path,
      do_grid_search, grid_objectives, probability, pipeline, results_path,
-     pos_label_str, feature_scaling, min_feature_count, folds_file,
+     pos_label, feature_scaling, min_feature_count, folds_file,
      grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
      save_cv_models, use_folds_file_for_grid_search, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
@@ -1910,9 +1910,9 @@ def test_config_parsing_param_grids_fixed_parameters_conflict():
         eq_(len(matches), 1)
 
 
-def test_config_parsing_default_pos_label_str_value():
+def test_config_parsing_default_pos_label_value():
     """
-    Check that the default value of `pos_label_str` gets set to `None`
+    Check that the default value of `pos_label` gets set to `None`
     """
 
     values_to_fill_dict = {
@@ -1932,13 +1932,13 @@ def test_config_parsing_default_pos_label_str_value():
 
     config_path = fill_in_config_options(config_template_path,
                                          values_to_fill_dict,
-                                         'default_value_pos_label_str')
+                                         'default_value_pos_label')
 
     (experiment_name, task, sampler, fixed_sampler_parameters,
      feature_hasher, hasher_features, id_col, label_col, train_set_name,
      test_set_name, suffix, featuresets, do_shuffle, model_path,
      do_grid_search, grid_objectives, probability, pipeline, results_path,
-     pos_label_str, feature_scaling, min_feature_count, folds_file,
+     pos_label, feature_scaling, min_feature_count, folds_file,
      grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
      save_cv_models, use_folds_file_for_grid_search, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
@@ -1946,7 +1946,7 @@ def test_config_parsing_default_pos_label_str_value():
      class_map, custom_learner_path, custom_metric_path, learning_curve_cv_folds_list,
      learning_curve_train_sizes, output_metrics, save_votes) = parse_config_file(config_path)
 
-    eq_(pos_label_str, None)
+    eq_(pos_label, None)
 
 
 def test_config_parsing_default_save_votes_value():
@@ -1978,7 +1978,7 @@ def test_config_parsing_default_save_votes_value():
      feature_hasher, hasher_features, id_col, label_col, train_set_name,
      test_set_name, suffix, featuresets, do_shuffle, model_path,
      do_grid_search, grid_objectives, probability, pipeline, results_path,
-     pos_label_str, feature_scaling, min_feature_count, folds_file,
+     pos_label, feature_scaling, min_feature_count, folds_file,
      grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
      save_cv_models, use_folds_file_for_grid_search, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
@@ -2019,7 +2019,7 @@ def test_config_parsing_set_save_votes_value():
      feature_hasher, hasher_features, id_col, label_col, train_set_name,
      test_set_name, suffix, featuresets, do_shuffle, model_path,
      do_grid_search, grid_objectives, probability, pipeline, results_path,
-     pos_label_str, feature_scaling, min_feature_count, folds_file,
+     pos_label, feature_scaling, min_feature_count, folds_file,
      grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
      save_cv_models, use_folds_file_for_grid_search, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,

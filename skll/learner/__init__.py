@@ -137,13 +137,13 @@ class Learner(object):
         A dictionary of keyword arguments to pass to the
         initializer for the specified model.
         Defaults to ``None``.
-    pos_label_str : str, optional
+    pos_label : str, optional
         A string denoting the label of the class to be
         treated as the positive class in a binary classification
         setting. If ``None``, the class represented by the label
         that appears second when sorted is chosen as the positive
         class. For example, if the two labels in data are "A"
-        and "B" and ``pos_label_str`` is not specified, "B" will
+        and "B" and ``pos_label`` is not specified, "B" will
         be chosen as the positive class.
         Defaults to ``None``.
     min_feature_count : int, optional
@@ -176,7 +176,7 @@ class Learner(object):
                  pipeline=False,
                  feature_scaling='none',
                  model_kwargs=None,
-                 pos_label_str=None,
+                 pos_label=None,
                  min_feature_count=1,
                  sampler=None,
                  sampler_kwargs=None,
@@ -191,7 +191,7 @@ class Learner(object):
         self.scaler = None
         self.label_dict = None
         self.label_list = None
-        self.pos_label_str = safe_float(pos_label_str) if pos_label_str is not None else pos_label_str
+        self.pos_label = safe_float(pos_label) if pos_label is not None else pos_label
         self._model = None
         self._store_pipeline = pipeline
         self._feature_scaling = feature_scaling
@@ -711,14 +711,14 @@ class Learner(object):
         # that it is last in the list; for multi-class classification
         # raise a warning and set it back to None, since it does not
         # make any sense anyway
-        if self.pos_label_str is not None:
+        if self.pos_label is not None:
             if len(self.label_list) != 2:
-                self.logger.warning('Ignoring value of `pos_label_str` for '
+                self.logger.warning('Ignoring value of `pos_label` for '
                                     'multi-class classification.')
-                self.pos_label_str = None
+                self.pos_label = None
             else:
                 self.label_list = sorted(self.label_list,
-                                         key=lambda x: (x == self.pos_label_str,
+                                         key=lambda x: (x == self.pos_label,
                                                         x))
 
         # Given a list of all labels in the dataset and a list of the

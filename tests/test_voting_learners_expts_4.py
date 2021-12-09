@@ -129,7 +129,7 @@ def check_xval_task(learner_type, options_dict):
         expected_init_args = (estimator_names,)
         expected_init_kwargs = {"voting": "soft" if options_dict["with_soft_voting"] else "hard",
                                 "feature_scaling": "none",
-                                "pos_label_str": "dog" if options_dict["with_pos_label_str"] else None,
+                                "pos_label": "dog" if options_dict["with_pos_label"] else None,
                                 "model_kwargs_list": model_kwargs_list,
                                 "sampler_list": sampler_list,
                                 "sampler_kwargs_list": None}
@@ -211,7 +211,7 @@ def test_xval_task():
     # not very common or because they are already tested in other voting
     # learner experiment tests
     option_names = ["with_soft_voting",
-                    "with_pos_label_str",
+                    "with_pos_label",
                     "with_model_kwargs_list",
                     "with_grid_search",
                     "with_param_grid_list",
@@ -244,9 +244,9 @@ def test_xval_task():
         # a dictionary class that returns `False` for non-existent keys
         options_dict = BoolDict(zip(option_names, option_values[1:]))
 
-        # voting regressors do not support soft voting or `pos_label_str`
+        # voting regressors do not support soft voting or `pos_label`
         if (learner_type == "regressor" and
-                (options_dict["with_soft_voting"] or options_dict["with_pos_label_str"])):
+                (options_dict["with_soft_voting"] or options_dict["with_pos_label"])):
             continue
 
         yield check_xval_task, learner_type, options_dict
