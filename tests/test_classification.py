@@ -249,20 +249,20 @@ def check_binary_predictions_for_pos_label(label_list,
     """
 
     if label_list == ['B', 'C']:
-        pos_label, other_label_str = 'B', 'C'
+        pos_label, other_label = 'B', 'C'
     elif label_list == [1, 2]:
-        pos_label, other_label_str = 2, 1
+        pos_label, other_label = 2, 1
     else:
-        pos_label, other_label_str = 'FRAG', 'NONE'
+        pos_label, other_label = 'FRAG', 'NONE'
 
     # create the mapping from class indices to class labels
     # manually so that they match our expectations for what
     # is supposed to happen when `pos_label` is specified
     # and when it is not
     if use_pos_label:
-        index_label_dict = {0: other_label_str, 1: pos_label}
+        index_label_dict = {0: other_label, 1: pos_label}
     else:
-        sorted_label_list = sorted([pos_label, other_label_str])
+        sorted_label_list = sorted([pos_label, other_label])
         index_label_dict = dict(enumerate(sorted_label_list))
 
     # initialize a random number generator
