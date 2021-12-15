@@ -248,7 +248,7 @@ def fill_in_config_options_for_voting_learners(learner_type,  # noqa: C901
 
     Returns
     -------
-    res : a 12-tuple
+    res : a 13-tuple
         A tuple containing the following items as determined by the options
         specified in ``options_dict``:
         - the path to the filled-in configuration file
@@ -262,6 +262,7 @@ def fill_in_config_options_for_voting_learners(learner_type,  # noqa: C901
         - the list of parameter grids used for the underlying estimators, if any
         - the list of samplers used for the underlying estimators, if any
         - the number of cross-validation folds used (6 or 10)
+        - the custom seed value used for cross-validation, if any
         - the number of learning curve cross-validation folds (10 or 20)
         - the list of learning curve training sizes
     """
@@ -274,6 +275,7 @@ def fill_in_config_options_for_voting_learners(learner_type,  # noqa: C901
     param_grid_list = None
     sampler_list = None
     num_cv_folds = learning_curve_cv_folds = 10
+    cv_seed = 123456789
     learning_curve_train_sizes = [0.1, 0.325, 0.55, 0.775, 1.0]
     if learner_type == "classifier":
         learner_name = "VotingClassifier"
@@ -380,6 +382,10 @@ def fill_in_config_options_for_voting_learners(learner_type,  # noqa: C901
         num_cv_folds = 6
         values_to_fill_dict["num_cv_folds"] = str(num_cv_folds)
 
+    if options_dict["with_custom_cv_seed"]:
+        cv_seed = 987
+        values_to_fill_dict["cv_seed"] = str(cv_seed)
+
     if options_dict["without_save_cv_folds"]:
         values_to_fill_dict["save_cv_folds"] = "false"
 
@@ -414,6 +420,7 @@ def fill_in_config_options_for_voting_learners(learner_type,  # noqa: C901
             param_grid_list,
             sampler_list,
             num_cv_folds,
+            cv_seed,
             learning_curve_cv_folds,
             learning_curve_train_sizes)
 

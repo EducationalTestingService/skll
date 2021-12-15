@@ -617,6 +617,7 @@ class VotingLearner(object):
                        examples,
                        stratified=True,
                        cv_folds=10,
+                       cv_seed=123456789,
                        grid_search=True,
                        grid_search_folds=5,
                        grid_jobs=None,
@@ -652,6 +653,11 @@ class VotingLearner(object):
             The number of folds to use for cross-validation, or
             a mapping from example IDs to folds.
             Defaults to 10.
+        cv_seed: int, optional
+            The value for seeding the random number generator
+            used to create the random folds. Note that this
+            seed is *only* used if either ``grid_search`` or
+            ``shuffle`` are set to ``True``.
         grid_search : bool, optional
             Should we do grid search when training each fold?
             Note: This will make this take *much* longer.
@@ -732,7 +738,7 @@ class VotingLearner(object):
 
         # Seed the random number generator so that randomized algorithms are
         # replicable.
-        random_state = np.random.RandomState(123456789)
+        random_state = np.random.RandomState(cv_seed)
 
         # We need to check whether the labels in the featureset are labels
         # or continuous values. If it's the latter, we need to raise an

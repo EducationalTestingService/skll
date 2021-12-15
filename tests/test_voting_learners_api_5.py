@@ -21,7 +21,11 @@ from sklearn.model_selection import PredefinedSplit
 from skll.data import FeatureSet
 from skll.learner.voting import VotingLearner
 from tests import other_dir, output_dir
-from tests.utils import make_california_housing_data, make_digits_data
+from tests.utils import (
+    compute_expected_folds_for_cv_testing,
+    make_california_housing_data,
+    make_digits_data,
+)
 
 # define some constants needed for testing
 TRAIN_FS_DIGITS, TEST_FS_DIGITS = make_digits_data(use_digit_names=True)
@@ -46,17 +50,20 @@ def tearDown():
 
 def check_cross_validate_with_grid_search(learner_type,
                                           with_soft_voting,
-                                          with_individual_predictions):
+                                          with_individual_predictions,
+                                          with_custom_seed):
 
     # to test the cross_validate() method with grid search, we
     # instantiate the SKLL voting learner, call `cross_validate()` with
     # 3 folds on it while writing out the predictions and also asking it
-    # to return the actual folds it used as well as the models. Then, we take
-    # each of the 3 models, take its underlying estimators, use them
-    # to train a scikit-learn voting learner directly on the corresponding
-    # training fold and make predictions on the test fold. Then we compute
-    # metrics over both sets of cross-validated predictions on the
-    # test set and compare their values.
+    # to return the actual folds it used as well as the models. We first
+    # confirm that the folds are computed as expected esp. with the custom
+    # seed, if one is specified. Then, we take each of the 3 models, take
+    # its underlying estimators, use them to train a scikit-learn voting
+    # learner directly on the corresponding training fold and make
+    # predictions on the test fold. Then we compute metrics over both
+    # sets of cross-validated predictions on the test set and
+    # compare their values.
 
     # set the prediction prefix in case we need to write out the predictions
     prediction_prefix = (Path(output_dir) / f"test_xval_voting_gs_"
@@ -85,6 +92,28 @@ def check_cross_validate_with_grid_search(learner_type,
                             feature_scaling="none",
                             min_feature_count=0,
                             voting=voting_type)
+
+    # set up an extra keyword argument for the `cross_validate()`
+    # method if a custom seed is specified and compute the expected
+    # folds; also compute the expected fold IDs for all featureset IDs
+    if with_custom_seed:
+        custom_seed_value = 54321
+        extra_xval_kwargs = {"cv_seed": custom_seed_value}
+        expected_fold_ids = compute_expected_folds_for_cv_testing(featureset,
+                                                                  num_folds=3,
+                                                                  stratified=learner_type == "classifier",
+                                                                  seed=custom_seed_value)
+    else:
+        extra_xval_kwargs = {}
+        # note that even if we don't have a custom seed, we are still doing
+        # grid search, so SKLL will still shuffle the features but it will
+        # use the default seed value which is 123456789 so we need to use
+        # that value for our expected fold computation function too
+        expected_fold_ids = compute_expected_folds_for_cv_testing(featureset,
+                                                                  num_folds=3,
+                                                                  stratified=learner_type == "classifier",
+                                                                  seed=123456789)
+
     (xval_results,
      used_fold_ids,
      used_models) = skll_vl.cross_validate(featureset,
@@ -95,7 +124,8 @@ def check_cross_validate_with_grid_search(learner_type,
                                            prediction_prefix=prediction_prefix,
                                            output_metrics=[extra_metric],
                                            save_cv_models=True,
-                                           individual_predictions=with_individual_predictions)
+                                           individual_predictions=with_individual_predictions,
+                                           **extra_xval_kwargs)
 
     # check that the results are as expected
     ok_(len(xval_results), 3)               # number of folds
@@ -110,6 +140,9 @@ def check_cross_validate_with_grid_search(learner_type,
         ok_(isinstance(xval_results[i][3], dict))   # model params
         ok_(isinstance(xval_results[i][4], float))  # objective
         ok_(isinstance(xval_results[i][5], dict))   # metric scores
+
+    # check that the expected fold IDs match the actual fold IDs
+    eq_(sorted(expected_fold_ids.items()), sorted(used_fold_ids.items()))
 
     # create a pandas dataframe with the returned fold IDs
     # and create a scikit-learn CV splitter with the exact folds
@@ -145,7 +178,7 @@ def check_cross_validate_with_grid_search(learner_type,
     # the estimators underlying the model, fit it on the training
     # partition of the fold and then predict on the test partition
     cv_splits = splitter.split()
-    for ((train, test), fold_model) in zip(cv_splits, used_models):
+    for ((train, test), _) in zip(cv_splits, used_models):
         used_estimators = used_models[0].model.named_estimators_
         clf1 = used_estimators[learner_names[0]]["estimator"]
         clf2 = used_estimators[learner_names[1]]["estimator"]
@@ -208,14 +241,18 @@ def check_cross_validate_with_grid_search(learner_type,
 def test_cross_validate_with_grid_search():
     for (learner_type,
          with_soft_voting,
-         with_individual_predictions) in product(["classifier", "regressor"],
-                                                 [False, True],
-                                                 [False, True]):
-        # regressors do not support soft voting
+         with_individual_predictions,
+         with_custom_seed) in product(["classifier", "regressor"],
+                                      [False, True],
+                                      [False, True],
+                                      [False, True]):
+
+        # regressors do not support soft voting or custom seeds
         if learner_type == "regressor" and with_soft_voting:
             continue
         else:
             yield (check_cross_validate_with_grid_search,
                    learner_type,
                    with_soft_voting,
-                   with_individual_predictions)
+                   with_individual_predictions,
+                   with_custom_seed)
