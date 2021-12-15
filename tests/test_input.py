@@ -1376,6 +1376,81 @@ def test_setting_number_of_cv_folds():
     eq_(cv_folds, 5)
 
 
+def test_default_cv_seed():
+
+    # make a simple config file that does not set `cv_seed`
+
+    values_to_fill_dict = {
+        'experiment_name': 'config_parsing',
+        'task': 'cross_validate',
+        'train_directory': train_dir,
+        'grid_search': 'true',
+        'featuresets': "[['f1', 'f2', 'f3']]",
+        'learners': "['LogisticRegression']",
+        'logs': output_dir,
+        'results': output_dir,
+        'objectives': "['f1_score_macro']"
+    }
+
+    config_template_path = join(config_dir,
+                                'test_config_parsing.template.cfg')
+    config_path = fill_in_config_options(config_template_path,
+                                         values_to_fill_dict,
+                                         'default_cv_folds')
+
+    (experiment_name, task, sampler, fixed_sampler_parameters,
+     feature_hasher, hasher_features, id_col, label_col, train_set_name,
+     test_set_name, suffix, featuresets, do_shuffle, model_path,
+     do_grid_search, grid_objectives, probability, pipeline, results_path,
+     pos_label, feature_scaling, min_feature_count, folds_file,
+     grid_search_jobs, grid_search_folds, cv_folds, cv_seed, save_cv_folds,
+     save_cv_models, use_folds_file_for_grid_search, do_stratified_folds,
+     fixed_parameter_list, param_grid_list, featureset_names, learners,
+     prediction_dir, log_path, train_path, test_path, ids_to_floats,
+     class_map, custom_learner_path, custom_metric_path, learning_curve_cv_folds_list,
+     learning_curve_train_sizes, output_metrics, save_votes) = parse_config_file(config_path)
+
+    eq_(cv_seed, 123456789)
+
+
+def test_setting_cv_seed():
+
+    # make a simple config file that explicitly sets `cv_seed`
+    values_to_fill_dict = {
+        'experiment_name': 'config_parsing',
+        'task': 'cross_validate',
+        'cv_seed': "987",
+        'train_directory': train_dir,
+        'featuresets': "[['f1', 'f2', 'f3']]",
+        'learners': "['LogisticRegression']",
+        'logs': output_dir,
+        'results': output_dir,
+        'grid_search': 'true',
+        'num_cv_folds': "5",
+        'objectives': "['f1_score_macro']"
+    }
+
+    config_template_path = join(config_dir,
+                                'test_config_parsing.template.cfg')
+    config_path = fill_in_config_options(config_template_path,
+                                         values_to_fill_dict,
+                                         'default_cv_folds')
+
+    (experiment_name, task, sampler, fixed_sampler_parameters,
+     feature_hasher, hasher_features, id_col, label_col, train_set_name,
+     test_set_name, suffix, featuresets, do_shuffle, model_path,
+     do_grid_search, grid_objectives, probability, pipeline, results_path,
+     pos_label, feature_scaling, min_feature_count, folds_file,
+     grid_search_jobs, grid_search_folds, cv_folds, cv_seed, save_cv_folds,
+     save_cv_models, use_folds_file_for_grid_search, do_stratified_folds,
+     fixed_parameter_list, param_grid_list, featureset_names, learners,
+     prediction_dir, log_path, train_path, test_path, ids_to_floats,
+     class_map, custom_learner_path, custom_metric_path, learning_curve_cv_folds_list,
+     learning_curve_train_sizes, output_metrics, save_votes) = parse_config_file(config_path)
+
+    eq_(cv_seed, 987)
+
+
 def test_setting_param_grids():
 
     # make a simple config file that does not set cv_folds
