@@ -303,7 +303,7 @@ def test_folds_file_logging_num_folds():
                    'test_folds_file_logging_train_f0.'
                    'jsonlines_LogisticRegression.log')) as f:
         cv_folds_pattern = re.compile(
-            r"(Task: cross_validate\n)(.+)(Cross-validating \([0-9]+ folds\))"
+            r"(Task: cross_validate\n)(.+)(Cross-validating \([0-9]+ folds, seed=[0-9]+\))"
         )
         matches = re.findall(cv_folds_pattern, f.read())
         eq_(len(matches), 1)
