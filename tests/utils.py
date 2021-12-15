@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Union
 
 import numpy as np
+from nose.tools import nottest
 from numpy.random import RandomState
 from sklearn.datasets import (
     fetch_california_housing,
@@ -18,7 +19,8 @@ from sklearn.datasets import (
     make_regression,
 )
 from sklearn.feature_extraction import FeatureHasher
-from sklearn.model_selection import ShuffleSplit
+from sklearn.model_selection import KFold, ShuffleSplit, StratifiedKFold
+from sklearn.utils import shuffle as sk_shuffle
 
 from skll.config import _setup_config_parser, fix_json
 from skll.data import FeatureSet, NDJWriter
@@ -172,8 +174,8 @@ def fill_in_config_options(config_template_path,
                             'sampler', 'shuffle', 'feature_scaling',
                             'learning_curve_cv_folds_list', 'folds_file',
                             'learning_curve_train_sizes', 'fixed_parameters',
-                            'num_cv_folds', 'bad_option', 'duplicate_option',
-                            'suffix'],
+                            'num_cv_folds', 'cv_seed', 'bad_option',
+                            'duplicate_option', 'suffix'],
                   'Tuning': ['grid_search', 'objective', 'min_feature_count',
                              'use_folds_file_for_grid_search', 'grid_search_folds',
                              'pos_label', 'param_grids', 'objectives',
@@ -912,3 +914,62 @@ def make_california_housing_data(num_examples=None, test_size=0.2):
         test_fs = None
 
     return train_fs, test_fs
+
+
+@nottest
+def compute_expected_folds_for_cv_testing(featureset, num_folds=10, stratified=True, seed=None):
+    """
+    Compute the fold IDs we expect from SKLL's ``cross_validate()`` methods.
+
+    This function is useful for cross-validation tests where we are trying
+    to confirm that that SKLL is correctly computing the k-fold cross-validation
+    folds for the given data for cases where k is a number. If ``seed`` is
+    specified, the function first shuffles the data using that seed and then
+    uses a ``StratifiedKFold()`` splitter to split the data into ``num_folds``.
+
+    Parameters
+    ----------
+    featureset : skll.data.FeatureSet
+        The given featureset for which to compute the folds.
+    num_folds : int, optional
+        The number of folds into which to split the given featureset.
+        Defaults to 10.
+    stratified : bool, optional
+        Whether to use stratified k-fold splitting or regular splitting.
+        Defaults to ``True`` (stratified).
+    seed : None, optional
+        The seed to use for the random number generator to
+        shuffle the data before splitting. If ``None``, no
+        shuffling takes place.
+
+    Returns
+    -------
+    expected_fold_ids : dict
+        A dictionary mapping each ID in the featureset to a fold ID.
+        Fold IDs range from 0 to ``num_folds``-1.
+    """
+    # initialize the return dictionary
+    expected_fold_ids = {}
+
+    # initialize an RNG with the given seed, if available
+    if seed:
+        random_state = np.random.RandomState(seed)
+
+        # shuffle and split the featureset ids, labels and features
+        ids, labels, features = sk_shuffle(featureset.ids, featureset.labels,
+                                           featureset.features,
+                                           random_state=random_state)
+
+        featureset = FeatureSet(featureset.name, ids, labels=labels,
+                                features=features,
+                                vectorizer=featureset.vectorizer)
+
+    # split the featureset IDs into the given number of folds
+    # and save the fold ID for each featureset ID
+    kfold = StratifiedKFold(n_splits=num_folds) if stratified else KFold(n_splits=num_folds)
+    for fold_num, (_, test_indices) in enumerate(kfold.split(featureset.features,
+                                                             featureset.labels)):
+        for index in test_indices:
+            expected_fold_ids[featureset.ids[index]] = str(fold_num)
+
+    return expected_fold_ids
