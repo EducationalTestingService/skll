@@ -116,6 +116,7 @@ def _classify_featureset(args):  # noqa: C901
     grid_search_jobs = args.pop("grid_search_jobs")
     grid_search_folds = args.pop("grid_search_folds")
     cv_folds = args.pop("cv_folds")
+    cv_seed = args.pop("cv_seed")
     save_cv_folds = args.pop("save_cv_folds")
     save_cv_models = args.pop("save_cv_models")
     use_folds_file_for_grid_search = args.pop("use_folds_file_for_grid_search")
@@ -196,7 +197,7 @@ def _classify_featureset(args):  # noqa: C901
                 num_folds = cv_folds
             else:  # folds_file was used, so count the unique fold ids.
                 num_folds = len(set(cv_folds.values()))
-            logger.info(f"Cross-validating ({num_folds} folds) on "
+            logger.info(f"Cross-validating ({num_folds} folds, seed={cv_seed}) on "
                         f"{train_set_name}, feature set {featureset} ...")
         elif task == 'evaluate':
             logger.info(f"Training on {train_set_name}, Test on "
@@ -368,6 +369,7 @@ def _classify_featureset(args):  # noqa: C901
                            "grid_search": grid_search,
                            "grid_search_folds": grid_search_folds,
                            "cv_folds": cv_folds,
+                           "cv_seed": cv_seed,
                            "grid_objective": grid_objective,
                            "output_metrics": output_metrics,
                            "grid_jobs": grid_search_jobs,
@@ -632,7 +634,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',  
          featuresets, do_shuffle, model_path, do_grid_search, grid_objectives,
          probability, pipeline, results_path, pos_label, feature_scaling,
          min_feature_count, folds_file, grid_search_jobs, grid_search_folds, cv_folds,
-         save_cv_folds, save_cv_models, use_folds_file_for_grid_search,
+         cv_seed, save_cv_folds, save_cv_models, use_folds_file_for_grid_search,
          do_stratified_folds, fixed_parameter_list, param_grid_list, featureset_names,
          learners, prediction_dir, log_path, train_path, test_path, ids_to_floats,
          class_map, custom_learner_path, custom_metric_path,
@@ -819,6 +821,7 @@ def run_configuration(config_file, local=False, overwrite=True, queue='all.q',  
                     job_args["grid_search_folds"] = grid_search_folds
                     job_args["folds_file"] = folds_file
                     job_args["cv_folds"] = cv_folds
+                    job_args["cv_seed"] = cv_seed
                     job_args["save_cv_folds"] = save_cv_folds
                     job_args["save_cv_models"] = save_cv_models
                     job_args["use_folds_file_for_grid_search"] = use_folds_file_for_grid_search

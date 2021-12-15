@@ -55,6 +55,7 @@ class SKLLConfigParser(configparser.ConfigParser):
         defaults = {'class_map': '{}',
                     'custom_learner_path': '',
                     'custom_metric_path': '',
+                    'cv_seed': '123456789',
                     'folds_file': '',
                     'feature_hasher': 'False',
                     'feature_scaling': 'none',
@@ -99,6 +100,7 @@ class SKLLConfigParser(configparser.ConfigParser):
         correct_section_mapping = {'class_map': 'Input',
                                    'custom_learner_path': 'Input',
                                    'custom_metric_path': 'Input',
+                                   'cv_seed': 'Input',
                                    'folds_file': 'Input',
                                    'feature_hasher': 'Input',
                                    'feature_scaling': 'Input',
@@ -350,6 +352,10 @@ def parse_config_file(config_path, log_level=logging.INFO):  # noqa: C901
 
     cv_folds : dict or int
         The specified folds mapping, or the number of folds.
+
+    cv_seed : int
+        The seed value for the random number generator used
+        to create the cross-validation folds.
 
     save_cv_folds : bool
         Whether to save CV Folds to file.
@@ -608,6 +614,9 @@ def parse_config_file(config_path, log_level=logging.INFO):  # noqa: C901
     label_col = config.get("Input", "label_col")
     id_col = config.get("Input", "id_col")
     ids_to_floats = config.getboolean("Input", "ids_to_floats")
+
+    # read in the cross-validation seed
+    cv_seed = config.getint("Input", "cv_seed")
 
     # if an external folds file is specified, then read it into a dictionary
     folds_file = locate_file(config.get("Input", "folds_file"), config_dir)
@@ -885,7 +894,7 @@ def parse_config_file(config_path, log_level=logging.INFO):  # noqa: C901
             test_set_name, suffix, featuresets, do_shuffle, model_path,
             do_grid_search, grid_objectives, probability, pipeline, results_path,
             pos_label, feature_scaling, min_feature_count, folds_file,
-            grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
+            grid_search_jobs, grid_search_folds, cv_folds, cv_seed, save_cv_folds,
             save_cv_models, use_folds_file_for_grid_search, do_stratified_folds,
             fixed_parameter_list, param_grid_list, featureset_names, learners,
             prediction_dir, log_path, train_path, test_path, ids_to_floats,
