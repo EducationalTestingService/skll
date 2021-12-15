@@ -70,6 +70,7 @@ def check_evaluate_task(learner_type, options_dict):
      sampler_list,
      _,
      _,
+     _,
      _) = fill_in_config_options_for_voting_learners(learner_type,
                                                      "evaluate",
                                                      options_dict)
