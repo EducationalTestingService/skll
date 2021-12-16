@@ -480,10 +480,15 @@ cv_seed *(Optional)*
 """"""""""""""""""""
 
 The seed to use during the creation of the folds for the
-:ref:`cross_validate <cross_validate>` task. Note that this seed is only used
-for shuffling the data before splitting it into folds. The shuffling happens
-automatically when doing :ref:`grid search <grid_search>` or if
-:ref:`shuffle <shuffle>` is set to ``True``. Defaults to 123456789.
+:ref:`cross_validate <cross_validate>` task. This option may be useful for
+running the same cross validation experiment multiple times (with the same
+number of differently constituted folds) to get a sense of the variance
+across replicates.
+
+Note that this seed is only used for shuffling the data before splitting it
+into folds. The shuffling happens automatically when doing
+:ref:`grid search <grid_search>` or if :ref:`shuffle <shuffle>` is explicitly
+set to ``True``. Defaults to 123456789.
 
 .. _feature_hasher:
 
