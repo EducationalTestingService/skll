@@ -658,6 +658,7 @@ class VotingLearner(object):
             used to create the random folds. Note that this
             seed is *only* used if either ``grid_search`` or
             ``shuffle`` are set to ``True``.
+            Defaults to 123456789.
         grid_search : bool, optional
             Should we do grid search when training each fold?
             Note: This will make this take *much* longer.
