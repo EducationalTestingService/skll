@@ -329,7 +329,7 @@ def test_config_parsing_bad_sampler():
 
 def test_config_parsing_bad_hashing():
     """
-    Test that config parsing raises error with `feature_hasher` but no `hasher_features`
+    Test that config parsing raises error with `feature_hasher` but not `hasher_features`
     """
 
     # make a simple config file that has bad feature hashing information

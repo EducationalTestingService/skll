@@ -737,7 +737,7 @@ def make_regression_data(num_examples=100,
         Number of features in each generated example.
         Defaults to 2.
     sd_noise : float, optional
-        Amount of Gaussian noise added to the output
+        Amount of Gaussian noise added to the output.
         Defaults to 1.0.
     use_feature_hashing : bool, optional
         Whether to use feature hashing.
