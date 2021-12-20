@@ -26,14 +26,14 @@ variables:
 testset1:
   extends: ".runtests"
   variables:
-    TESTFILES: "tests/test_featureset.py tests/test_commandline_utils.py tests/test_custom_metrics.py"
+    TESTFILES: "tests/test_featureset.py tests/test_commandline_utils.py tests/test_custom_metrics.py tests/test_voting_learners_api_5.py"
   stage: "test"
 
 # second set of test files
 testset2:
   extends: ".runtests"
   variables:
-    TESTFILES: "tests/test_output.py tests/test_voting_learners_api_4.py tests/test_voting_learners_api_5.py"
+    TESTFILES: "tests/test_output.py tests/test_voting_learners_api_4.py"
   stage: "test"
 
 # third set of test files

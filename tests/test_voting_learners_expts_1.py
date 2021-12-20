@@ -68,6 +68,7 @@ def check_train_task(learner_type, options_dict):
      sampler_list,
      _,
      _,
+     _,
      _) = fill_in_config_options_for_voting_learners(learner_type,
                                                      "train",
                                                      options_dict)

@@ -22,7 +22,6 @@ from nose.tools import assert_greater, assert_less, eq_, raises
 from numpy.testing import assert_almost_equal
 from sklearn.datasets import make_classification
 from sklearn.feature_extraction import FeatureHasher
-from sklearn.model_selection import StratifiedKFold
 
 from skll.config import load_cv_folds
 from skll.data import FeatureSet
@@ -31,6 +30,7 @@ from skll.learner import Learner
 from skll.utils.constants import KNOWN_DEFAULT_PARAM_GRIDS
 from tests import config_dir, other_dir, output_dir, train_dir
 from tests.utils import (
+    compute_expected_folds_for_cv_testing,
     create_jsonlines_feature_files,
     fill_in_config_paths_for_single_file,
     remove_jsonlines_feature_files,
@@ -60,6 +60,8 @@ def tearDown():
 
     cfg_files = [join(config_dir, 'test_save_cv_folds.cfg'),
                  join(config_dir, 'test_save_cv_models.cfg'),
+                 join(config_dir, 'test_custom_cv_seed_classifier.cfg'),
+                 join(config_dir, 'test_custom_cv_seed_regressor.cfg'),
                  join(config_dir, 'test_folds_file.cfg'),
                  join(config_dir, 'test_folds_file_grid.cfg')]
     for cfg_file in cfg_files:
@@ -68,6 +70,7 @@ def tearDown():
     for output_file in (glob(join(output_dir, 'test_save_cv_folds*')) +
                         glob(join(output_dir, 'test_int_labels_cv_*')) +
                         glob(join(output_dir, 'test_save_cv_models*')) +
+                        glob(join(output_dir, 'test_custom_cv_seed*')) +
                         glob(join(output_dir, 'test_folds_file*'))):
         unlink(output_file)
 
@@ -300,7 +303,7 @@ def test_folds_file_logging_num_folds():
                    'test_folds_file_logging_train_f0.'
                    'jsonlines_LogisticRegression.log')) as f:
         cv_folds_pattern = re.compile(
-            r"(Task: cross_validate\n)(.+)(Cross-validating \([0-9]+ folds\))"
+            r"(Task: cross_validate\n)(.+)(Cross-validating \([0-9]+ folds, seed=[0-9]+\))"
         )
         matches = re.findall(cv_folds_pattern, f.read())
         eq_(len(matches), 1)
@@ -385,14 +388,11 @@ def test_cross_validate_task():
     assert_almost_equal(result_dict['accuracy'], 0.517)
 
     # Check that the fold ids were saved correctly
-    expected_skll_ids = {}
+    # First compute the expected fold IDs
     examples = load_featureset(train_path, '', suffix, quiet=True)
-    kfold = StratifiedKFold(n_splits=10)
-    for fold_num, (_, test_indices) in enumerate(kfold.split(examples.features,
-                                                             examples.labels)):
-        for index in test_indices:
-            expected_skll_ids[examples.ids[index]] = fold_num
-
+    expected_skll_ids = compute_expected_folds_for_cv_testing(examples,
+                                                              num_folds=10)
+    # read in the computed fold IDs
     skll_fold_ids = {}
     with open(join(output_dir, 'test_save_cv_folds_skll_fold_ids.csv')) as f:
         reader = csv.DictReader(f)
@@ -424,3 +424,72 @@ def test_cross_validate_task_save_cv_models():
         "test_save_cv_models_train_f0.jsonlines_LogisticRegression_fold"
     for i in range(1, 11):
         assert exists(join(output_dir, f"{cv_model_prefix}{i}.model")) is True
+
+
+def check_cross_validate_task_with_custom_seed(learner_type, use_config):
+    """
+    This tests cross-validation for either a classifier or a regressor
+    with an custom seed and with grid search enabled generates the
+    same folds as expected. We run the test using a configuration file
+    as well as the API.
+    """
+
+    # load in the featureset
+    suffix = '.jsonlines'
+    train_path = join(train_dir, f'f0{suffix}')
+    if learner_type == "classifier":
+        examples = load_featureset(train_path, '', suffix, quiet=True)
+    else:
+        examples = load_featureset(train_path, '', suffix, class_map={"dog": 0, "cat": 1}, quiet=True)
+
+    # use a configuration file or the API, as specified
+    template_name = ("test_custom_cv_seed_classifier.template.cfg"
+                     if learner_type == "classifier"
+                     else "test_custom_cv_seed_regressor.template.cfg")
+    if use_config:
+        config_path = fill_in_config_paths_for_single_file(
+            join(config_dir, template_name),
+            train_path,
+            None
+        )
+        run_configuration(config_path, quiet=True)
+
+        # read in the folds file produced by SKLL
+        computed_fold_ids = {}
+        cv_folds_file_name = ("test_custom_cv_seed_clf_skll_fold_ids.csv"
+                              if learner_type == "classifier"
+                              else "test_custom_cv_seed_reg_skll_fold_ids.csv")
+        with open(join(output_dir, cv_folds_file_name)) as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                computed_fold_ids[row['id']] = row['cv_test_fold']
+
+    else:
+        learner_name = "LogisticRegression" if learner_type == "classifier" else "Ridge"
+        learner = Learner(learner_name)
+        objective = "accuracy" if learner_type == "classifier" else "pearson"
+        (_, _, _, computed_fold_ids, _) = learner.cross_validate(examples,
+                                                                 cv_folds=10,
+                                                                 cv_seed=54321,
+                                                                 grid_search=True,
+                                                                 grid_objective=objective)
+
+    # compute the fold IDs we expect from SKLL using the custom seed directly;
+    # obviously, we only use stratified fold splitting with classifiers
+    expected_fold_ids = compute_expected_folds_for_cv_testing(examples,
+                                                              stratified=learner_type == "classifier",
+                                                              seed=54321)
+
+    # convert the dictionary to strings (sorted by key) for quick comparison
+    computed_fold_ids_str = ''.join(f'{key}{val}' for key, val in sorted(computed_fold_ids.items()))
+    expected_fold_ids_str = ''.join(f'{key}{val}' for key, val in sorted(expected_fold_ids.items()))
+
+    # the two sets of folds must be equal
+    eq_(computed_fold_ids_str, expected_fold_ids_str)
+
+
+def test_cross_validate_task_with_custom_seed():
+    yield check_cross_validate_task_with_custom_seed, "classifier", False
+    yield check_cross_validate_task_with_custom_seed, "classifier", True
+    yield check_cross_validate_task_with_custom_seed, "regressor", False
+    yield check_cross_validate_task_with_custom_seed, "regressor", True

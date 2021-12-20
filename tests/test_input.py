@@ -120,8 +120,7 @@ def test_locate_file_valid_paths3():
 @raises(IOError)
 def test_locate_file_invalid_path():
     """
-    Test that `config.locate_file` raises an error for paths that do not
-    exist.
+    Test that `config.locate_file` raises error for paths that do not exist
     """
 
     locate_file(join(test_dir, 'does_not_exist.cfg'), _my_dir)
@@ -215,7 +214,7 @@ def test_empty_config_name_raises_file_not_found_error():
 
 def test_config_parsing_no_name():
     """
-    Test to ensure config file parsing raises an error missing experiment name
+    Test that config parsing raises an error for missing experiment names
     """
 
     # make a simple config file that has no experiment name
@@ -239,8 +238,9 @@ def test_config_parsing_no_name():
 
 
 def test_config_parsing_bad_task():
-    # Test to ensure config file parsing raises an error with invalid or
-    # missing task
+    """
+    Test to ensure config parsing raises error with invalid/missing task
+    """
 
     # make a simple config file that has a bad task
     # but everything else is correct
@@ -268,8 +268,9 @@ def test_config_parsing_bad_task():
 
 
 def test_config_parsing_bad_learner():
-    # Test to ensure config file parsing raises an error with missing, bad and
-    # duplicate learners
+    """
+    Test that config parsing raises error with missing/bad/duplicate learners
+    """
 
     # make a simple config file that has bad learner specifications
     values_to_fill_dict = {
@@ -328,7 +329,7 @@ def test_config_parsing_bad_sampler():
 
 def test_config_parsing_bad_hashing():
     """
-    Test to ensure config file parsing raises an error when feature_hasher is specified but not hasher_features
+    Test that config parsing raises error with `feature_hasher` but not `hasher_features`
     """
 
     # make a simple config file that has bad feature hashing information
@@ -354,8 +355,9 @@ def test_config_parsing_bad_hashing():
 
 
 def test_config_parsing_bad_featuresets():
-    # Test to ensure config file parsing raises an error with badly specified
-    # featuresets
+    """
+    Test that config file parsing raises error with badly specified featuresets
+    """
 
     # make a simple config file that has bad feature sets
     values_to_fill_dict = {
@@ -384,8 +386,9 @@ def test_config_parsing_bad_featuresets():
 
 
 def test_config_parsing_bad_featurenames():
-    # Test to ensure config file parsing raises an error with badly specified
-    # featureset names
+    """
+    Test that config parsing raises error with badly specified featureset names
+    """
 
     # make a simple config file that has bad feature names
     values_to_fill_dict = {
@@ -416,8 +419,9 @@ def test_config_parsing_bad_featurenames():
 
 
 def test_config_parsing_bad_scaling():
-    # Test to ensure config file parsing raises an error with invalid scaling
-    # type
+    """
+    Test that config parsing raises error with invalid scaling type
+    """
 
     # make a simple config file that has bad scaling information
     values_to_fill_dict = {
@@ -447,8 +451,9 @@ def test_config_parsing_bad_scaling():
 
 
 def test_config_parsing_bad_train():
-    # Test to ensure config file parsing raises an error with invalid train
-    # path specifications
+    """
+    Test that config parsing raises error with invalid train path specifications
+    """
 
     # make a simple config file that has a bad train paths
     values_to_fill_dict = {
@@ -493,8 +498,9 @@ def test_config_parsing_bad_train():
 
 
 def test_config_parsing_bad_test():
-    # Test to ensure config file parsing raises an error with invalid test path
-    # specifications
+    """
+    Test that config parsing raises error with invalid test path specifications
+    """
 
     # make a simple config file that has bad test path
     values_to_fill_dict = {
@@ -539,7 +545,7 @@ def test_config_parsing_bad_test():
 
 def test_config_parsing_grid_search_but_no_objectives():
     """
-    Test to ensure config file parsing raises an error with grid search but no objectives.
+    Test that config parsing raises error with grid search but no objectives
     """
 
     # make a simple config file that has grid search turned on but no objectives
@@ -564,7 +570,7 @@ def test_config_parsing_grid_search_but_no_objectives():
 
 def test_config_parsing_bad_objectives():
     """
-    Test to ensure config file parsing raises an error with grid objectives given as a string
+    Test that config parsing raises error with grid objectives as strings
     """
 
     # make a simple config file that has a mistyped objective value
@@ -590,7 +596,7 @@ def test_config_parsing_bad_objectives():
 
 def test_config_parsing_bad_metric():
     """
-    Test to ensure config file parsing raises an error with metrics given as a string
+    Test that config parsing raises error with metrics as strings
     """
 
     # make a simple config file that has bad metrics
@@ -617,7 +623,7 @@ def test_config_parsing_bad_metric():
 
 def test_config_parsing_log_loss_no_probability():
     """
-    Test that config parsing raises an error if log loss is used without probability
+    Test that config parsing raises error for `log_loss` without probability
     """
 
     values_to_fill_dict = {
@@ -644,7 +650,7 @@ def test_config_parsing_log_loss_no_probability():
 
 def test_config_parsing_roc_auc_no_probability():
     """
-    Test that config parsing raises an error if roc_auc is used without probability
+    Test that config parsing raises error for `roc_auc` without probability
     """
 
     values_to_fill_dict = {
@@ -670,9 +676,9 @@ def test_config_parsing_roc_auc_no_probability():
 
 
 def test_config_parsing_bad_task_paths():
-
-    # Test to ensure config file parsing raises an error with various
-    # incorrectly set paths
+    """
+    Test that config parsing raises error with various incorrectly set paths
+    """
 
     # make a simple config file that has a bad task
     # but everything else is correct
@@ -768,7 +774,7 @@ def test_config_parsing_bad_task_paths():
 
 def test_config_parsing_bad_cv_folds():
     """
-    Test to ensure config file parsing raises an error with an invalid cv_folds
+    Test that config parsing raises error with invalid `cv_folds`
     """
 
     # make a simple config file that has a bad value for cv_folds
@@ -796,8 +802,7 @@ def test_config_parsing_bad_cv_folds():
 
 def test_config_parsing_save_cv_models_no_models_path():
     """
-    Test to ensure config file parsing raises an error when save_cv_folds
-    is set to true but no models output path is provided.
+    Test that config parsing raises error with `save_cv_folds` but no output path
     """
 
     # make a simple config file that has a bad value for cv_folds
@@ -824,6 +829,9 @@ def test_config_parsing_save_cv_models_no_models_path():
 
 
 def test_config_parsing_invalid_option():
+    """
+    Test that config parsing raises error with invalid config options
+    """
 
     # make a simple config file that has an invalid option
     values_to_fill_dict = {
@@ -849,6 +857,9 @@ def test_config_parsing_invalid_option():
 
 
 def test_config_parsing_duplicate_option():
+    """
+    Test that config parsing raises error with duplicate config options
+    """
 
     # make a simple config file that has a duplicate option
     values_to_fill_dict = {
@@ -874,6 +885,9 @@ def test_config_parsing_duplicate_option():
 
 
 def test_config_parsing_option_in_wrong_section():
+    """
+    Test that config parsing raises error with option in wrong section
+    """
 
     # make a simple config file that has an option in the wrong section
     values_to_fill_dict = {
@@ -899,6 +913,9 @@ def test_config_parsing_option_in_wrong_section():
 
 
 def test_config_parsing_mislocated_input_path():
+    """
+    Test that config parsing raises error with mislocated input path
+    """
 
     # make a simple config file that has a mislocated path
     values_to_fill_dict = {
@@ -925,7 +942,7 @@ def test_config_parsing_mislocated_input_path():
 @raises(ValueError)
 def test_config_parsing_mse_throws_exception():
     """
-    Check that `mean_squared_error` is not supported
+    Test that config parsing raises error with `mean_squared_error`
     """
 
     # make a simple config file that has an invalid option
@@ -953,7 +970,7 @@ def test_config_parsing_mse_throws_exception():
 
 def test_config_parsing_no_grid_objectives_needed_for_learning_curve():
     """
-    Check that tuning objectives are not needed for learning curve task
+    Test that config parsing works as expected for learning curves without tuning objectives
     """
 
     values_to_fill_dict = {
@@ -979,7 +996,7 @@ def test_config_parsing_no_grid_objectives_needed_for_learning_curve():
      test_set_name, suffix, featuresets, do_shuffle, model_path,
      do_grid_search, grid_objectives, probability, pipeline, results_path,
      pos_label, feature_scaling, min_feature_count, folds_file,
-     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
+     grid_search_jobs, grid_search_folds, cv_folds, cv_seed, save_cv_folds,
      save_cv_models, use_folds_file_for_grid_search, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
@@ -992,6 +1009,9 @@ def test_config_parsing_no_grid_objectives_needed_for_learning_curve():
 
 
 def test_config_parsing_relative_input_path():
+    """
+    Test that config parsing works as expected with relative input directories
+    """
 
     # make a simple config file that has relative paths
     values_to_fill_dict = {
@@ -1017,7 +1037,7 @@ def test_config_parsing_relative_input_path():
      test_set_name, suffix, featuresets, do_shuffle, model_path,
      do_grid_search, grid_objectives, probability, pipeline, results_path,
      pos_label, feature_scaling, min_feature_count, folds_file,
-     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
+     grid_search_jobs, grid_search_folds, cv_folds, cv_seed, save_cv_folds,
      save_cv_models, use_folds_file_for_grid_search, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
@@ -1029,6 +1049,9 @@ def test_config_parsing_relative_input_path():
 
 
 def test_config_parsing_relative_input_paths():
+    """
+    Test that config parsing works as expected with relative input file paths
+    """
 
     train_file = join(train_dir, 'f0.jsonlines')
     test_file = join(train_dir, 'f1.jsonlines')
@@ -1055,6 +1078,9 @@ def test_config_parsing_relative_input_paths():
 
 
 def test_config_parsing_automatic_output_directory_creation():
+    """
+    Test that output directories in config file are automatically created
+    """
 
     train_file = join(train_dir, 'f0.jsonlines')
     test_file = join(train_dir, 'f1.jsonlines')
@@ -1099,6 +1125,9 @@ def test_config_parsing_automatic_output_directory_creation():
 
 
 def test_cv_folds_and_grid_search_folds():
+    """
+    Test config parsing for various `cv_folds` and `grid_search_folds` combos
+    """
 
     # we want to test all possible combinations of the following variables:
     #  task = train, evaluate, predict, cross_validate
@@ -1291,7 +1320,7 @@ def check_cv_folds_and_grid_search_folds(task,
      test_set_name, suffix, featuresets, do_shuffle, model_path,
      do_grid_search, grid_objectives, probability, pipeline, results_path,
      pos_label, feature_scaling, min_feature_count, folds_file,
-     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
+     grid_search_jobs, grid_search_folds, cv_folds, cv_seed, save_cv_folds,
      save_cv_models, use_folds_file_for_grid_search, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
@@ -1303,8 +1332,11 @@ def check_cv_folds_and_grid_search_folds(task,
 
 
 def test_default_number_of_cv_folds():
+    """
+    Test that config parsing works as expected without `cv_folds` being set
+    """
 
-    # make a simple config file that does not set cv_folds
+    # make a simple config file that does not set `cv_folds`
 
     values_to_fill_dict = {
         'experiment_name': 'config_parsing',
@@ -1329,7 +1361,7 @@ def test_default_number_of_cv_folds():
      test_set_name, suffix, featuresets, do_shuffle, model_path,
      do_grid_search, grid_objectives, probability, pipeline, results_path,
      pos_label, feature_scaling, min_feature_count, folds_file,
-     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
+     grid_search_jobs, grid_search_folds, cv_folds, cv_seed, save_cv_folds,
      save_cv_models, use_folds_file_for_grid_search, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
@@ -1340,8 +1372,11 @@ def test_default_number_of_cv_folds():
 
 
 def test_setting_number_of_cv_folds():
+    """
+    Test that config parsing works as expected with `cv_folds` explicitly set
+    """
 
-    # make a simple config file that does not set cv_folds
+    # make a simple config file that explicitly sets `cv_folds`
     values_to_fill_dict = {
         'experiment_name': 'config_parsing',
         'task': 'cross_validate',
@@ -1366,7 +1401,7 @@ def test_setting_number_of_cv_folds():
      test_set_name, suffix, featuresets, do_shuffle, model_path,
      do_grid_search, grid_objectives, probability, pipeline, results_path,
      pos_label, feature_scaling, min_feature_count, folds_file,
-     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
+     grid_search_jobs, grid_search_folds, cv_folds, cv_seed, save_cv_folds,
      save_cv_models, use_folds_file_for_grid_search, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
@@ -1376,7 +1411,91 @@ def test_setting_number_of_cv_folds():
     eq_(cv_folds, 5)
 
 
+def test_default_cv_seed():
+    """
+    Test that config parsing works as expected with the default `cv_seed`
+    """
+
+    # make a simple config file that does not set `cv_seed`
+
+    values_to_fill_dict = {
+        'experiment_name': 'config_parsing',
+        'task': 'cross_validate',
+        'train_directory': train_dir,
+        'grid_search': 'true',
+        'featuresets': "[['f1', 'f2', 'f3']]",
+        'learners': "['LogisticRegression']",
+        'logs': output_dir,
+        'results': output_dir,
+        'objectives': "['f1_score_macro']"
+    }
+
+    config_template_path = join(config_dir,
+                                'test_config_parsing.template.cfg')
+    config_path = fill_in_config_options(config_template_path,
+                                         values_to_fill_dict,
+                                         'default_cv_folds')
+
+    (experiment_name, task, sampler, fixed_sampler_parameters,
+     feature_hasher, hasher_features, id_col, label_col, train_set_name,
+     test_set_name, suffix, featuresets, do_shuffle, model_path,
+     do_grid_search, grid_objectives, probability, pipeline, results_path,
+     pos_label, feature_scaling, min_feature_count, folds_file,
+     grid_search_jobs, grid_search_folds, cv_folds, cv_seed, save_cv_folds,
+     save_cv_models, use_folds_file_for_grid_search, do_stratified_folds,
+     fixed_parameter_list, param_grid_list, featureset_names, learners,
+     prediction_dir, log_path, train_path, test_path, ids_to_floats,
+     class_map, custom_learner_path, custom_metric_path, learning_curve_cv_folds_list,
+     learning_curve_train_sizes, output_metrics, save_votes) = parse_config_file(config_path)
+
+    eq_(cv_seed, 123456789)
+
+
+def test_setting_cv_seed():
+    """
+    Test that config parsing works as expected with `cv_seed` explicitly set
+    """
+
+    # make a simple config file that explicitly sets `cv_seed`
+    values_to_fill_dict = {
+        'experiment_name': 'config_parsing',
+        'task': 'cross_validate',
+        'cv_seed': "987",
+        'train_directory': train_dir,
+        'featuresets': "[['f1', 'f2', 'f3']]",
+        'learners': "['LogisticRegression']",
+        'logs': output_dir,
+        'results': output_dir,
+        'grid_search': 'true',
+        'num_cv_folds': "5",
+        'objectives': "['f1_score_macro']"
+    }
+
+    config_template_path = join(config_dir,
+                                'test_config_parsing.template.cfg')
+    config_path = fill_in_config_options(config_template_path,
+                                         values_to_fill_dict,
+                                         'default_cv_folds')
+
+    (experiment_name, task, sampler, fixed_sampler_parameters,
+     feature_hasher, hasher_features, id_col, label_col, train_set_name,
+     test_set_name, suffix, featuresets, do_shuffle, model_path,
+     do_grid_search, grid_objectives, probability, pipeline, results_path,
+     pos_label, feature_scaling, min_feature_count, folds_file,
+     grid_search_jobs, grid_search_folds, cv_folds, cv_seed, save_cv_folds,
+     save_cv_models, use_folds_file_for_grid_search, do_stratified_folds,
+     fixed_parameter_list, param_grid_list, featureset_names, learners,
+     prediction_dir, log_path, train_path, test_path, ids_to_floats,
+     class_map, custom_learner_path, custom_metric_path, learning_curve_cv_folds_list,
+     learning_curve_train_sizes, output_metrics, save_votes) = parse_config_file(config_path)
+
+    eq_(cv_seed, 987)
+
+
 def test_setting_param_grids():
+    """
+    Test that config parsing works as expected with specified param grids
+    """
 
     # make a simple config file that does not set cv_folds
 
@@ -1405,7 +1524,7 @@ def test_setting_param_grids():
      test_set_name, suffix, featuresets, do_shuffle, model_path,
      do_grid_search, grid_objectives, probability, pipeline, results_path,
      pos_label, feature_scaling, min_feature_count, folds_file,
-     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
+     grid_search_jobs, grid_search_folds, cv_folds, cv_seed, save_cv_folds,
      save_cv_models, use_folds_file_for_grid_search, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
@@ -1421,6 +1540,10 @@ def test_setting_param_grids():
 
 
 def test_setting_fixed_parameters():
+    """
+    Test that config parsing works as expected with specified fixed parameters
+    """
+
     # make a simple config file that does not set cv_folds
 
     values_to_fill_dict = {
@@ -1448,7 +1571,7 @@ def test_setting_fixed_parameters():
      test_set_name, suffix, featuresets, do_shuffle, model_path,
      do_grid_search, grid_objectives, probability, pipeline, results_path,
      pos_label, feature_scaling, min_feature_count, folds_file,
-     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
+     grid_search_jobs, grid_search_folds, cv_folds, cv_seed, save_cv_folds,
      save_cv_models, use_folds_file_for_grid_search, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
@@ -1466,8 +1589,7 @@ def test_setting_fixed_parameters():
 @raises(ValueError)
 def test_learning_curve_objectives_unsupported_error():
     """
-    testing that the SKLL learning_curve
-    does not support objectives option any more
+    Test that config parsing raises error for `objectives` with learning curves
     """
 
     values_to_fill_dict = {
@@ -1492,6 +1614,9 @@ def test_learning_curve_objectives_unsupported_error():
 
 
 def test_default_learning_curve_options():
+    """
+    Test that config parsing works as expected with default learning curve options
+    """
 
     values_to_fill_dict = {
         'experiment_name': 'config_parsing',
@@ -1516,7 +1641,7 @@ def test_default_learning_curve_options():
      test_set_name, suffix, featuresets, do_shuffle, model_path,
      do_grid_search, grid_objectives, probability, pipeline, results_path,
      pos_label, feature_scaling, min_feature_count, folds_file,
-     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
+     grid_search_jobs, grid_search_folds, cv_folds, cv_seed, save_cv_folds,
      save_cv_models, use_folds_file_for_grid_search, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
@@ -1528,6 +1653,9 @@ def test_default_learning_curve_options():
 
 
 def test_setting_learning_curve_options():
+    """
+    Test that config parsing works as expected with specified learning curve options
+    """
 
     values_to_fill_dict = {
         'experiment_name': 'config_parsing',
@@ -1553,7 +1681,7 @@ def test_setting_learning_curve_options():
      test_set_name, suffix, featuresets, do_shuffle, model_path,
      do_grid_search, grid_objectives, probability, pipeline, results_path,
      pos_label, feature_scaling, min_feature_count, folds_file,
-     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
+     grid_search_jobs, grid_search_folds, cv_folds, cv_seed, save_cv_folds,
      save_cv_models, use_folds_file_for_grid_search, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
@@ -1566,6 +1694,9 @@ def test_setting_learning_curve_options():
 
 @raises(ValueError)
 def test_learning_curve_metrics_and_objectives_throw_error():
+    """
+    Test that config parsing raises error for learning curve `metrics` and `objectives`
+    """
 
     values_to_fill_dict = {
         'experiment_name': 'config_parsing',
@@ -1592,7 +1723,7 @@ def test_learning_curve_metrics_and_objectives_throw_error():
      test_set_name, suffix, featuresets, do_shuffle, model_path,
      do_grid_search, grid_objectives, probability, pipeline, results_path,
      pos_label, feature_scaling, min_feature_count, folds_file,
-     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
+     grid_search_jobs, grid_search_folds, cv_folds, cv_seed, save_cv_folds,
      save_cv_models, use_folds_file_for_grid_search, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
@@ -1603,6 +1734,9 @@ def test_learning_curve_metrics_and_objectives_throw_error():
 
 
 def test_learning_curve_metrics_and_no_objectives():
+    """
+    Test that config parsing works for learning curves with `metrics` but no `objectives`
+    """
 
     values_to_fill_dict = {
         'experiment_name': 'config_parsing',
@@ -1628,7 +1762,7 @@ def test_learning_curve_metrics_and_no_objectives():
      test_set_name, suffix, featuresets, do_shuffle, model_path,
      do_grid_search, grid_objectives, probability, pipeline, results_path,
      pos_label, feature_scaling, min_feature_count, folds_file,
-     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
+     grid_search_jobs, grid_search_folds, cv_folds, cv_seed, save_cv_folds,
      save_cv_models, use_folds_file_for_grid_search, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
@@ -1639,6 +1773,9 @@ def test_learning_curve_metrics_and_no_objectives():
 
 
 def test_learning_curve_metrics():
+    """
+    Test that config parsing works for learning curves with `metrics` only
+    """
 
     values_to_fill_dict = {
         'experiment_name': 'config_parsing',
@@ -1664,7 +1801,7 @@ def test_learning_curve_metrics():
      test_set_name, suffix, featuresets, do_shuffle, model_path,
      do_grid_search, grid_objectives, probability, pipeline, results_path,
      pos_label, feature_scaling, min_feature_count, folds_file,
-     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
+     grid_search_jobs, grid_search_folds, cv_folds, cv_seed, save_cv_folds,
      save_cv_models, use_folds_file_for_grid_search, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
@@ -1676,6 +1813,9 @@ def test_learning_curve_metrics():
 
 
 def test_learning_curve_pipeline_option():
+    """
+    Test that config parsing works for learning curves with `pipeline` set
+    """
 
     values_to_fill_dict = {
         'experiment_name': 'config_parsing',
@@ -1702,7 +1842,7 @@ def test_learning_curve_pipeline_option():
      test_set_name, suffix, featuresets, do_shuffle, model_path,
      do_grid_search, grid_objectives, probability, pipeline, results_path,
      pos_label, feature_scaling, min_feature_count, folds_file,
-     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
+     grid_search_jobs, grid_search_folds, cv_folds, cv_seed, save_cv_folds,
      save_cv_models, use_folds_file_for_grid_search, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
@@ -1713,6 +1853,9 @@ def test_learning_curve_pipeline_option():
 
 
 def test_learning_curve_no_metrics():
+    """
+    Test that config parsing works for learning curves with no `metrics`
+    """
 
     values_to_fill_dict = {
         'experiment_name': 'config_parsing',
@@ -1736,7 +1879,9 @@ def test_learning_curve_no_metrics():
 
 
 def test_learning_curve_no_metrics_and_no_objectives():
-
+    """
+    Test that config parsing works for learning curves with no `metrics` or `objectives`
+    """
     values_to_fill_dict = {
         'experiment_name': 'config_parsing',
         'task': 'learning_curve',
@@ -1760,6 +1905,9 @@ def test_learning_curve_no_metrics_and_no_objectives():
 
 
 def test_learning_curve_bad_folds_specifications():
+    """
+    Test that config parsing raises error for bad learning curve folds
+    """
 
     values_to_fill_dict = {
         'experiment_name': 'config_parsing',
@@ -1785,7 +1933,7 @@ def test_learning_curve_bad_folds_specifications():
 
 def test_config_parsing_param_grids_no_grid_search():
     """
-    Test for warning if grid search is off but with param grids.
+    Test that config parsing raises warning for no grid search with param grids
     """
 
     # make a simple config file that turns off grid search but specifies param grids
@@ -1821,7 +1969,7 @@ def test_config_parsing_param_grids_no_grid_search():
 
 def test_config_parsing_no_grid_search_but_objectives_specified():
     """
-    Test for warning if grid search is off but with objectives.
+    Test that config parsing raises warning if no grid search with `objectives`
     """
 
     # make a simple config file that has grid search off but still specifies objectives
@@ -1848,7 +1996,7 @@ def test_config_parsing_no_grid_search_but_objectives_specified():
      test_set_name, suffix, featuresets, do_shuffle, model_path,
      do_grid_search, grid_objectives, probability, pipeline, results_path,
      pos_label, feature_scaling, min_feature_count, folds_file,
-     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
+     grid_search_jobs, grid_search_folds, cv_folds, cv_seed, save_cv_folds,
      save_cv_models, use_folds_file_for_grid_search, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
@@ -1870,7 +2018,7 @@ def test_config_parsing_no_grid_search_but_objectives_specified():
 
 def test_config_parsing_param_grids_fixed_parameters_conflict():
     """
-    Test for warning if param grids are provided in addition to fixed params.
+    Test that config parsing raises warning for both param grids and fixed params
     """
 
     # make a simple config file that has a bad task
@@ -1912,7 +2060,7 @@ def test_config_parsing_param_grids_fixed_parameters_conflict():
 
 def test_config_parsing_default_pos_label_value():
     """
-    Check that the default value of `pos_label` gets set to `None`
+    Test that config parsing works with default `pos_label` value
     """
 
     values_to_fill_dict = {
@@ -1939,7 +2087,7 @@ def test_config_parsing_default_pos_label_value():
      test_set_name, suffix, featuresets, do_shuffle, model_path,
      do_grid_search, grid_objectives, probability, pipeline, results_path,
      pos_label, feature_scaling, min_feature_count, folds_file,
-     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
+     grid_search_jobs, grid_search_folds, cv_folds, cv_seed, save_cv_folds,
      save_cv_models, use_folds_file_for_grid_search, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
@@ -1951,7 +2099,7 @@ def test_config_parsing_default_pos_label_value():
 
 def test_config_parsing_default_save_votes_value():
     """
-    Check that the default value of `save_value` gets set to `False`
+    Test that config parsing works as expected for default `save_votes` value
     """
 
     values_to_fill_dict = {
@@ -1979,7 +2127,7 @@ def test_config_parsing_default_save_votes_value():
      test_set_name, suffix, featuresets, do_shuffle, model_path,
      do_grid_search, grid_objectives, probability, pipeline, results_path,
      pos_label, feature_scaling, min_feature_count, folds_file,
-     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
+     grid_search_jobs, grid_search_folds, cv_folds, cv_seed, save_cv_folds,
      save_cv_models, use_folds_file_for_grid_search, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
@@ -1991,7 +2139,7 @@ def test_config_parsing_default_save_votes_value():
 
 def test_config_parsing_set_save_votes_value():
     """
-    Check that the value of `save_value` gets correctly set
+    Test that config parsing works as expected for specified `save_votes` value
     """
 
     values_to_fill_dict = {
@@ -2020,7 +2168,7 @@ def test_config_parsing_set_save_votes_value():
      test_set_name, suffix, featuresets, do_shuffle, model_path,
      do_grid_search, grid_objectives, probability, pipeline, results_path,
      pos_label, feature_scaling, min_feature_count, folds_file,
-     grid_search_jobs, grid_search_folds, cv_folds, save_cv_folds,
+     grid_search_jobs, grid_search_folds, cv_folds, cv_seed, save_cv_folds,
      save_cv_models, use_folds_file_for_grid_search, do_stratified_folds,
      fixed_parameter_list, param_grid_list, featureset_names, learners,
      prediction_dir, log_path, train_path, test_path, ids_to_floats,
@@ -2033,7 +2181,7 @@ def test_config_parsing_set_save_votes_value():
 @raises(KeyError)
 def test_config_parsing_use_log_instead_of_logs():
     """
-    Check that using 'log' instead of 'logs' raises an error
+    Test that config parsing raises error for `log` option instead of `logs`
     """
 
     values_to_fill_dict = {

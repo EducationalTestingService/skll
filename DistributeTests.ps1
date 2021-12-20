@@ -32,11 +32,11 @@ if ($agentNumber -eq 1) {
     $testsToRun = $testsToRun + "tests/test_featureset.py"
     $testsToRun = $testsToRun + "tests/test_commandline_utils.py"
     $testsToRun = $testsToRun + "tests/test_custom_metrics.py"
+    $testsToRun = $testsToRun + "tests/test_voting_learners_api_5.py"
 }
 elseif ($agentNumber -eq 2) {
     $testsToRun = $testsToRun + "tests/test_output.py"
     $testsToRun = $testsToRun + "tests/test_voting_learners_api_4.py"
-    $testsToRun = $testsToRun + "tests/test_voting_learners_api_5.py"
 }
 elseif ($agentNumber -eq 3) {
     $testsToRun = $testsToRun + "tests/test_regression.py"

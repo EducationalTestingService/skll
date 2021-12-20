@@ -474,6 +474,21 @@ Path to a ``.py`` file that defines a
 :ref:`tuning objective  <objectives>`, an :ref:`output metric <metrics>`,
 or both.
 
+.. _cv_seed:
+
+cv_seed *(Optional)*
+""""""""""""""""""""
+
+The seed to use during the creation of the folds for the
+:ref:`cross_validate <cross_validate>` task. This option may be useful for
+running the same cross validation experiment multiple times (with the same
+number of differently constituted folds) to get a sense of the variance
+across replicates.
+
+Note that this seed is only used for shuffling the data before splitting it
+into folds. The shuffling happens automatically when doing
+:ref:`grid search <grid_search>` or if :ref:`shuffle <shuffle>` is explicitly
+set to ``True``. Defaults to 123456789.
 
 .. _feature_hasher:
 
@@ -771,8 +786,6 @@ num_cv_folds *(Optional)*
 
 The number of folds to use for cross validation. Defaults to 10.
 
-.. _shuffle:
-
 .. _random_folds:
 
 random_folds *(Optional)*
@@ -822,6 +835,8 @@ SkewedChi2Sampler
     .. code-block:: python
 
        {'random_state': 123456789}
+
+.. _shuffle:
 
 shuffle *(Optional)*
 """"""""""""""""""""

@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Union
 
 import numpy as np
+from nose.tools import nottest
 from numpy.random import RandomState
 from sklearn.datasets import (
     fetch_california_housing,
@@ -18,7 +19,8 @@ from sklearn.datasets import (
     make_regression,
 )
 from sklearn.feature_extraction import FeatureHasher
-from sklearn.model_selection import ShuffleSplit
+from sklearn.model_selection import KFold, ShuffleSplit, StratifiedKFold
+from sklearn.utils import shuffle as sk_shuffle
 
 from skll.config import _setup_config_parser, fix_json
 from skll.data import FeatureSet, NDJWriter
@@ -47,8 +49,19 @@ def unlink(file_path: Union[str, Path]):
 
 def fill_in_config_paths(config_template_path):
     """
-    Add paths to train, test, and output directories to a given config template
-    file.
+    Fill paths in given configuration file template.
+
+    Add various paths in the given configuration template file.
+
+    Parameters
+    ----------
+    config_template_path : str
+        The path to the template configuration file.
+
+    Returns
+    -------
+    str
+        The path to the filled configuration file.
     """
 
     config = _setup_config_parser(config_template_path, validate=False)
@@ -100,8 +113,30 @@ def fill_in_config_paths_for_single_file(config_template_path,
                                          train_directory='',
                                          test_directory=''):
     """
-    Add paths to train and test files, and output directories to a given config
-    template file.
+    Fill in input file and directory paths in given configuration template.
+
+    Add paths to train files, test files, and output directories in the
+    given config template file.
+
+    Parameters
+    ----------
+    config_template_path : str
+        Path to the template configuration file.
+    train_file : str
+        Name of the training data file.
+    test_file : str
+        Name of the test data file.
+    train_directory : str, optional
+        Path to the directory containing the training data.
+        Defaults to ''
+    test_directory : str, optional
+        Path to the directory containing the test data.
+        Defaults to ''
+
+    Returns
+    -------
+    str
+        The path to the filled configuration file.
     """
 
     config = _setup_config_parser(config_template_path, validate=False)
@@ -154,7 +189,29 @@ def fill_in_config_options(config_template_path,
                            values_to_fill_dict,
                            sub_prefix,
                            good_probability_option=False):
-    """Fill in values in the given config template"""
+    """
+    Fill in configuration options in the given template file.
+
+    Parameters
+    ----------
+    config_template_path : str
+        Path to the template configuration file.
+    values_to_fill_dict : Dict[str, Any]
+        Dictionary containing the options to fille the keys and the
+        corresponding values.
+    sub_prefix : str
+        The sub-prefix to add to the name when creating
+        the filled configuration file on disk.
+    good_probability_option : bool, optional
+        Whether to add the "probability" option in the correct
+        section or an incorrect section.
+        Defaults to ``False``.
+
+    Returns
+    -------
+    str
+        The path to the filled configuration file.
+    """
 
     config = _setup_config_parser(config_template_path, validate=False)
 
@@ -172,8 +229,8 @@ def fill_in_config_options(config_template_path,
                             'sampler', 'shuffle', 'feature_scaling',
                             'learning_curve_cv_folds_list', 'folds_file',
                             'learning_curve_train_sizes', 'fixed_parameters',
-                            'num_cv_folds', 'bad_option', 'duplicate_option',
-                            'suffix'],
+                            'num_cv_folds', 'cv_seed', 'bad_option',
+                            'duplicate_option', 'suffix'],
                   'Tuning': ['grid_search', 'objective', 'min_feature_count',
                              'use_folds_file_for_grid_search', 'grid_search_folds',
                              'pos_label', 'param_grids', 'objectives',
@@ -205,8 +262,20 @@ def fill_in_config_options(config_template_path,
 
 def fill_in_config_paths_for_fancy_output(config_template_path):
     """
-    Add paths to train, test, and output directories to a given config template
-    file.
+    Fill in the template for more comprehensive ("fancier") output.
+
+    Add paths to train, test, and output directories in the given
+    config template file.
+
+    Parameters
+    ----------
+    config_template_path : str
+        Path to the template configuration file.
+
+    Returns
+    -------
+    str
+        The path to the filled configuration file.
     """
 
     config = _setup_config_parser(config_template_path, validate=False)
@@ -246,7 +315,7 @@ def fill_in_config_options_for_voting_learners(learner_type,  # noqa: C901
 
     Returns
     -------
-    res : a 12-tuple
+    res : a 13-tuple
         A tuple containing the following items as determined by the options
         specified in ``options_dict``:
         - the path to the filled-in configuration file
@@ -260,6 +329,7 @@ def fill_in_config_options_for_voting_learners(learner_type,  # noqa: C901
         - the list of parameter grids used for the underlying estimators, if any
         - the list of samplers used for the underlying estimators, if any
         - the number of cross-validation folds used (6 or 10)
+        - the custom seed value used for cross-validation, if any
         - the number of learning curve cross-validation folds (10 or 20)
         - the list of learning curve training sizes
     """
@@ -272,6 +342,7 @@ def fill_in_config_options_for_voting_learners(learner_type,  # noqa: C901
     param_grid_list = None
     sampler_list = None
     num_cv_folds = learning_curve_cv_folds = 10
+    cv_seed = 123456789
     learning_curve_train_sizes = [0.1, 0.325, 0.55, 0.775, 1.0]
     if learner_type == "classifier":
         learner_name = "VotingClassifier"
@@ -378,6 +449,10 @@ def fill_in_config_options_for_voting_learners(learner_type,  # noqa: C901
         num_cv_folds = 6
         values_to_fill_dict["num_cv_folds"] = str(num_cv_folds)
 
+    if options_dict["with_custom_cv_seed"]:
+        cv_seed = 987
+        values_to_fill_dict["cv_seed"] = str(cv_seed)
+
     if options_dict["without_save_cv_folds"]:
         values_to_fill_dict["save_cv_folds"] = "false"
 
@@ -412,11 +487,20 @@ def fill_in_config_options_for_voting_learners(learner_type,  # noqa: C901
             param_grid_list,
             sampler_list,
             num_cv_folds,
+            cv_seed,
             learning_curve_cv_folds,
             learning_curve_train_sizes)
 
 
 def create_jsonlines_feature_files(path):
+    """
+    Create dummy jsonlines feature files and save them under ``path``.
+
+    Parameters
+    ----------
+    path : str
+        Full path under which to save the created feature files.
+    """
 
     # we only need to create the feature files if they
     # don't already exist under the given path
@@ -469,8 +553,7 @@ def create_jsonlines_feature_files(path):
 
 def remove_jsonlines_feature_files(path: Union[str, Path]):
     """
-    Companion method for ``create_jsonlines_feature_files``. Removes
-    all created files.
+    Remove all files created by ``create_jsonlines_feature_files()``.
 
     Parameters
     ----------
@@ -490,6 +573,68 @@ def make_classification_data(num_examples=100, train_test_ratio=0.5,
                              class_weights=None, non_negative=False,
                              one_string_feature=False, num_string_values=4,
                              random_state=1234567890):
+    """
+    Create dummy classification data for use in various tests.
+
+    Parameters
+    ----------
+    num_examples : int, optional
+        Number of examples in the generated data.
+        Defaults to 100.
+    train_test_ratio : float, optional
+        Ratio of train to test data in the generated data.
+        Defaults to 0.5.
+    num_features : int, optional
+        Number of features in each generated example.
+        Defaults to 10.
+    use_feature_hashing : bool, optional
+        Whether to use feature hashing.
+        Defaults to ``False``.
+    feature_bins : int, optional
+        How many hashed feature bins to use, if ``use_feature_hashing``
+        is ``True``.
+        Defaults to 4.
+    num_labels : int, optional
+        Number of classes to use.
+    empty_labels : bool, optional
+        Whether to set the training and test labels to ``None``
+        for certain tests.
+        Defaults to ``False``.
+    string_label_list : List[str], optional
+        List of pre-specified string labels.
+    feature_prefix : str, optional
+        The prefix to use for all the feature names, if any.
+        Defaults to "f" (i.e., "f01" et cetera).
+    id_type : str, optional
+        The data types to use for the generated example IDs.
+        One of ["float", "integer", "integer_string", "string"].
+        Defaults to "string".
+    class_weights : List[float], optional
+        The proportion of generated samples for each of the classes.
+        If ``None``, use the same number of samples for each class.
+        Defaults to ``None``.
+    non_negative : bool, optional
+        Whether to generate only non-negative features.
+        Defaults to ``False``.
+    one_string_feature : bool, optional
+        Whether to generate one feature with string values in
+        the generated data.
+        Defaults to ``False``.
+    num_string_values : int, optional
+        If ``one_string_feature`` is set to ``True``, how many
+        possible values to use for that feature.
+        Defaults to 4.
+    random_state : int, optional
+        Random state to use for generating the data.
+        Defaults to 123456789.
+
+    Returns
+    -------
+    Tuple
+        Tuple containing the generated training featureset and
+        the generated test featureset.
+
+    """
 
     # use sklearn's make_classification to generate the data for us
     num_numeric_features = (num_features - 1 if one_string_feature else
@@ -497,7 +642,8 @@ def make_classification_data(num_examples=100, train_test_ratio=0.5,
     X, y = make_classification(n_samples=num_examples,
                                n_features=num_numeric_features,
                                n_informative=num_numeric_features,
-                               n_redundant=0, n_classes=num_labels,
+                               n_redundant=0,
+                               n_classes=num_labels,
                                weights=class_weights,
                                random_state=random_state)
 
@@ -576,6 +722,44 @@ def make_regression_data(num_examples=100,
                          feature_bins=4,
                          start_feature_num=1,
                          random_state=1234567890):
+    """
+    Create dummy regression data for use with tests
+
+    Parameters
+    ----------
+    num_examples : int, optional
+        Number of examples in the generated data.
+        Defaults to 100.
+    train_test_ratio : float, optional
+        Ratio of train to test data in the generated data.
+        Defaults to 0.5.
+    num_features : int, optional
+        Number of features in each generated example.
+        Defaults to 2.
+    sd_noise : float, optional
+        Amount of Gaussian noise added to the output.
+        Defaults to 1.0.
+    use_feature_hashing : bool, optional
+        Whether to use feature hashing.
+        Defaults to ``False``.
+    feature_bins : int, optional
+        How many hashed feature bins to use, if ``use_feature_hashing``
+        is ``True``.
+        Defaults to 4.
+    start_feature_num : int, optional
+        The integer suffix for the first feature name (i.e., "f01").
+        Defaults to 1.
+    random_state : int, optional
+        Random state to use for generating the data.
+        Defaults to 123456789.
+
+    Returns
+    -------
+    Tuple
+        3-tuple containing the generated training featureset, the generated
+        test featureset, and a dictionary containing the oracle feature
+        weights
+    """
 
     # if we are doing feature hashing and we have asked for more
     # feature bins than number of total features, we need to
@@ -657,10 +841,25 @@ def make_regression_data(num_examples=100,
 
 def make_sparse_data(use_feature_hashing=False):
     """
+    Create sparse data for use in various tests.
+
     Function to create sparse data with two features always zero
     in the training set and a different one always zero in the
-    test set
+    test set.
+
+    Parameters
+    ----------
+    use_feature_hashing : bool, optional
+        Whether to use feature hashing.
+        Defaults to ``False``.
+
+    Returns
+    -------
+    Tuple
+        Tuple containing the generated training featureset and
+        the generated test featureset.
     """
+
     # Create training data
     X, y = make_classification(n_samples=500, n_features=3,
                                n_informative=3, n_redundant=0,
@@ -912,3 +1111,67 @@ def make_california_housing_data(num_examples=None, test_size=0.2):
         test_fs = None
 
     return train_fs, test_fs
+
+
+@nottest
+def compute_expected_folds_for_cv_testing(featureset,
+                                          num_folds=10,
+                                          stratified=True,
+                                          seed=None):
+    """
+    Compute the fold IDs expected from SKLL's ``cross_validate()`` methods.
+
+    This function is useful for cross-validation tests where
+    we are trying to confirm that that SKLL is correctly computing
+    the k-fold cross-validation folds for the given data for cases
+    where k is a number. If ``seed`` is specified, the function first
+    shuffles the data using that seed and then uses a
+    ``StratifiedKFold()`` splitter to split the data into
+    ``num_folds``.
+
+    Parameters
+    ----------
+    featureset : skll.data.FeatureSet
+        The given featureset for which to compute the folds.
+    num_folds : int, optional
+        The number of folds into which to split the given featureset.
+        Defaults to 10.
+    stratified : bool, optional
+        Whether to use stratified k-fold splitting or regular splitting.
+        Defaults to ``True`` (stratified).
+    seed : int, optional
+        The seed to use for the random number generator to
+        shuffle the data before splitting. If ``None``, no
+        shuffling takes place.
+
+    Returns
+    -------
+    expected_fold_ids : dict
+        A dictionary mapping each ID in the featureset to a fold ID.
+        Fold IDs range from 0 to ``num_folds``-1.
+    """
+    # initialize the return dictionary
+    expected_fold_ids = {}
+
+    # initialize an RNG with the given seed, if available
+    if seed:
+        random_state = np.random.RandomState(seed)
+
+        # shuffle and split the featureset ids, labels and features
+        ids, labels, features = sk_shuffle(featureset.ids, featureset.labels,
+                                           featureset.features,
+                                           random_state=random_state)
+
+        featureset = FeatureSet(featureset.name, ids, labels=labels,
+                                features=features,
+                                vectorizer=featureset.vectorizer)
+
+    # split the featureset IDs into the given number of folds
+    # and save the fold ID for each featureset ID
+    kfold = StratifiedKFold(n_splits=num_folds) if stratified else KFold(n_splits=num_folds)
+    for fold_num, (_, test_indices) in enumerate(kfold.split(featureset.features,
+                                                             featureset.labels)):
+        for index in test_indices:
+            expected_fold_ids[featureset.ids[index]] = str(fold_num)
+
+    return expected_fold_ids
