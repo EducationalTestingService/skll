@@ -287,7 +287,7 @@ def test_folds_file_logging_num_folds():
         train_path,
         None
     )
-    run_configuration(config_path, quiet=True)
+    run_configuration(config_path, quiet=True, local=True)
 
     # Check experiment log output
     with open(join(output_dir, 'test_folds_file_logging.log')) as f:
@@ -322,7 +322,7 @@ def test_folds_file_with_fewer_ids_than_featureset():
         train_path,
         None
     )
-    run_configuration(config_path, quiet=True)
+    run_configuration(config_path, quiet=True, local=True)
 
     # Check job log output
     with open(join(output_dir,
@@ -350,7 +350,7 @@ def test_folds_file_logging_grid_search():
         train_path,
         None
     )
-    run_configuration(config_path, quiet=True)
+    run_configuration(config_path, quiet=True, local=True)
 
     # Check experiment log output
     with open(join(output_dir, 'test_folds_file_logging.log')) as f:
@@ -377,7 +377,7 @@ def test_cross_validate_task():
         train_path,
         None
     )
-    run_configuration(config_path, quiet=True)
+    run_configuration(config_path, quiet=True, local=True)
 
     # Check final average results
     with open(join(output_dir,
@@ -419,7 +419,7 @@ def test_cross_validate_task_save_cv_models():
         train_path,
         None
     )
-    run_configuration(config_path, quiet=True)
+    run_configuration(config_path, quiet=True, local=True)
     cv_model_prefix = \
         "test_save_cv_models_train_f0.jsonlines_LogisticRegression_fold"
     for i in range(1, 11):
@@ -452,7 +452,7 @@ def check_cross_validate_task_with_custom_seed(learner_type, use_config):
             train_path,
             None
         )
-        run_configuration(config_path, quiet=True)
+        run_configuration(config_path, quiet=True, local=True)
 
         # read in the folds file produced by SKLL
         computed_fold_ids = {}

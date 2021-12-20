@@ -203,7 +203,7 @@ def check_summary_score(use_feature_hashing,  # noqa: C901
     config_template_path = join(config_dir, cfgfile)
     config_path = fill_in_config_paths(config_template_path)
 
-    run_configuration(config_path, quiet=True)
+    run_configuration(config_path, quiet=True, local=True)
 
     with open(join(output_dir,
                    f'{outprefix}_LogisticRegression.results.json')) as f:
@@ -369,7 +369,7 @@ def check_xval_fancy_results_file(do_grid_search,
                                          'xval')
 
     # run the experiment
-    run_configuration(config_path, quiet=True)
+    run_configuration(config_path, quiet=True, local=True)
 
     # now make sure that the results file was produced
     results_file_path = join(output_dir,
@@ -487,14 +487,14 @@ def check_grid_search_cv_results(task, do_grid_search):  # noqa: C901
     # run the experiment
     if task in ['train', 'predict']:
         if do_grid_search:
-            run_configuration(config_path, quiet=True)
+            run_configuration(config_path, quiet=True, local=True)
         else:
             assert_raises(ValueError, run_configuration, config_path, quiet=True)
             # Short-circuit the test since a ValueError is
             # expected and is fatal
             return
     else:
-        run_configuration(config_path, quiet=True)
+        run_configuration(config_path, quiet=True, local=True)
 
     # now make sure that the results json file was produced
     for learner in learners:
@@ -628,7 +628,7 @@ def test_multiple_featuresets_and_featurehasher_throws_warning():
 
     # run the experiment
     print(config_path)
-    run_configuration(config_path, quiet=True)
+    run_configuration(config_path, quiet=True, local=True)
 
     # test if it throws any warning
     logfile_path = join(
@@ -732,7 +732,7 @@ def test_learning_curve_output():
     config_path = fill_in_config_paths(config_template_path)
 
     # run the learning curve experiment
-    run_configuration(config_path, quiet=True)
+    run_configuration(config_path, quiet=True, local=True)
     outprefix = 'test_learning_curve'
 
     # make sure that the TSV file is created with the right columns
@@ -765,7 +765,7 @@ def test_learning_curve_output_with_objectives():
     config_path = fill_in_config_paths(config_template_path)
 
     # run the learning curve experiment
-    run_configuration(config_path, quiet=True)
+    run_configuration(config_path, quiet=True, local=True)
     outprefix = 'test_learning_curve'
 
     # make sure that the TSV file is created with the right columns
@@ -798,7 +798,7 @@ def test_learning_curve_plots():
     config_path = fill_in_config_paths(config_template_path)
 
     # run the learning curve experiment
-    run_configuration(config_path, quiet=True)
+    run_configuration(config_path, quiet=True, local=True)
     outprefix = 'test_learning_curve'
 
     # make sure that the two PNG files (one per featureset) are created
@@ -818,7 +818,7 @@ def test_learning_curve_plots_with_objectives():
     config_path = fill_in_config_paths(config_template_path)
 
     # run the learning curve experiment
-    run_configuration(config_path, quiet=True)
+    run_configuration(config_path, quiet=True, local=True)
     outprefix = 'test_learning_curve'
 
     # make sure that the two PNG files (one per featureset) are created

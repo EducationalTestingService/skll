@@ -454,7 +454,7 @@ def test_int_labels():
     with open(config_path, 'w') as new_config_file:
         config.write(new_config_file)
 
-    run_configuration(config_path, quiet=True)
+    run_configuration(config_path, quiet=True, local=True)
 
 
 def test_additional_metrics():
@@ -507,7 +507,7 @@ def test_fancy_output():
                                 'test_regression_fancy_output.template.cfg')
     config_path = fill_in_config_paths_for_fancy_output(config_template_path)
 
-    run_configuration(config_path, quiet=True)
+    run_configuration(config_path, quiet=True, local=True)
 
     # read in the results file and get the descriptive statistics
     actual_stats_from_file = {}
