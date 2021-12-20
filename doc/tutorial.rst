@@ -40,7 +40,7 @@ This will create a new virtual environment named ``skllenv`` with the
 latest release of SKLL which you can then activate by running
 ``conda activate skllenv``. Make sure to create and activate this environment
 before proceeding further.  Once you are done with the tutorial, you may
-deactivate the virtual environment by running ``conda deactivate skllenv``.
+deactivate the virtual environment by running ``conda deactivate``.
 
 Get your data into the correct format
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
