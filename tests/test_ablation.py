@@ -94,7 +94,7 @@ def test_ablation_cv():
     config_template_path = join(config_dir, 'test_ablation.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
-    run_configuration(config_path, quiet=True, ablation=1)
+    run_configuration(config_path, quiet=True, ablation=1, local=True)
 
     # read in the summary file and make sure it has
     # 7 ablated featuresets * (10 folds + 1 average line) * 2 learners = 154
@@ -119,7 +119,7 @@ def test_ablation_cv_all_combos():
                                 'test_ablation_all_combos.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
-    run_configuration(config_path, quiet=True, ablation=None)
+    run_configuration(config_path, quiet=True, ablation=None, local=True)
 
     # read in the summary file and make sure it has
     # 10 ablated featuresets * (10 folds + 1 average line) * 2 learners = 220
@@ -145,7 +145,7 @@ def test_ablation_cv_feature_hasher():
                                 'test_ablation_feature_hasher.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
-    run_configuration(config_path, quiet=True, ablation=1)
+    run_configuration(config_path, quiet=True, ablation=1, local=True)
 
     # read in the summary file and make sure it has
     # 7 ablated featuresets * (10 folds + 1 average line) * 2 learners = 154
@@ -171,7 +171,7 @@ def test_ablation_cv_feature_hasher_all_combos():
                                 'test_ablation_feature_hasher_all_combos.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
-    run_configuration(config_path, quiet=True, ablation=None)
+    run_configuration(config_path, quiet=True, ablation=None, local=True)
 
     # read in the summary file and make sure it has
     #    10 ablated featuresets
@@ -200,7 +200,7 @@ def test_ablation_cv_sampler():
                                 'test_ablation_sampler.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
-    run_configuration(config_path, quiet=True, ablation=1)
+    run_configuration(config_path, quiet=True, ablation=1, local=True)
 
     # read in the summary file and make sure it has
     # 7 ablated featuresets * (10 folds + 1 average line) * 2 learners = 154
@@ -225,7 +225,7 @@ def test_ablation_cv_all_combos_sampler():
                                 'test_ablation_sampler_all_combos.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
-    run_configuration(config_path, quiet=True, ablation=None)
+    run_configuration(config_path, quiet=True, ablation=None, local=True)
 
     # read in the summary file and make sure it has
     # 10 ablated featuresets * (10 folds + 1 average line) * 2 learners = 220
@@ -251,7 +251,7 @@ def test_ablation_cv_feature_hasher_sampler():
                                 'test_ablation_feature_hasher_sampler.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
-    run_configuration(config_path, quiet=True, ablation=1)
+    run_configuration(config_path, quiet=True, ablation=1, local=True)
 
     # read in the summary file and make sure it has
     # 7 ablated featuresets * (10 folds + 1 average line) * 2 learners = 154
@@ -277,7 +277,7 @@ def test_ablation_cv_feature_hasher_all_combos_sampler():
                                 'test_ablation_feature_hasher_sampler_all_combos.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
-    run_configuration(config_path, quiet=True, ablation=None)
+    run_configuration(config_path, quiet=True, ablation=None, local=True)
 
     # read in the summary file and make sure it has
     # 10 ablated featuresets * (10 folds + 1 average line) * 2 learners = 220

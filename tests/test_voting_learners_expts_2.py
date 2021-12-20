@@ -117,7 +117,8 @@ def check_evaluate_task(learner_type, options_dict):
 
         run_configuration(config_path,
                           overwrite=not options_dict["with_existing_model"],
-                          quiet=True)
+                          quiet=True,
+                          local=True)
 
         # check that init was called the expected number of times;
         # if we are loading an existing model from disk, it should

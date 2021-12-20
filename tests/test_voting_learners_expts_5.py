@@ -113,7 +113,7 @@ def check_learning_curve_task(learner_type, options_dict):
                         model=DEFAULT,
                         create=True):
 
-        run_configuration(config_path, quiet=True)
+        run_configuration(config_path, quiet=True, local=True)
 
         # check that init was called the expected number of times which
         # is the number of metrics we wanted the learning curve for

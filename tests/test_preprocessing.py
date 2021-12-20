@@ -145,7 +145,7 @@ def test_class_map():
     config_template_path = join(config_dir, 'test_class_map.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
-    run_configuration(config_path, quiet=True)
+    run_configuration(config_path, quiet=True, local=True)
 
     with open(join(output_dir,
                    'test_class_map_test_class_map_LogisticRegression.results'
@@ -167,7 +167,7 @@ def test_class_map_feature_hasher():
                                 'test_class_map_feature_hasher.template.cfg')
     config_path = fill_in_config_paths(config_template_path)
 
-    run_configuration(config_path, quiet=True)
+    run_configuration(config_path, quiet=True, local=True)
 
     with open(join(output_dir,
                    'test_class_map_test_class_map_LogisticRegression.results.'

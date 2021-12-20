@@ -98,7 +98,7 @@ def test_majority_class_custom_learner():
     config_template_path = join(config_dir, cfgfile)
     config_path = fill_in_config_paths(config_template_path)
 
-    run_configuration(config_path, quiet=True)
+    run_configuration(config_path, quiet=True, local=True)
 
     outprefix = 'test_majority_class_custom_learner'
 
@@ -138,7 +138,7 @@ def test_logistic_custom_learner():
     config_template_path = join(config_dir, cfgfile)
     config_path = fill_in_config_paths(config_template_path)
 
-    run_configuration(config_path, quiet=True)
+    run_configuration(config_path, quiet=True, local=True)
 
     outprefix = 'test_logistic_custom_learner'
     preds = read_predictions(
@@ -186,7 +186,7 @@ def test_custom_learner_model_loading():
     config_template_path = join(config_dir, cfgfile)
     config_path = fill_in_config_paths(config_template_path)
 
-    run_configuration(config_path, quiet=True)
+    run_configuration(config_path, quiet=True, local=True)
 
     # save the predictions from disk into memory
     # and delete the predictions file
@@ -204,7 +204,7 @@ def test_custom_learner_model_loading():
     config_template_path = join(config_dir, cfgfile)
     config_path = fill_in_config_paths(config_template_path)
 
-    run_configuration(config_path, overwrite=False, quiet=True)
+    run_configuration(config_path, overwrite=False, quiet=True, local=True)
 
     # load the newly generated predictions
     preds2 = read_predictions(pred_file)

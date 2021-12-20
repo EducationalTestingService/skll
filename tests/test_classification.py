@@ -676,7 +676,7 @@ def test_train_file_test_file():
                                                        join(test_dir,
                                                             'test_single_file.'
                                                             'jsonlines'))
-    run_configuration(config_path, quiet=True)
+    run_configuration(config_path, quiet=True, local=True)
 
     # Check results for objective functions ["accuracy", "f1", "f05"]
 
@@ -729,7 +729,7 @@ def test_predict_on_subset_with_existing_model():
         join(train_dir, 'train_single_file.jsonlines'),
         join(test_dir, 'test_single_file_subset.jsonlines')
     )
-    run_configuration(config_path, quiet=True, overwrite=False)
+    run_configuration(config_path, quiet=True, overwrite=False, local=True)
 
     # Check results
     with open(join(output_dir,
@@ -753,7 +753,7 @@ def test_train_file_test_file_ablation():
         join(train_dir, 'train_single_file.jsonlines'),
         join(test_dir, 'test_single_file.jsonlines')
     )
-    run_configuration(config_path, quiet=True, ablation=None)
+    run_configuration(config_path, quiet=True, ablation=None, local=True)
 
     # check that we see the message that ablation was ignored in the experiment log
     # Check experiment log output

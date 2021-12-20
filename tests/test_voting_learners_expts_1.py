@@ -89,7 +89,7 @@ def check_train_task(learner_type, options_dict):
                         save=DEFAULT,
                         model=DEFAULT,
                         create=True) as mocks:
-        run_configuration(config_path, quiet=True)
+        run_configuration(config_path, quiet=True, local=True)
 
         # check that init was called the expected number of times;
         # if we are not doing grid search, everything is only called once
