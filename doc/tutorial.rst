@@ -26,6 +26,22 @@ Let's see how we can apply the basic workflow above to a simple example using
 the `Titanic: Machine Learning from Disaster <https://www.kaggle.com/c/titanic/>`__
 data from `Kaggle <https://www.kaggle.com>`__.
 
+Create virtual environment with SKLL
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Before we proceed further, we need to install SKLL. The easiest way to do
+this is in a virtual environment. For this tutorial, we will
+use `conda <https://conda.io/projects/conda/en/latest/user-guide/install/index.html>`__
+for creating our virtual environment as follows::
+
+    conda create -n skllenv -c conda-forge -c ets python=3.9 skll
+
+This will create a new virtual environment named ``skllenv`` with the
+latest release of SKLL which you can then activate by running
+``conda activate skllenv``. Make sure to create and activate this environment
+before proceeding further.  Once you are done with the tutorial, you may
+deactivate the virtual environment by running ``conda deactivate``.
+
 Get your data into the correct format
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -116,7 +132,8 @@ need to type the following into a terminal:
 
     $ run_experiment titanic/evaluate_tuned.cfg
 
-That should produce output like::
+Make sure you have the ``skllenv`` environment activated before you run
+this command which should produce output like::
 
     2020-03-10 14:25:23,596 - Titanic_Evaluate_Tuned_family.csv+misc.csv+socioeconomic.csv+vitals.csv_RandomForestClassifier - INFO - Task: evaluate
     2020-03-10 14:25:23,596 - Titanic_Evaluate_Tuned_family.csv+misc.csv+socioeconomic.csv+vitals.csv_RandomForestClassifier - INFO - Training on train, Test on dev, feature set ['family.csv', 'misc.csv', 'socioeconomic.csv', 'vitals.csv'] ...
