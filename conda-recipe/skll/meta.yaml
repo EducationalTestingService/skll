@@ -7,6 +7,7 @@ source:
 
 build:
   number: 0
+  noarch: python
   script:
     - cd $SRC_DIR
     - "{{ PYTHON }} -m pip install . --no-deps -vv"
@@ -32,21 +33,11 @@ build:
 
 requirements:
   build:
-    - python
+    - python >=3.8
     - pip
     - setuptools
-    - beautifulsoup4
-    - joblib
-    - numpy {{ numpy }}
-    - pandas
-    - ruamel.yaml
-    - scikit-learn >=1.0.1,<=1.0.2
-    - scipy
-    - seaborn
-    - tabulate
-
   run:
-    - python
+    - python >=3.8
     - beautifulsoup4
     - joblib
     - numpy

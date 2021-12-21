@@ -49,7 +49,7 @@ You can install using either ``pip`` or ``conda``. See details `here <https://sk
 Requirements
 ~~~~~~~~~~~~
 
--  Python 3.7, 3.8, or 3.9
+-  Python 3.8, 3.9, or 3.10
 -  `beautifulsoup4 <http://www.crummy.com/software/BeautifulSoup/>`__
 -  `gridmap <https://pypi.org/project/gridmap/>`__ (only required if you plan
    to run things in parallel on a DRMAA-compatible cluster)
