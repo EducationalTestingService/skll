@@ -651,14 +651,14 @@ LinearSVC and LinearSVR
 LogisticRegression
     .. code-block:: python
 
-            {'max_iter': 1000, multi_class': 'auto', random_state': 123456789, 'solver': 'liblinear'}
+       {'max_iter': 1000, 'multi_class': 'auto', 'random_state': 123456789, 'solver': 'liblinear'}
 
     .. note:: The regularization ``penalty`` used by default is ``"l2"``. However, ``"l1"``, ``"elasticnet"``, and ``"none"`` (no regularization) are also available. There is a dependency between the ``penalty`` and the ``solver``. For example, the ``"elasticnet"`` penalty can *only* be used in conjunction with the ``"saga"`` solver. See more information in the ``scikit-learn`` documentation `here <https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html>`__.
 
 MLPClassifier and MLPRegressor:
     .. code-block:: python
 
-       {'learning_rate': 'invscaling', max_iter': 500}
+       {'learning_rate': 'invscaling', 'max_iter': 500}
 
 RandomForestClassifier and RandomForestRegressor
     .. code-block:: python
@@ -678,17 +678,17 @@ Ridge and RidgeClassifier
 SVC and SVR
     .. code-block:: python
 
-           {'cache_size': 1000, 'gamma': 'scale'}
+       {'cache_size': 1000, 'gamma': 'scale'}
 
 SGDClassifier
     .. code-block:: python
 
-           {'loss': 'log', 'max_iter': 1000, 'random_state': 123456789, 'tol': 1e-3}
+       {'loss': 'log', 'max_iter': 1000, 'random_state': 123456789, 'tol': 1e-3}
 
 SGDRegressor
     .. code-block:: python
 
-           {'max_iter': 1000, 'random_state': 123456789, 'tol': 1e-3}
+       {'max_iter': 1000, 'random_state': 123456789, 'tol': 1e-3}
 
 TheilSenRegressor
     .. code-block:: python
