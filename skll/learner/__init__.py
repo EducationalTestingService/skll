@@ -640,6 +640,24 @@ class Learner(object):
 
         return estimator, default_param_grid
 
+    def get_feature_names_out(self):
+        """
+        Return the names of the actual features used by the estimator.
+
+        It is possible for some features to get filtered out by the
+        feature selector which means that the vectorizer is no
+        longer the correct source for the feature names. This
+        method takes into account the feature selector and returns
+        the names of the features that were actually selected to be
+        used by the estimator.
+
+        Returns
+        -------
+        names : 1-D array
+            Names of features actually used by the estimator.
+        """
+        return self.feat_vectorizer.get_feature_names_out()[self.feat_selector.get_support()]
+
     def _check_input_formatting(self, examples):
         """
         check that the examples are properly formatted.
