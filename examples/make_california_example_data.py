@@ -34,7 +34,7 @@ def main():
     X = california.data[chosen_indices, :]
     Y = california.target[chosen_indices]
 
-    # crate example jsonlines dictionaries
+    # create example jsonlines dictionaries
     examples = [
         {"id": f"EXAMPLE_{i}", "y": y, "x": {f"f{j}": x_val for j, x_val in enumerate(x)}}
         for i, (x, y) in enumerate(zip(X, Y))
