@@ -17,7 +17,7 @@ from os.path import exists, getsize, join
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn import __version__ as SCIKIT_VERSION
-from sklearn.metrics import SCORERS
+from sklearn.metrics._scorer import _SCORERS
 
 from skll.config import parse_config_file
 from skll.config.utils import _munge_featureset_name
@@ -154,7 +154,7 @@ def _classify_featureset(args):  # noqa: C901
             # metrics that are not in `SCORERS` or `None` are candidates
             # (the `None` is a by-product of how jobs with single tuning
             # objectives are created)
-            if metric_name not in SCORERS and metric_name is not None:
+            if metric_name not in _SCORERS and metric_name is not None:
                 possible_custom_metric_names.append(metric_name)
             # if the metric is already in `SCORERS`, is it a custom one
             # that we already registered? if so, log that

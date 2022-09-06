@@ -66,7 +66,7 @@ from sklearn.utils.multiclass import type_of_target
 from skll.data import FeatureSet
 from skll.data.dict_vectorizer import DictVectorizer
 from skll.data.readers import safe_float
-from skll.metrics import SCORERS
+from skll.metrics import _SCORERS
 from skll.utils.constants import (
     CORRELATION_METRICS,
     KNOWN_DEFAULT_PARAM_GRIDS,
@@ -871,9 +871,9 @@ class Learner(object):
                 new_grid_objective = f'{grid_objective}_probs'
                 metrics_module = import_module('skll.metrics')
                 metric_func = getattr(metrics_module, 'correlation')
-                SCORERS[new_grid_objective] = make_scorer(metric_func,
-                                                          corr_type=grid_objective,
-                                                          needs_proba=True)
+                _SCORERS[new_grid_objective] = make_scorer(metric_func,
+                                                           corr_type=grid_objective,
+                                                           needs_proba=True)
                 grid_objective = new_grid_objective
 
         # Shuffle so that the folds are random for the inner grid search CV.
@@ -1026,7 +1026,7 @@ class Learner(object):
         # objectives and probability outputs
         if 'old_grid_objective' in locals():
             grid_objective = old_grid_objective
-            del SCORERS[new_grid_objective]
+            del _SCORERS[new_grid_objective]
 
         # store a scikit-learn Pipeline in the `pipeline` attribute
         # composed of a copy of the vectorizer, the selector,

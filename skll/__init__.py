@@ -9,7 +9,8 @@ common scikit-learn experiments with pre-generated features.
 :organization: ETS
 """
 
-from sklearn.metrics import SCORERS, f1_score, fbeta_score, make_scorer
+from sklearn.metrics import f1_score, fbeta_score, make_scorer
+from sklearn.metrics._scorer import _SCORERS
 
 from .metrics import correlation, f1_score_least_frequent, kappa
 
@@ -37,4 +38,4 @@ _scorers = {"f1_score_micro": make_scorer(f1_score, average="micro"),
                                           allow_off_by_one=True),
             "uwk_off_by_one": make_scorer(kappa, allow_off_by_one=True)}
 
-SCORERS.update(_scorers)
+_SCORERS.update(_scorers)

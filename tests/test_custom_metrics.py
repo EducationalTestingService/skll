@@ -17,7 +17,8 @@ from numpy.testing import (
     assert_array_equal,
     assert_raises_regex,
 )
-from sklearn.metrics import SCORERS, fbeta_score
+from sklearn.metrics import fbeta_score
+from sklearn.metrics._scorer import _SCORERS
 
 import skll.metrics
 from skll.data import NDJReader
@@ -80,7 +81,7 @@ def _cleanup_custom_metrics():
             pass
 
         try:
-            del SCORERS[metric_name]
+            del _SCORERS[metric_name]
         except KeyError:
             pass
 
@@ -110,12 +111,12 @@ def test_register_custom_metric_load_one():
 
     # make sure that this metric is now registered with SKLL
     assert "f075_macro" in _CUSTOM_METRICS
-    assert "f075_macro" in SCORERS
+    assert "f075_macro" in _SCORERS
 
     # make sure that the other metric in that same file
     # is _not_ registered with SKLL since we didn't ask for it
     assert "ratio_of_ones" not in _CUSTOM_METRICS
-    assert "ratio_of_ones" not in SCORERS
+    assert "ratio_of_ones" not in _SCORERS
 
 
 @with_setup(setup_func)
@@ -129,9 +130,9 @@ def test_register_custom_metric_load_both():
 
     # now make sure that both are registered
     assert "f075_macro" in _CUSTOM_METRICS
-    assert "f075_macro" in SCORERS
+    assert "f075_macro" in _SCORERS
     assert "ratio_of_ones" in _CUSTOM_METRICS
-    assert "ratio_of_ones" in SCORERS
+    assert "ratio_of_ones" in _SCORERS
 
 
 @with_setup(setup_func)
@@ -146,9 +147,9 @@ def test_register_custom_metric_load_different_files():
 
     # make sure both are registered
     assert "f075_macro" in _CUSTOM_METRICS
-    assert "f075_macro" in SCORERS
+    assert "f075_macro" in _SCORERS
     assert "f06_micro" in _CUSTOM_METRICS
-    assert "f06_micro" in SCORERS
+    assert "f06_micro" in _SCORERS
 
 
 @with_setup(setup_func)
