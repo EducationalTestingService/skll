@@ -15,7 +15,8 @@ from os.path import abspath, basename, dirname, exists
 
 import numpy as np
 from scipy.stats import kendalltau, pearsonr, spearmanr
-from sklearn.metrics import SCORERS, confusion_matrix, f1_score, make_scorer
+from sklearn.metrics import confusion_matrix, f1_score, make_scorer
+from sklearn.metrics._scorer import _SCORERS
 
 # a set that will hold the names of any custom metrics;
 # this is a private variable only meant for internal use
@@ -264,7 +265,7 @@ def register_custom_metric(custom_metric_path, custom_metric_name):
 
     # once we know that the module name is okay, we need to make sure
     # that the metric function name is also okay
-    if custom_metric_name in SCORERS:
+    if custom_metric_name in _SCORERS:
         raise NameError(f"a metric called '{custom_metric_name}' already "
                         f"exists in SKLL; rename the metric function "
                         f"in {custom_metric_module_name}.py and try again.")
@@ -297,7 +298,7 @@ def register_custom_metric(custom_metric_path, custom_metric_name):
 
     # make the scorer function with the extracted keyword arguments
     # and add it to the `CUSTOM_METRICS` set
-    SCORERS[f"{custom_metric_name}"] = make_scorer(metric_func, **make_scorer_kwargs)
+    _SCORERS[f"{custom_metric_name}"] = make_scorer(metric_func, **make_scorer_kwargs)
     _CUSTOM_METRICS.add(custom_metric_name)
 
     return metric_func
@@ -305,15 +306,15 @@ def register_custom_metric(custom_metric_path, custom_metric_name):
 
 def use_score_func(func_name, y_true, y_pred):
     """
-    Call the scoring function in ``sklearn.metrics.SCORERS`` with the given
-    name. This takes care of handling keyword arguments that were pre-specified
-    when creating the scorer. This applies any sign-flipping that was specified
-    by ``make_scorer()`` when the scorer was created.
+    Call the scoring function in the given name. This takes care of handling
+    keyword arguments that were pre-specified when creating the scorer.
+    This applies any sign-flipping that was specified by ``make_scorer()``
+    when the scorer was created.
 
     Parameters
     ----------
     func_name : str
-        The name of the objective function to use from SCORERS.
+        The name of the objective function to use.
     y_true : array-like of float
         The true/actual/gold labels for the data.
     y_pred : array-like of float
@@ -324,5 +325,5 @@ def use_score_func(func_name, y_true, y_pred):
     ret_score : float
         The scored result from the given scorer.
     """
-    scorer = SCORERS[func_name]
+    scorer = _SCORERS[func_name]
     return scorer._sign * scorer._score_func(y_true, y_pred, **scorer._kwargs)
