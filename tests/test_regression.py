@@ -578,7 +578,7 @@ def check_ransac_regression(base_estimator, pearson_value):
 
     # train a RANSACRegressor on the training data and evalute on the
     # testing data
-    model_kwargs = {'base_estimator': base_estimator} if base_estimator else {}
+    model_kwargs = {'estimator': base_estimator, 'min_samples': 4} if base_estimator else {}
     learner = Learner('RANSACRegressor', model_kwargs=model_kwargs)
     learner.train(train_fs, grid_search=False)
 

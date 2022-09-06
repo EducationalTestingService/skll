@@ -383,7 +383,7 @@ def check_generate_predictions(use_regression=False,  # noqa: C901
                              random_state=123456789,
                              tol=1e-3)
     else:
-        model = SGDClassifier(loss='log',
+        model = SGDClassifier(loss='log_loss',
                               max_iter=1000,
                               random_state=123456789,
                               tol=1e-3)

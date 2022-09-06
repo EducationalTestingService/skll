@@ -257,7 +257,7 @@ class Learner(object):
             self._model_kwargs['cache_size'] = 1000
             self._model_kwargs['gamma'] = 'scale'
         elif issubclass(self._model_type, SGDClassifier):
-            self._model_kwargs['loss'] = 'log'
+            self._model_kwargs['loss'] = 'log_loss'
             self._model_kwargs['max_iter'] = 1000
             self._model_kwargs['tol'] = 1e-3
         elif issubclass(self._model_type, SGDRegressor):
@@ -315,17 +315,19 @@ class Learner(object):
             self.sampler = None
 
         if model_kwargs:
-            # if the model is an AdaBoost classifier or regressor or
-            # a RANSAC regressor, then we need to convert any specified
-            # `base_estimator` (a string) into an object before passing
-            # it in to the learner constructor. We also need to make sure
-            # where appropriate, we set the random state to a fixed seed
-            # such that results are replicable
-            if issubclass(self._model_type,
-                          (AdaBoostRegressor,
-                           AdaBoostClassifier,
-                           RANSACRegressor)) and ('base_estimator' in model_kwargs):
-                base_estimator_name = model_kwargs['base_estimator']
+            # if the model is an AdaBoost classifier or regressor (or
+            # a RANSAC regressor), then we need to convert the specified
+            # `base_estimator` (or `estimator`) string into an object
+            # before passing it in to the learner constructor. We also
+            # need to make sure where appropriate, we set the random state
+            # to a fixed seed such that results are replicable
+            is_ada_has_base_estimator = (issubclass(self._model_type, (AdaBoostRegressor,
+                                                                       AdaBoostClassifier))
+                                         and 'base_estimator' in model_kwargs)
+            is_ransac_has_estimator = (issubclass(self._model_type, RANSACRegressor)
+                                       and 'estimator' in model_kwargs)
+            if is_ada_has_base_estimator or is_ransac_has_estimator:
+                base_estimator_name = model_kwargs.get('base_estimator', model_kwargs.get('estimator'))
                 if base_estimator_name in ['LinearRegression', 'MultinomialNB']:
                     base_estimator_kwargs = {}
                 elif base_estimator_name in ['SGDClassifier', 'SGDRegressor']:
@@ -339,7 +341,11 @@ class Learner(object):
                 else:
                     base_estimator_kwargs = {'random_state': 123456789}
                 base_estimator = globals()[base_estimator_name](**base_estimator_kwargs)
-                model_kwargs['base_estimator'] = base_estimator
+                # RANSACRegressor uses 'estimator' instead of 'base_estimator'
+                if is_ransac_has_estimator:
+                    model_kwargs['estimator'] = base_estimator
+                else:
+                    model_kwargs['base_estimator'] = base_estimator
             self._model_kwargs.update(model_kwargs)
 
     @classmethod

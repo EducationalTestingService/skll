@@ -651,10 +651,10 @@ def test_feature_merging_order_invariance():
     merged_fs_shuf = train_fs1 + train_fs2_shuf
 
     # check that the two merged versions are the same
-    feature_names = (train_fs1.vectorizer.get_feature_names() +
-                     train_fs2.vectorizer.get_feature_names())
-    assert_array_equal(merged_fs.vectorizer.get_feature_names(), feature_names)
-    assert_array_equal(merged_fs_shuf.vectorizer.get_feature_names(),
+    feature_names = (train_fs1.vectorizer.get_feature_names_out().tolist() +
+                     train_fs2.vectorizer.get_feature_names_out().tolist())
+    assert_array_equal(merged_fs.vectorizer.get_feature_names_out().tolist(), feature_names)
+    assert_array_equal(merged_fs_shuf.vectorizer.get_feature_names_out().tolist(),
                        feature_names)
 
     assert_array_equal(merged_fs.labels, train_fs1.labels)
@@ -781,7 +781,7 @@ def test_dict_list_reader():
     eq_(converted.features[2, 2], 3.0)
     eq_(converted.features[2, 0], 0.0)
 
-    eq_(converted.vectorizer.get_feature_names(), ['f1', 'f2', 'f3'])
+    eq_(converted.vectorizer.get_feature_names_out().tolist(), ['f1', 'f2', 'f3'])
 
 
 # Tests related to converting featuresets

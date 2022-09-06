@@ -50,9 +50,9 @@ KNOWN_DEFAULT_PARAM_GRIDS = {AdaBoostClassifier:
                               'lambda_1': [1e-6, 1e-4, 1e-2, 1, 10],
                               'lambda_2': [1e-6, 1e-4, 1e-2, 1, 10]},
                              DecisionTreeClassifier:
-                             {'max_features': ["auto", None]},
+                             {'max_features': ["sqrt", None]},
                              DecisionTreeRegressor:
-                             {'max_features': ["auto", None]},
+                             {'max_features': ["sqrt", None]},
                              DummyClassifier:
                              {},
                              DummyRegressor:
