@@ -104,6 +104,9 @@ def generate_learning_curve_plots(experiment_name,
     num_metrics = len(df['metric'].unique())
     df_melted = pd.melt(df, id_vars=[c for c in df.columns
                                      if c not in ['train_score_mean', 'test_score_mean']])
+    # make sure the "variable" column is cateogrical since it will be
+    # mapped to hue levels in the learning curve below
+    df_melted["variable"] = df_melted["variable"].astype("category")
 
     # if there are any training sizes greater than 1000,
     # then we should probably rotate the tick labels
@@ -120,12 +123,15 @@ def generate_learning_curve_plots(experiment_name,
         with sns.axes_style('whitegrid', {"grid.linestyle": ':',
                                           "xtick.major.size": 3.0}):
             g = sns.FacetGrid(df_fs, row="metric", col="learner_name",
-                              hue="variable", height=2.5, aspect=1,
-                              margin_titles=True, despine=True, sharex=False,
-                              sharey=False, legend_out=False, palette="Set1")
-            colors = train_color, test_color = sns.color_palette("Set1")[:2]
-            g = g.map_dataframe(sns.pointplot, "training_set_size", "value",
-                                scale=.5, ci=None)
+                              height=2.5, aspect=1, margin_titles=True,
+                              despine=True, sharex=False,
+                              sharey=False, legend_out=False)
+            train_color, test_color = sns.color_palette(palette="Set1", n_colors=2)
+            g = g.map_dataframe(sns.pointplot, x="training_set_size",
+                                y="value", hue="variable", scale=.5,
+                                errorbar=None,
+                                palette={"train_score_mean": train_color,
+                                         "test_score_mean": test_color})
             ylimits = _compute_ylimits_for_featureset(df_fs, g.row_names)
             for ax in g.axes.flat:
                 plt.setp(ax.texts, text="")
@@ -163,8 +169,8 @@ def generate_learning_curve_plots(experiment_name,
                                                                     color=c,
                                                                     label=l,
                                                                     linestyle='-')
-                                            for c, l in zip(colors, ['Training',
-                                                                     'Cross-validation'])]
+                                            for c, l in zip([train_color, test_color],
+                                                            ['Training', 'Cross-validation'])]
                             ax.legend(handles=plot_handles,
                                       loc=4,
                                       fancybox=True,
