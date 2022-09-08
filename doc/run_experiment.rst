@@ -249,7 +249,7 @@ field in each section is provided below, but to summarize:
 *   A :ref:`list of classifiers/regressors <learners>` to try on your feature
     files is required.
 
-Example configuration files are available `here <https://github.com/EducationalTestingService/skll/tree/main/examples/>`__ under the ``boston``, ``iris``, and ``titanic`` sub-directories.
+Example configuration files are available `here <https://github.com/EducationalTestingService/skll/tree/main/examples/>`__ under the ``california``, ``iris``, and ``titanic`` sub-directories.
 
 .. _general:
 
@@ -352,7 +352,7 @@ Regressors:
         *   ``estimator_sampler_list`` which can be used to specify any feature sampling algorithms for the underlying learners, and
         *   ``estimator_sampler_parameters`` which can be used to specify any additional parameters for any specified samplers.
 
-        Refer to this `example voting configuration file <https://github.com/EducationalTestingService/skll/blob/main/examples/boston/voting.cfg>`__ to see how these parameters are used.
+        Refer to this `example voting configuration file <https://github.com/EducationalTestingService/skll/blob/main/examples/california/voting.cfg>`__ to see how these parameters are used.
 
     For all regressors *except* ``VotingRegressor``, you can also prepend
     ``Rescaled`` to the beginning of the full name (e.g., ``RescaledSVR``)
@@ -1075,7 +1075,7 @@ BayesianRidge
 DecisionTreeClassifier and DecisionTreeRegressor
     .. code-block:: python
 
-       {'max_features': ["auto", None]}
+       {'max_features': ["sqrt", None]}
 
 ElasticNet
     .. code-block:: python
@@ -1286,7 +1286,7 @@ Here's an example of how to use this attribute.
     learner1 = Learner('LogisticRegression', pipeline=True)
     _ = learner1.train(fs1, grid_search=True, grid_objective='f1_score_macro')
 
-    fs2 = Reader.for_path('examples/boston/train/example_boston_features.jsonlines').read()
+    fs2 = Reader.for_path('examples/california/train/example_california_features.jsonlines').read()
     learner2 = Learner('RescaledSVR', feature_scaling='both', pipeline=True)
     _ = learner2.train(fs2, grid_search=True, grid_objective='pearson')
 
@@ -1299,7 +1299,7 @@ Here's an example of how to use this attribute.
     enc.inverse_transform(pipeline1.predict(D1))
 
     # then, the regressor
-    D2 = {"f0": 0.09178, "f1": 0.0, "f2": 4.05, "f3": 0.0, "f4": 0.51, "f5": 6.416, "f6": 84.1, "f7": 2.6463, "f8": 5.0, "f9": 296.0, "f10": 16.6, "f11": 395.5, "f12": 9.04}
+    D2 = {"f0": 4.1344, "f1": 36.0, "f2": 4.1, "f3": 0.98, "f4": 1245.0, "f5": 3.0, "f6": 33.9, "f7": -118.32}
     pipeline2 = learner2.pipeline
     pipeline2.predict(D2)
 

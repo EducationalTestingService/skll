@@ -104,7 +104,7 @@ def generate_learning_curve_plots(experiment_name,
     num_metrics = len(df['metric'].unique())
     df_melted = pd.melt(df, id_vars=[c for c in df.columns
                                      if c not in ['train_score_mean', 'test_score_mean']])
-    # make sure the "variable" column is cateogrical since it will be
+    # make sure the "variable" column is categorical since it will be
     # mapped to hue levels in the learning curve below
     df_melted["variable"] = df_melted["variable"].astype("category")
 
