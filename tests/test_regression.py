@@ -753,7 +753,7 @@ def test_train_string_labels():
 def test_non_negative_regression():
     """Test that non-negative regression works as expected"""
 
-    # read in the Boston example training data into a featureset
+    # read in the example training data into a featureset
     train_path = join(train_dir, "test_non_negative.jsonlines")
     train_fs = NDJReader.for_path(train_path).read()
 

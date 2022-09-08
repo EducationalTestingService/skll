@@ -19,11 +19,11 @@ from skll.experiments import run_configuration
 from tests import examples_dir, other_dir
 
 _old_titanic_dir = join(examples_dir, 'titanic')
-_old_boston_dir = join(examples_dir, 'boston')
+_old_california_dir = join(examples_dir, 'california')
 _old_iris_dir = join(examples_dir, 'iris')
 
 _new_titanic_dir = join(other_dir, 'titanic')
-_new_boston_dir = join(other_dir, 'boston')
+_new_california_dir = join(other_dir, 'california')
 _new_iris_dir = join(other_dir, 'iris')
 
 # if we are running the tests without activating the conda
@@ -40,9 +40,9 @@ def setup():
     and copy files to new locations.
     """
 
-    # Create the directories we need for boston and iris;
+    # Create the directories we need for california and iris;
     # if these directories already exist, it's fine
-    for dir_path in [_new_iris_dir, _new_boston_dir]:
+    for dir_path in [_new_iris_dir, _new_california_dir]:
         Path(dir_path).mkdir(exist_ok=True)
 
     # We get rid of the new titanic directory, if it already exists,
@@ -62,8 +62,8 @@ def setup():
         cwd=dirname(_new_titanic_dir)
     )
     subprocess.run(
-        [python_binary, join(examples_dir, 'make_boston_example_data.py')],
-        cwd=dirname(_new_boston_dir)
+        [python_binary, join(examples_dir, 'make_california_example_data.py')],
+        cwd=dirname(_new_california_dir)
     )
     subprocess.run(
         [python_binary, join(examples_dir, 'make_iris_example_data.py')],
@@ -74,8 +74,8 @@ def setup():
     for cfg_file in glob(join(_old_titanic_dir, '**.cfg')):
         copyfile(cfg_file, join(_new_titanic_dir, basename(cfg_file)))
 
-    for cfg_file in glob(join(_old_boston_dir, '**.cfg')):
-        copyfile(cfg_file, join(_new_boston_dir, basename(cfg_file)))
+    for cfg_file in glob(join(_old_california_dir, '**.cfg')):
+        copyfile(cfg_file, join(_new_california_dir, basename(cfg_file)))
 
     for cfg_file in glob(join(_old_iris_dir, '**.cfg')):
         copyfile(cfg_file, join(_new_iris_dir, basename(cfg_file)))
@@ -85,7 +85,7 @@ def tearDown():
     """
     Clean up after tests, remove all directories we created.
     """
-    for dir_path in [_new_iris_dir, _new_boston_dir, _new_titanic_dir]:
+    for dir_path in [_new_iris_dir, _new_california_dir, _new_titanic_dir]:
         rmtree(dir_path)
 
 
@@ -96,6 +96,7 @@ def run_configuration_and_check_outputs(config_path):
     """
 
     # run this experiment, get the `results_json_path`
+    __import__('ipdb').sset_trace()
     results_json_path = run_configuration(config_path, local=True, quiet=True)[0]
 
     # if the results path exists, check the output
@@ -140,11 +141,11 @@ def test_titanic_configs():
         run_configuration_and_check_outputs(config_path)
 
 
-def test_boston_configs():
+def test_california_configs():
     """
-    Run all of the configuration files for the boston example
+    Run all of the configuration files for the california example
     """
-    for config_path in glob(join(_new_boston_dir, '*.cfg')):
+    for config_path in glob(join(_new_california_dir, '*.cfg')):
         run_configuration_and_check_outputs(config_path)
 
 
