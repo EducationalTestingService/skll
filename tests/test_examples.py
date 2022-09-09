@@ -96,7 +96,6 @@ def run_configuration_and_check_outputs(config_path):
     """
 
     # run this experiment, get the `results_json_path`
-    __import__('ipdb').sset_trace()
     results_json_path = run_configuration(config_path, local=True, quiet=True)[0]
 
     # if the results path exists, check the output
