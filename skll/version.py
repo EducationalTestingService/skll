@@ -8,5 +8,5 @@ in one place. Based on the suggestion `here. <http://bit.ly/16LbuJF>`_
 :organization: ETS
 """
 
-__version__ = '3.0.0'
+__version__ = '3.1.0'
 VERSION = tuple(int(x) for x in __version__.split('.'))

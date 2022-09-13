@@ -46,7 +46,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'SciKit-Learn Laboratory'
-copyright = u'2012-2021, Educational Testing Service'
+copyright = u'2012-2022, Educational Testing Service'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
