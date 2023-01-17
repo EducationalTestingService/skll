@@ -15,7 +15,7 @@ variables:
 # set up the basic job
 .runtests:
   before_script:
-    - "conda create --prefix /root/sklldev --channel conda-forge --file conda_requirements.txt python=${PYVERSION} codecov --yes --quiet"
+    - "conda create --prefix /root/sklldev --channel conda-forge --file requirements.txt python=${PYVERSION} codecov --yes --quiet"
     - /root/sklldev/bin/pip install -e .
   script:
     - "/root/sklldev/bin/nosetests ${TESTFILES}"
