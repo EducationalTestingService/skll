@@ -7,8 +7,6 @@ variables:
   PYVERSION: "3.8"
   BINDIR: "/root/sklldev/bin"
   MPLBACKEND: "Agg"
-  NOSE_WITH_COV: "1"
-  NOSE_COVER_PACKAGE: "skll"
   LOGCAPTURE_LEVEL: "WARNING"
   CODECOV_TOKEN: "e2cce606-b88b-415d-a106-5c7da6e7eb6e"
 
@@ -18,7 +16,7 @@ variables:
     - "conda create --prefix /root/sklldev --channel conda-forge --file requirements.txt python=${PYVERSION} codecov --yes --quiet"
     - /root/sklldev/bin/pip install -e .
   script:
-    - "/root/sklldev/bin/nosetests --nologcapture --with-coverage --cover-package=skll ${TESTFILES}"
+    - "/root/sklldev/bin/nosetests --with-coverage --cover-package=skll ${TESTFILES}"
   after_script:
     - /root/sklldev/bin/codecov
 
