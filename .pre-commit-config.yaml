@@ -13,15 +13,16 @@ repos:
     -   id: check-ast
     -   id: check-json
     -   id: debug-statements
--   repo: https://gitlab.com/pycqa/flake8
-    rev: 4.0.1
+-   repo: https://github.com/pycqa/flake8
+    rev: 6.0.0
     hooks:
     - id: flake8
 -   repo: https://github.com/PyCQA/isort
-    rev: 5.10.1
+    rev: 5.11.4
     hooks:
     -   id: isort
+        args: ["--multi-line", "3", "--trailing-comma", "--use-parentheses", "--ensure-newline-before-comments", "--line-length", "88"]
 -   repo: https://github.com/ikamensh/flynt/
-    rev: '0.69'
+    rev: '0.77'
     hooks:
     -   id: flynt
