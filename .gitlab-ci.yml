@@ -18,7 +18,7 @@ variables:
     - "conda create --prefix /root/sklldev --channel conda-forge --file requirements.txt python=${PYVERSION} codecov --yes --quiet"
     - /root/sklldev/bin/pip install -e .
   script:
-    - "/root/sklldev/bin/nosetests ${TESTFILES}"
+    - "/root/sklldev/bin/nosetests --nologcapture --with-coverage --cover-package=skll ${TESTFILES}"
   after_script:
     - /root/sklldev/bin/codecov
 
