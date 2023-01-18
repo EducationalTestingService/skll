@@ -15,6 +15,13 @@ variables:
   before_script:
     - "conda create --prefix /root/sklldev --channel conda-forge --file requirements.txt python=${PYVERSION} codecov --yes --quiet"
     - /root/sklldev/bin/pip install -e .
+    - echo "import os" > sitecustomize.py
+    - echo "try:" >> sitecustomize.py
+    - echo "    import coverage" >> sitecustomize.py
+    - echo "    os.environ['COVERAGE_PROCESS_START'] = '.coveragerc'" >> sitecustomize.py
+    - echo "    coverage.process_startup()" >> sitecustomize.py
+    - echo "except ImportError:" >> sitecustomize.py
+    - echo "    pass" >> sitecustomize.py
   script:
     - "/root/sklldev/bin/nosetests --with-coverage --cover-package=skll ${TESTFILES}"
   after_script:
