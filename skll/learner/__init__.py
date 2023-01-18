@@ -273,23 +273,6 @@ class Learner(object):
             self._model_kwargs['solver'] = 'liblinear'
             self._model_kwargs['multi_class'] = 'auto'
 
-        #############################################
-        # FIXME when upgrading to scikit-learn v1.2 #
-        #############################################
-        # scikit-learn v1.0 will be deprecating the `normalize`
-        # attribute for linear models; this attribute
-        # is set to False by default in most scikit-learn
-        # linear models anyway and so no warnings are surfaced
-        # in SKLL. However, for `Lars`, the default value of
-        # `normalize` is still set to True and so we need to
-        # force it to False to avoid deprecation warnings. This
-        # code will actually lead to an execption in the
-        # `_create_estimator()` method when the `normalize`
-        # attribute  doesn't exist, so that will be the perfect
-        # reminder to excise this if block entirely.
-        if issubclass(self._model_type, Lars):
-            self._model_kwargs["normalize"] = False
-
         if issubclass(self._model_type,
                       (AdaBoostClassifier, AdaBoostRegressor,
                        DecisionTreeClassifier, DecisionTreeRegressor,
