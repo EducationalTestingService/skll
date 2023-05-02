@@ -40,7 +40,7 @@ def setup():
 
 
 def tearDown():
-    """ Clean up after tests"""
+    """Clean up after tests"""
     for output_file_path in Path(output_dir).glob("test_voting_learner_cross_validate*"):
         output_file_path.unlink()
 
@@ -57,21 +57,21 @@ def check_xval_task(learner_type, options_dict):
     """Check given combination of cross-validation configuration options"""
 
     # create a configuration file with the given options
-    (config_path,
-     estimator_names,
-     job_name,
-     _,
-     objectives,
-     output_metrics,
-     model_kwargs_list,
-     param_grid_list,
-     sampler_list,
-     num_cv_folds,
-     cv_seed,
-     _,
-     _) = fill_in_config_options_for_voting_learners(learner_type,
-                                                     "cross_validate",
-                                                     options_dict)
+    (
+        config_path,
+        estimator_names,
+        job_name,
+        _,
+        objectives,
+        output_metrics,
+        model_kwargs_list,
+        param_grid_list,
+        sampler_list,
+        num_cv_folds,
+        cv_seed,
+        _,
+        _,
+    ) = fill_in_config_options_for_voting_learners(learner_type, "cross_validate", options_dict)
 
     #  mock the `__init__()` method for the `VotingLearner` class so
     # that we can check that the voting learner was instantiated with
@@ -99,10 +99,12 @@ def check_xval_task(learner_type, options_dict):
     # we also need to patch some other output functions that write
     # various results to disk since we are not actually producing
     # any results from `cross_validate()`
-    output_patchers = patch.multiple("skll.experiments",
-                                     _print_fancy_output=DEFAULT,
-                                     _write_skll_folds=DEFAULT,
-                                     _write_summary_file=DEFAULT)
+    output_patchers = patch.multiple(
+        "skll.experiments",
+        _print_fancy_output=DEFAULT,
+        _write_skll_folds=DEFAULT,
+        _write_summary_file=DEFAULT,
+    )
 
     # start all the patchers
     mock_vl_init = init_patcher.start()
@@ -113,10 +115,7 @@ def check_xval_task(learner_type, options_dict):
     # run the configuration file but with various methods/attributes for
     # `VotingLearner` mocked so that we can check that things were called
     # as expected without actually needing to train any models
-    with patch.multiple(VotingLearner,
-                        save=DEFAULT,
-                        model=DEFAULT,
-                        create=True) as mocks:
+    with patch.multiple(VotingLearner, save=DEFAULT, model=DEFAULT, create=True) as mocks:
         run_configuration(config_path, quiet=True, local=True)
 
         # check that init was called the expected number of times;
@@ -128,12 +127,14 @@ def check_xval_task(learner_type, options_dict):
 
         # note that the init arguments are the same no matter the call
         expected_init_args = (estimator_names,)
-        expected_init_kwargs = {"voting": "soft" if options_dict["with_soft_voting"] else "hard",
-                                "feature_scaling": "none",
-                                "pos_label": "dog" if options_dict["with_pos_label"] else None,
-                                "model_kwargs_list": model_kwargs_list,
-                                "sampler_list": sampler_list,
-                                "sampler_kwargs_list": None}
+        expected_init_kwargs = {
+            "voting": "soft" if options_dict["with_soft_voting"] else "hard",
+            "feature_scaling": "none",
+            "pos_label": "dog" if options_dict["with_pos_label"] else None,
+            "model_kwargs_list": model_kwargs_list,
+            "sampler_list": sampler_list,
+            "sampler_kwargs_list": None,
+        }
 
         # check that each init call had the expected arguments
         for actual_call in mock_vl_init.call_args_list:
@@ -146,17 +147,19 @@ def check_xval_task(learner_type, options_dict):
         eq_(mock_vl_xval.call_count, num_expected_init_calls)
 
         # check that each cross_validate call had the expected arguments
-        expected_xval_kwargs = {"param_grid_list": param_grid_list,
-                                "grid_search_folds": 4 if options_dict["with_gs_folds"] else 5,
-                                "grid_search": options_dict["with_grid_search"],
-                                "grid_jobs": None,
-                                "stratified": True,
-                                "cv_folds": num_cv_folds,
-                                "cv_seed": cv_seed if options_dict["with_custom_cv_seed"] else 123456789,
-                                "output_metrics": output_metrics,
-                                "save_cv_folds": not options_dict["without_save_cv_folds"],
-                                "save_cv_models": options_dict["with_save_cv_models"],
-                                "individual_predictions": options_dict["with_individual_predictions"]}
+        expected_xval_kwargs = {
+            "param_grid_list": param_grid_list,
+            "grid_search_folds": 4 if options_dict["with_gs_folds"] else 5,
+            "grid_search": options_dict["with_grid_search"],
+            "grid_jobs": None,
+            "stratified": True,
+            "cv_folds": num_cv_folds,
+            "cv_seed": cv_seed if options_dict["with_custom_cv_seed"] else 123456789,
+            "output_metrics": output_metrics,
+            "save_cv_folds": not options_dict["without_save_cv_folds"],
+            "save_cv_models": options_dict["with_save_cv_models"],
+            "individual_predictions": options_dict["with_individual_predictions"],
+        }
 
         for idx, actual_call in enumerate(mock_vl_xval.call_args_list):
             actual_arg = actual_call[0][0]
@@ -167,13 +170,15 @@ def check_xval_task(learner_type, options_dict):
                 eq_(actual_value, expected_value)
 
             # check the grid objective value
-            eq_(actual_call[1]["grid_objective"],
-                objectives[idx] if options_dict["with_grid_search"] else None)
+            eq_(
+                actual_call[1]["grid_objective"],
+                objectives[idx] if options_dict["with_grid_search"] else None,
+            )
 
             # check the prediction prefix value
-            if (not options_dict["with_grid_search"] or
-                    (options_dict["with_grid_search"] and
-                     not options_dict["with_multiple_objectives"])):
+            if not options_dict["with_grid_search"] or (
+                options_dict["with_grid_search"] and not options_dict["with_multiple_objectives"]
+            ):
                 expected_prediction_prefix = job_name
             else:
                 expected_prediction_prefix = f"{job_name}_{objectives[idx]}"
@@ -183,19 +188,26 @@ def check_xval_task(learner_type, options_dict):
         # save was called the expected number of times
         # which will be number of folds x number of objectives
         if options_dict["with_save_cv_models"]:
-            num_expected_save_calls = (num_cv_folds * len(objectives) if options_dict["with_grid_search"]
-                                       else num_cv_folds)
-            eq_(mocks['save'].call_count, num_expected_save_calls)
+            num_expected_save_calls = (
+                num_cv_folds * len(objectives) if options_dict["with_grid_search"] else num_cv_folds
+            )
+            eq_(mocks["save"].call_count, num_expected_save_calls)
 
             # check that each save call had the expected arguments
-            for idx, actual_call in enumerate(mocks['save'].call_args_list):
+            for idx, actual_call in enumerate(mocks["save"].call_args_list):
                 objective_idx, fold_idx = divmod(idx, num_cv_folds)
-                if (not options_dict["with_grid_search"] or
-                        (options_dict["with_grid_search"] and
-                         not options_dict["with_multiple_objectives"])):
+                if not options_dict["with_grid_search"] or (
+                    options_dict["with_grid_search"]
+                    and not options_dict["with_multiple_objectives"]
+                ):
                     expected_save_args = (join(output_dir, f"{job_name}_fold{fold_idx+1}.model"),)
                 else:
-                    expected_save_args = (join(output_dir, f"{job_name}_{objectives[objective_idx]}_fold{fold_idx+1}.model"),)
+                    expected_save_args = (
+                        join(
+                            output_dir,
+                            f"{job_name}_{objectives[objective_idx]}_fold{fold_idx+1}.model",
+                        ),
+                    )
                 eq_(actual_call[0], expected_save_args)
 
     # stop all the patchers
@@ -206,41 +218,43 @@ def check_xval_task(learner_type, options_dict):
 
 
 def test_xval_task():
-
     # test various combinations of experiment configuration options
     # NOTE: this is not the full set of combinations since that that would
     # have been too slow; we exclude some options because they are either
     # not very common or because they are already tested in other voting
     # learner experiment tests
-    option_names = ["with_soft_voting",
-                    "with_pos_label",
-                    "with_model_kwargs_list",
-                    "with_grid_search",
-                    "with_param_grid_list",
-                    "with_multiple_objectives",
-                    "with_gs_folds",
-                    "with_cv_folds",
-                    "with_custom_cv_seed",
-                    "with_output_metrics",
-                    "without_save_cv_folds",
-                    "with_save_cv_models",
-                    "with_individual_predictions"]
+    option_names = [
+        "with_soft_voting",
+        "with_pos_label",
+        "with_model_kwargs_list",
+        "with_grid_search",
+        "with_param_grid_list",
+        "with_multiple_objectives",
+        "with_gs_folds",
+        "with_cv_folds",
+        "with_custom_cv_seed",
+        "with_output_metrics",
+        "without_save_cv_folds",
+        "with_save_cv_models",
+        "with_individual_predictions",
+    ]
 
-    for option_values in product(["classifier", "regressor"],
-                                 [False, True],
-                                 [False, True],
-                                 [False, True],
-                                 [False, True],
-                                 [False, True],
-                                 [False, True],
-                                 [False, True],
-                                 [False, True],
-                                 [False, True],
-                                 [False, True],
-                                 [False, True],
-                                 [False, True],
-                                 [False, True]):
-
+    for option_values in product(
+        ["classifier", "regressor"],
+        [False, True],
+        [False, True],
+        [False, True],
+        [False, True],
+        [False, True],
+        [False, True],
+        [False, True],
+        [False, True],
+        [False, True],
+        [False, True],
+        [False, True],
+        [False, True],
+        [False, True],
+    ):
         # assign the learner type separately
         learner_type = option_values[0]
 
@@ -249,8 +263,9 @@ def test_xval_task():
         options_dict = BoolDict(zip(option_names, option_values[1:]))
 
         # voting regressors do not support soft voting or `pos_label`
-        if (learner_type == "regressor" and
-                (options_dict["with_soft_voting"] or options_dict["with_pos_label"])):
+        if learner_type == "regressor" and (
+            options_dict["with_soft_voting"] or options_dict["with_pos_label"]
+        ):
             continue
 
         yield check_xval_task, learner_type, options_dict

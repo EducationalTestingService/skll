@@ -28,9 +28,7 @@ from tests import config_dir, output_dir, test_dir, train_dir
 from tests.utils import fill_in_config_paths, unlink
 
 _ALL_MODELS = list(KNOWN_DEFAULT_PARAM_GRIDS.keys())
-SCORE_OUTPUT_RE = re.compile(
-    r'Objective Function Score \(Test\) = ([\-\d\.]+)'
-)
+SCORE_OUTPUT_RE = re.compile(r"Objective Function Score \(Test\) = ([\-\d\.]+)")
 
 
 def setup():
@@ -46,63 +44,54 @@ def tearDown():
     Clean up after tests.
     """
 
-    for output_file in glob.glob(join(output_dir, 'test_class_map*')):
+    for output_file in glob.glob(join(output_dir, "test_class_map*")):
         os.unlink(output_file)
 
     for dir_path in [train_dir, test_dir]:
-        unlink(Path(dir_path) / 'test_class_map.jsonlines')
+        unlink(Path(dir_path) / "test_class_map.jsonlines")
 
-    config_files = ['test_class_map.cfg',
-                    'test_class_map_feature_hasher.cfg']
+    config_files = ["test_class_map.cfg", "test_class_map_feature_hasher.cfg"]
     for cf in config_files:
         unlink(Path(config_dir) / cf)
 
 
 def test_SelectByMinCount():
-    """ Test SelectByMinCount feature selector """
-    m2 = [[0.001, 0.0, 0.0, 0.0],
-          [0.00001, -2.0, 0.0, 0.0],
-          [0.001, 0.0, 0.0, 4.0],
-          [0.0101, -200.0, 0.0, 0.0]]
+    """Test SelectByMinCount feature selector"""
+    m2 = [
+        [0.001, 0.0, 0.0, 0.0],
+        [0.00001, -2.0, 0.0, 0.0],
+        [0.001, 0.0, 0.0, 4.0],
+        [0.0101, -200.0, 0.0, 0.0],
+    ]
 
     # default should keep all nonzero features (i.e. ones that appear 1+ times)
     feat_selector = SelectByMinCount()
-    expected = np.array([[0.001, 0.0, 0.0],
-                         [0.00001, -2.0, 0.0],
-                         [0.001, 0.0, 4.0],
-                         [0.0101, -200.0, 0.0]])
+    expected = np.array(
+        [[0.001, 0.0, 0.0], [0.00001, -2.0, 0.0], [0.001, 0.0, 4.0], [0.0101, -200.0, 0.0]]
+    )
     assert_array_equal(feat_selector.fit_transform(np.array(m2)), expected)
-    assert_array_equal(feat_selector.fit_transform(
-        sp.csr_matrix(m2)).toarray(),
-        expected)
+    assert_array_equal(feat_selector.fit_transform(sp.csr_matrix(m2)).toarray(), expected)
 
     # keep features that happen 2+ times
     feat_selector = SelectByMinCount(min_count=2)
-    expected = np.array([[0.001, 0.0],
-                         [0.00001, -2.0],
-                         [0.001, 0.0],
-                         [0.0101, -200.0]])
+    expected = np.array([[0.001, 0.0], [0.00001, -2.0], [0.001, 0.0], [0.0101, -200.0]])
     assert_array_equal(feat_selector.fit_transform(np.array(m2)), expected)
-    assert_array_equal(
-        feat_selector.fit_transform(sp.csr_matrix(m2)).toarray(),
-        expected)
+    assert_array_equal(feat_selector.fit_transform(sp.csr_matrix(m2)).toarray(), expected)
 
     # keep features that happen 3+ times
     feat_selector = SelectByMinCount(min_count=3)
     expected = np.array([[0.001], [0.00001], [0.001], [0.0101]])
     assert_array_equal(feat_selector.fit_transform(np.array(m2)), expected)
-    assert_array_equal(
-        feat_selector.fit_transform(sp.csr_matrix(m2)).toarray(),
-        expected)
+    assert_array_equal(feat_selector.fit_transform(sp.csr_matrix(m2)).toarray(), expected)
 
 
 def make_class_map_data():
     # Create training file
-    train_path = join(train_dir, 'test_class_map.jsonlines')
+    train_path = join(train_dir, "test_class_map.jsonlines")
     ids = []
     labels = []
     features = []
-    class_names = ['beagle', 'cat', 'dachsund', 'cat']
+    class_names = ["beagle", "cat", "dachsund", "cat"]
     for i in range(1, 101):
         y = class_names[i % 4]
         ex_id = f"{y}{i}"
@@ -111,13 +100,12 @@ def make_class_map_data():
         ids.append(ex_id)
         labels.append(y)
         features.append(x)
-    train_fs = FeatureSet('train_class_map', ids, features=features,
-                          labels=labels)
+    train_fs = FeatureSet("train_class_map", ids, features=features, labels=labels)
     writer = NDJWriter(train_path, train_fs)
     writer.write()
 
     # Create test file
-    test_path = join(test_dir, 'test_class_map.jsonlines')
+    test_path = join(test_dir, "test_class_map.jsonlines")
     ids = []
     labels = []
     features = []
@@ -129,8 +117,7 @@ def make_class_map_data():
         ids.append(ex_id)
         labels.append(y)
         features.append(x)
-    test_fs = FeatureSet('test_class_map', ids, features=features,
-                         labels=labels)
+    test_fs = FeatureSet("test_class_map", ids, features=features, labels=labels)
     writer = NDJWriter(test_path, test_fs)
     writer.write()
 
@@ -142,16 +129,16 @@ def test_class_map():
 
     make_class_map_data()
 
-    config_template_path = join(config_dir, 'test_class_map.template.cfg')
+    config_template_path = join(config_dir, "test_class_map.template.cfg")
     config_path = fill_in_config_paths(config_template_path)
 
     run_configuration(config_path, quiet=True, local=True)
 
-    with open(join(output_dir,
-                   'test_class_map_test_class_map_LogisticRegression.results'
-                   '.json')) as f:
+    with open(
+        join(output_dir, "test_class_map_test_class_map_LogisticRegression.results" ".json")
+    ) as f:
         outd = json.loads(f.read())
-        logistic_result_score = outd[0]['accuracy']
+        logistic_result_score = outd[0]["accuracy"]
 
     assert_almost_equal(logistic_result_score, 0.5)
 
@@ -163,26 +150,29 @@ def test_class_map_feature_hasher():
 
     make_class_map_data()
 
-    config_template_path = join(config_dir,
-                                'test_class_map_feature_hasher.template.cfg')
+    config_template_path = join(config_dir, "test_class_map_feature_hasher.template.cfg")
     config_path = fill_in_config_paths(config_template_path)
 
     run_configuration(config_path, quiet=True, local=True)
 
-    with open(join(output_dir,
-                   'test_class_map_test_class_map_LogisticRegression.results.'
-                   'json')) as f:
+    with open(
+        join(output_dir, "test_class_map_test_class_map_LogisticRegression.results." "json")
+    ) as f:
         outd = json.loads(f.read())
-        logistic_result_score = outd[0]['accuracy']
+        logistic_result_score = outd[0]["accuracy"]
 
     assert_almost_equal(logistic_result_score, 0.5)
 
 
 def make_scaling_data(use_feature_hashing=False):
-
-    X, y = make_classification(n_samples=1000, n_classes=2,
-                               n_features=5, n_informative=5,
-                               n_redundant=0, random_state=1234567890)
+    X, y = make_classification(
+        n_samples=1000,
+        n_classes=2,
+        n_features=5,
+        n_informative=5,
+        n_redundant=0,
+        random_state=1234567890,
+    )
 
     # we want to arbitrary scale the various features to test the scaling
     scalers = np.array([1, 10, 100, 1000, 10000])
@@ -190,10 +180,10 @@ def make_scaling_data(use_feature_hashing=False):
 
     # since we want to use SKLL's FeatureSet class, we need to
     # create a list of IDs
-    ids = [f'EXAMPLE_{n}' for n in range(1, 1001)]
+    ids = [f"EXAMPLE_{n}" for n in range(1, 1001)]
 
     # create a list of dictionaries as the features
-    feature_names = [f'f{n}' for n in range(1, 6)]
+    feature_names = [f"f{n}" for n in range(1, 6)]
     features = []
     for row in X:
         features.append(dict(zip(feature_names, row)))
@@ -204,12 +194,12 @@ def make_scaling_data(use_feature_hashing=False):
     train_ids, test_ids = ids[:800], ids[800:]
 
     vectorizer = FeatureHasher(n_features=4) if use_feature_hashing else None
-    train_fs = FeatureSet('train_scaling', train_ids,
-                          features=train_features, labels=train_y,
-                          vectorizer=vectorizer)
-    test_fs = FeatureSet('test_scaling', test_ids,
-                         features=test_features, labels=test_y,
-                         vectorizer=vectorizer)
+    train_fs = FeatureSet(
+        "train_scaling", train_ids, features=train_features, labels=train_y, vectorizer=vectorizer
+    )
+    test_fs = FeatureSet(
+        "test_scaling", test_ids, features=test_features, labels=test_y, vectorizer=vectorizer
+    )
 
     return (train_fs, test_fs)
 
@@ -218,28 +208,27 @@ def check_scaling_features(use_feature_hashing=False, use_scaling=False):
     train_fs, test_fs = make_scaling_data(use_feature_hashing=use_feature_hashing)
 
     # create a Linear SVM with the value of scaling as specified
-    feature_scaling = 'both' if use_scaling else 'none'
-    learner = Learner('SGDClassifier', feature_scaling=feature_scaling,
-                      pos_label="1")
+    feature_scaling = "both" if use_scaling else "none"
+    learner = Learner("SGDClassifier", feature_scaling=feature_scaling, pos_label="1")
 
     # train the learner on the training set and test on the testing set
-    learner.train(train_fs,
-                  grid_search=True,
-                  grid_objective='f1_score_micro',
-                  grid_search_folds=3)
+    learner.train(train_fs, grid_search=True, grid_objective="f1_score_micro", grid_search_folds=3)
     test_output = learner.evaluate(test_fs)
-    fmeasures = [test_output[2][0]['F-measure'],
-                 test_output[2][1]['F-measure']]
+    fmeasures = [test_output[2][0]["F-measure"], test_output[2][1]["F-measure"]]
 
     # these are the expected values of the f-measures, sorted
     if not use_feature_hashing:
-        expected_fmeasures = ([0.5333333333333333, 0.4842105263157895] if
-                              not use_scaling else
-                              [0.7219512195121951, 0.7076923076923077])
+        expected_fmeasures = (
+            [0.5333333333333333, 0.4842105263157895]
+            if not use_scaling
+            else [0.7219512195121951, 0.7076923076923077]
+        )
     else:
-        expected_fmeasures = ([0.5288461538461539, 0.4895833333333333] if
-                              not use_scaling else
-                              [0.663157894736842, 0.6952380952380952])
+        expected_fmeasures = (
+            [0.5288461538461539, 0.4895833333333333]
+            if not use_scaling
+            else [0.663157894736842, 0.6952380952380952]
+        )
 
     assert_almost_equal(expected_fmeasures, fmeasures)
 

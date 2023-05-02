@@ -9,7 +9,7 @@ from sklearn.metrics import (
 
 
 def f075_macro(y_true, y_pred):
-    return fbeta_score(y_true, y_pred, beta=0.75, average='macro')
+    return fbeta_score(y_true, y_pred, beta=0.75, average="macro")
 
 
 def ratio_of_ones(y_true, y_pred):
@@ -23,11 +23,11 @@ def r2(y_true, y_pred):
 
 
 def one_minus_precision(y_true, y_pred, greater_is_better=False):
-    return 1 - precision_score(y_true, y_pred, average='binary')
+    return 1 - precision_score(y_true, y_pred, average="binary")
 
 
 def one_minus_f1_macro(y_true, y_pred, greater_is_better=False):
-    return 1 - f1_score(y_true, y_pred, average='macro')
+    return 1 - f1_score(y_true, y_pred, average="macro")
 
 
 def fake_prob_metric(y_true, y_pred, needs_proba=True):
@@ -35,4 +35,4 @@ def fake_prob_metric(y_true, y_pred, needs_proba=True):
 
 
 def fake_prob_metric_multiclass(y_true, y_pred, needs_proba=True):
-    return roc_auc_score(y_true, y_pred, average='macro', multi_class='ovo')
+    return roc_auc_score(y_true, y_pred, average="macro", multi_class="ovo")

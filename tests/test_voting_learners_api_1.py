@@ -40,19 +40,23 @@ def setup():
 
 def tearDown():
     """Clean up after tests"""
-    for model_path in [Path("test_current_directory.model"),
-                       Path(output_dir) / "test_other_directory.model"]:
+    for model_path in [
+        Path("test_current_directory.model"),
+        Path(output_dir) / "test_other_directory.model",
+    ]:
         if model_path.exists():
             model_path.unlink()
 
 
-def check_initialize(learner_type,
-                     voting_type,
-                     feature_scaling,
-                     pos_label,
-                     min_feature_count,
-                     model_kwargs_list,
-                     sampler_list):
+def check_initialize(
+    learner_type,
+    voting_type,
+    feature_scaling,
+    pos_label,
+    min_feature_count,
+    model_kwargs_list,
+    sampler_list,
+):
     """Run checks for voting learner initialization."""
     # instantiate the keyword arguments for the initialization
     kwargs = {}
@@ -70,26 +74,20 @@ def check_initialize(learner_type,
 
     # if the voting learner is a classifier
     if learner_type == "classifier":
-
         # we are using 2 learners
         learner_names = ["LogisticRegression", "SVC", "MultinomialNB"]
 
         # add the model parameters for each of the learners
         if model_kwargs_list is not None:
-            given_model_kwargs_list = [{"C": 0.01},
-                                       {"C": 10.0, "kernel": "poly"},
-                                       {"alpha": 0.75}]
+            given_model_kwargs_list = [{"C": 0.01}, {"C": 10.0, "kernel": "poly"}, {"alpha": 0.75}]
             kwargs["model_kwargs_list"] = given_model_kwargs_list
     else:
-
         # we are using 2 learners
         learner_names = ["LinearRegression", "SVR", "RandomForestRegressor"]
 
         # add the model parameters for each of the learners
         if model_kwargs_list is not None:
-            given_model_kwargs_list = [{},
-                                       {"C": 0.01, "kernel": "linear"},
-                                       {"n_estimators": 1000}]
+            given_model_kwargs_list = [{}, {"C": 0.01, "kernel": "linear"}, {"n_estimators": 1000}]
             kwargs["model_kwargs_list"] = given_model_kwargs_list
 
     # initialize the voting classifier
@@ -119,7 +117,7 @@ def check_initialize(learner_type,
     eq_(vl.voting, expected_voting_type)
 
     # check that feature scaling is properly set
-    expected_feature_scaling = 'none' if feature_scaling is None else feature_scaling
+    expected_feature_scaling = "none" if feature_scaling is None else feature_scaling
     eq_(vl.learners[0]._feature_scaling, expected_feature_scaling)
     eq_(vl.learners[1]._feature_scaling, expected_feature_scaling)
     eq_(vl.learners[2]._feature_scaling, expected_feature_scaling)
@@ -128,21 +126,17 @@ def check_initialize(learner_type,
     if model_kwargs_list:
         eq_(vl.model_kwargs_list, given_model_kwargs_list)
         if learner_type == "classifier":
-            eq_(vl.learners[0].model_kwargs["C"],
-                given_model_kwargs_list[0]["C"])
-            eq_(vl.learners[1].model_kwargs["C"],
-                given_model_kwargs_list[1]["C"])
-            eq_(vl.learners[1].model_kwargs["kernel"],
-                given_model_kwargs_list[1]["kernel"])
-            eq_(vl.learners[2].model_kwargs["alpha"],
-                given_model_kwargs_list[2]["alpha"])
+            eq_(vl.learners[0].model_kwargs["C"], given_model_kwargs_list[0]["C"])
+            eq_(vl.learners[1].model_kwargs["C"], given_model_kwargs_list[1]["C"])
+            eq_(vl.learners[1].model_kwargs["kernel"], given_model_kwargs_list[1]["kernel"])
+            eq_(vl.learners[2].model_kwargs["alpha"], given_model_kwargs_list[2]["alpha"])
         else:
-            eq_(vl.learners[1].model_kwargs["C"],
-                given_model_kwargs_list[1]["C"])
-            eq_(vl.learners[1].model_kwargs["kernel"],
-                given_model_kwargs_list[1]["kernel"])
-            eq_(vl.learners[2].model_kwargs["n_estimators"],
-                given_model_kwargs_list[2]["n_estimators"])
+            eq_(vl.learners[1].model_kwargs["C"], given_model_kwargs_list[1]["C"])
+            eq_(vl.learners[1].model_kwargs["kernel"], given_model_kwargs_list[1]["kernel"])
+            eq_(
+                vl.learners[2].model_kwargs["n_estimators"],
+                given_model_kwargs_list[2]["n_estimators"],
+            )
     else:
         eq_(vl.model_kwargs_list, [])
 
@@ -160,82 +154,102 @@ def check_initialize(learner_type,
 
 
 def test_initialize():
-    for (learner_type,
-         voting_type,
-         feature_scaling,
-         pos_label,
-         min_feature_count,
-         model_kwargs_list,
-         sampler_list) in product(["classifier", "regressor"],
-                                  [None, "hard", "soft"],
-                                  [None, "none", "both", "with_mean", "with_std"],
-                                  [None, "a"],
-                                  [None, 5],
-                                  [None, True],
-                                  [None, True]):
-        yield (check_initialize,
-               learner_type,
-               voting_type,
-               feature_scaling,
-               pos_label,
-               min_feature_count,
-               model_kwargs_list,
-               sampler_list)
+    for (
+        learner_type,
+        voting_type,
+        feature_scaling,
+        pos_label,
+        min_feature_count,
+        model_kwargs_list,
+        sampler_list,
+    ) in product(
+        ["classifier", "regressor"],
+        [None, "hard", "soft"],
+        [None, "none", "both", "with_mean", "with_std"],
+        [None, "a"],
+        [None, 5],
+        [None, True],
+        [None, True],
+    ):
+        yield (
+            check_initialize,
+            learner_type,
+            voting_type,
+            feature_scaling,
+            pos_label,
+            min_feature_count,
+            model_kwargs_list,
+            sampler_list,
+        )
 
 
 def test_initialize_bad_model_kwargs_list():
-    assert_raises_regex(ValueError,
-                        r"should be a list",
-                        VotingLearner,
-                        ["SVC", "LogisticRegression", "MultinomialNB"],
-                        model_kwargs_list={"C": 0.01})
+    assert_raises_regex(
+        ValueError,
+        r"should be a list",
+        VotingLearner,
+        ["SVC", "LogisticRegression", "MultinomialNB"],
+        model_kwargs_list={"C": 0.01},
+    )
 
 
 def test_initialize_bad_sampler_list():
-    assert_raises_regex(ValueError,
-                        r"should be a list",
-                        VotingLearner,
-                        ["SVC", "LogisticRegression", "MultinomialNB"],
-                        sampler_list="Nystroem")
+    assert_raises_regex(
+        ValueError,
+        r"should be a list",
+        VotingLearner,
+        ["SVC", "LogisticRegression", "MultinomialNB"],
+        sampler_list="Nystroem",
+    )
 
 
 def test_initialize_bad_sampler_kwargs_list():
-    assert_raises_regex(ValueError,
-                        r"should be a list",
-                        VotingLearner,
-                        ["SVC", "LogisticRegression", "MultinomialNB"],
-                        sampler_kwargs_list=0.01)
+    assert_raises_regex(
+        ValueError,
+        r"should be a list",
+        VotingLearner,
+        ["SVC", "LogisticRegression", "MultinomialNB"],
+        sampler_kwargs_list=0.01,
+    )
 
 
 def test_initialize_incorrect_model_kwargs_list():
-    assert_raises_regex(ValueError,
-                        r"must have 3 entries",
-                        VotingLearner,
-                        ["SVC", "LogisticRegression", "MultinomialNB"],
-                        model_kwargs_list=[{"C": 0.01}, {"C": 0.1}])
+    assert_raises_regex(
+        ValueError,
+        r"must have 3 entries",
+        VotingLearner,
+        ["SVC", "LogisticRegression", "MultinomialNB"],
+        model_kwargs_list=[{"C": 0.01}, {"C": 0.1}],
+    )
 
 
 def test_initialize_incorrect_sampler_list():
-    assert_raises_regex(ValueError,
-                        r"must have 3 entries",
-                        VotingLearner,
-                        ["SVC", "LogisticRegression", "MultinomialNB"],
-                        sampler_list=["RBFSampler"])
+    assert_raises_regex(
+        ValueError,
+        r"must have 3 entries",
+        VotingLearner,
+        ["SVC", "LogisticRegression", "MultinomialNB"],
+        sampler_list=["RBFSampler"],
+    )
 
 
 def test_initialize_incorrect_sampler_kwargs_list():
-    assert_raises_regex(ValueError,
-                        r"must have 3 entries",
-                        VotingLearner,
-                        ["SVC", "LogisticRegression", "MultinomialNB"],
-                        sampler_kwargs_list=[{"gamma": 1.0}])
+    assert_raises_regex(
+        ValueError,
+        r"must have 3 entries",
+        VotingLearner,
+        ["SVC", "LogisticRegression", "MultinomialNB"],
+        sampler_kwargs_list=[{"gamma": 1.0}],
+    )
 
 
 def test_intialize_bad_learner_types():
-    assert_raises_regex(ValueError,
-                        r"cannot mix classifiers and regressors",
-                        VotingLearner,
-                        ["SVC", "LinearRegression", "MultinomialNB"])
+    assert_raises_regex(
+        ValueError,
+        r"cannot mix classifiers and regressors",
+        VotingLearner,
+        ["SVC", "LinearRegression", "MultinomialNB"],
+    )
 
 
 def check_train(learner_type, with_grid_search):
@@ -258,40 +272,37 @@ def check_train(learner_type, with_grid_search):
 
     # instantiate and train a voting learner
     vl = VotingLearner(learner_names)
-    vl.train(featureset,
-             grid_objective=objective,
-             grid_search=with_grid_search,
-             grid_search_folds=3)
+    vl.train(
+        featureset, grid_objective=objective, grid_search=with_grid_search, grid_search_folds=3
+    )
 
     # check that the training worked
     assert_is_not_none(vl.model)
     model_type = VotingClassifier if learner_type == "classifier" else VotingRegressor
-    assert(isinstance(vl.model, model_type))
+    assert isinstance(vl.model, model_type)
 
     # check the underlying learners
     eq_(len(vl.learners), len(learner_names))
-    assert(isinstance(vl.learners[0].model, estimator_classes[0]))
-    assert(isinstance(vl.learners[1].model, estimator_classes[1]))
-    assert(isinstance(vl.learners[2].model, estimator_classes[2]))
+    assert isinstance(vl.learners[0].model, estimator_classes[0])
+    assert isinstance(vl.learners[1].model, estimator_classes[1])
+    assert isinstance(vl.learners[2].model, estimator_classes[2])
 
     eq_(len(vl.model.named_estimators_), 3)
     pipeline1 = vl.model.named_estimators_[learner_names[0]]
     pipeline2 = vl.model.named_estimators_[learner_names[1]]
     pipeline3 = vl.model.named_estimators_[learner_names[2]]
 
-    assert(isinstance(pipeline1, Pipeline))
-    assert(isinstance(pipeline2, Pipeline))
-    assert(isinstance(pipeline3, Pipeline))
+    assert isinstance(pipeline1, Pipeline)
+    assert isinstance(pipeline2, Pipeline)
+    assert isinstance(pipeline3, Pipeline)
 
-    assert(isinstance(pipeline1['estimator'], estimator_classes[0]))
-    assert(isinstance(pipeline2['estimator'], estimator_classes[1]))
-    assert(isinstance(pipeline3['estimator'], estimator_classes[2]))
+    assert isinstance(pipeline1["estimator"], estimator_classes[0])
+    assert isinstance(pipeline2["estimator"], estimator_classes[1])
+    assert isinstance(pipeline3["estimator"], estimator_classes[2])
 
 
 def test_train():
-    for (learner_type,
-         with_grid_search) in product(["classifier", "regressor"],
-                                      [False, True]):
+    for learner_type, with_grid_search in product(["classifier", "regressor"], [False, True]):
         yield check_train, learner_type, with_grid_search
 
 
@@ -300,37 +311,36 @@ def test_train_with_custom_path():
 
     # instantiate and train a voting classifier on the digits training set
     learner_names = ["CustomLogisticRegressionWrapper", "SVC"]
-    vl = VotingLearner(learner_names,
-                       custom_learner_path=str(CUSTOM_LEARNER_PATH))
-    vl.train(TRAIN_FS_DIGITS,
-             grid_objective="accuracy",
-             grid_search=False)
+    vl = VotingLearner(learner_names, custom_learner_path=str(CUSTOM_LEARNER_PATH))
+    vl.train(TRAIN_FS_DIGITS, grid_objective="accuracy", grid_search=False)
 
     # check that we have a trained model
     assert_is_not_none(vl.model)
-    assert(isinstance(vl.model, VotingClassifier))
+    assert isinstance(vl.model, VotingClassifier)
 
     # check the underlying learners
     eq_(len(vl.learners), 2)
     eq_(vl.learners[0].model.__class__.__name__, "CustomLogisticRegressionWrapper")
-    assert(isinstance(vl.learners[1].model, SVC))
+    assert isinstance(vl.learners[1].model, SVC)
     eq_(len(vl.model.named_estimators_), 2)
     pipeline1 = vl.model.named_estimators_["CustomLogisticRegressionWrapper"]
     pipeline2 = vl.model.named_estimators_["SVC"]
-    assert(isinstance(pipeline1, Pipeline))
-    assert(isinstance(pipeline2, Pipeline))
-    eq_(pipeline1['estimator'].__class__.__name__, "CustomLogisticRegressionWrapper")
-    assert(isinstance(pipeline2['estimator'], SVC))
+    assert isinstance(pipeline1, Pipeline)
+    assert isinstance(pipeline2, Pipeline)
+    eq_(pipeline1["estimator"].__class__.__name__, "CustomLogisticRegressionWrapper")
+    assert isinstance(pipeline2["estimator"], SVC)
 
 
 def test_train_bad_param_grid_list():
     vl = VotingLearner(["SVC", "LogisticRegression", "MultinomialNB"])
-    assert_raises_regex(ValueError,
-                        r"should be a list",
-                        vl.train,
-                        TRAIN_FS_DIGITS[:100],
-                        grid_objective="accuracy",
-                        param_grid_list={"C": [0.01, 0.1, 1.0, 10.0]})
+    assert_raises_regex(
+        ValueError,
+        r"should be a list",
+        vl.train,
+        TRAIN_FS_DIGITS[:100],
+        grid_objective="accuracy",
+        param_grid_list={"C": [0.01, 0.1, 1.0, 10.0]},
+    )
 
 
 def check_save_and_load(learner_type, use_current_directory):
@@ -369,7 +379,5 @@ def check_save_and_load(learner_type, use_current_directory):
 
 
 def test_save_and_load():
-    for (learner_type,
-         use_current_directory) in product(["classifier", "regressor"],
-                                           [False, True]):
+    for learner_type, use_current_directory in product(["classifier", "regressor"], [False, True]):
         yield check_save_and_load, learner_type, use_current_directory

@@ -48,11 +48,9 @@ def tearDown():
         output_file_path.unlink()
 
 
-def check_cross_validate_with_grid_search(learner_type,
-                                          with_soft_voting,
-                                          with_individual_predictions,
-                                          with_custom_seed):
-
+def check_cross_validate_with_grid_search(
+    learner_type, with_soft_voting, with_individual_predictions, with_custom_seed
+):
     # to test the cross_validate() method with grid search, we
     # instantiate the SKLL voting learner, call `cross_validate()` with
     # 3 folds on it while writing out the predictions and also asking it
@@ -66,9 +64,9 @@ def check_cross_validate_with_grid_search(learner_type,
     # compare their values.
 
     # set the prediction prefix in case we need to write out the predictions
-    prediction_prefix = (Path(output_dir) / f"test_xval_voting_gs_"
-                                            f"{learner_type}_"
-                                            f"{with_soft_voting}")
+    prediction_prefix = (
+        Path(output_dir) / f"test_xval_voting_gs_" f"{learner_type}_" f"{with_soft_voting}"
+    )
     prediction_prefix = str(prediction_prefix)
 
     # set various parameters based on whether we are using
@@ -88,10 +86,9 @@ def check_cross_validate_with_grid_search(learner_type,
 
     # instantiate and cross-validate the SKLL voting learner
     # on the full digits dataset
-    skll_vl = VotingLearner(learner_names,
-                            feature_scaling="none",
-                            min_feature_count=0,
-                            voting=voting_type)
+    skll_vl = VotingLearner(
+        learner_names, feature_scaling="none", min_feature_count=0, voting=voting_type
+    )
 
     # set up an extra keyword argument for the `cross_validate()`
     # method if a custom seed is specified and compute the expected
@@ -99,36 +96,34 @@ def check_cross_validate_with_grid_search(learner_type,
     if with_custom_seed:
         custom_seed_value = 54321
         extra_xval_kwargs = {"cv_seed": custom_seed_value}
-        expected_fold_ids = compute_expected_folds_for_cv_testing(featureset,
-                                                                  num_folds=3,
-                                                                  stratified=learner_type == "classifier",
-                                                                  seed=custom_seed_value)
+        expected_fold_ids = compute_expected_folds_for_cv_testing(
+            featureset, num_folds=3, stratified=learner_type == "classifier", seed=custom_seed_value
+        )
     else:
         extra_xval_kwargs = {}
         # note that even if we don't have a custom seed, we are still doing
         # grid search, so SKLL will still shuffle the features but it will
         # use the default seed value which is 123456789 so we need to use
         # that value for our expected fold computation function too
-        expected_fold_ids = compute_expected_folds_for_cv_testing(featureset,
-                                                                  num_folds=3,
-                                                                  stratified=learner_type == "classifier",
-                                                                  seed=123456789)
+        expected_fold_ids = compute_expected_folds_for_cv_testing(
+            featureset, num_folds=3, stratified=learner_type == "classifier", seed=123456789
+        )
 
-    (xval_results,
-     used_fold_ids,
-     used_models) = skll_vl.cross_validate(featureset,
-                                           grid_search=True,
-                                           grid_objective=objective,
-                                           grid_search_folds=3,
-                                           cv_folds=3,
-                                           prediction_prefix=prediction_prefix,
-                                           output_metrics=[extra_metric],
-                                           save_cv_models=True,
-                                           individual_predictions=with_individual_predictions,
-                                           **extra_xval_kwargs)
+    (xval_results, used_fold_ids, used_models) = skll_vl.cross_validate(
+        featureset,
+        grid_search=True,
+        grid_objective=objective,
+        grid_search_folds=3,
+        cv_folds=3,
+        prediction_prefix=prediction_prefix,
+        output_metrics=[extra_metric],
+        save_cv_models=True,
+        individual_predictions=with_individual_predictions,
+        **extra_xval_kwargs,
+    )
 
     # check that the results are as expected
-    ok_(len(xval_results), 3)               # number of folds
+    ok_(len(xval_results), 3)  # number of folds
     for i in range(3):
         if learner_type == "classifier":
             ok_(isinstance(xval_results[i][0], list))  # confusion matrix
@@ -136,10 +131,10 @@ def check_cross_validate_with_grid_search(learner_type,
         else:
             eq_(xval_results[i][0], None)  # no confusion matrix
             eq_(xval_results[i][1], None)  # no accuracy
-        ok_(isinstance(xval_results[i][2], dict))   # result dict
-        ok_(isinstance(xval_results[i][3], dict))   # model params
+        ok_(isinstance(xval_results[i][2], dict))  # result dict
+        ok_(isinstance(xval_results[i][3], dict))  # model params
         ok_(isinstance(xval_results[i][4], float))  # objective
-        ok_(isinstance(xval_results[i][5], dict))   # metric scores
+        ok_(isinstance(xval_results[i][5], dict))  # metric scores
 
     # check that the expected fold IDs match the actual fold IDs
     eq_(sorted(expected_fold_ids.items()), sorted(used_fold_ids.items()))
@@ -178,18 +173,21 @@ def check_cross_validate_with_grid_search(learner_type,
     # the estimators underlying the model, fit it on the training
     # partition of the fold and then predict on the test partition
     cv_splits = splitter.split()
-    for ((train, test), _) in zip(cv_splits, used_models):
+    for (train, test), _ in zip(cv_splits, used_models):
         used_estimators = used_models[0].model.named_estimators_
         clf1 = used_estimators[learner_names[0]]["estimator"]
         clf2 = used_estimators[learner_names[1]]["estimator"]
         clf3 = used_estimators[learner_names[2]]["estimator"]
 
         # instantiate the scikit-learn voting classifier
-        sklearn_model_type = (VotingClassifier if learner_type == "classifier"
-                              else VotingRegressor)
-        sklearn_model_kwargs = {"estimators": [(learner_names[0], clf1),
-                                               (learner_names[1], clf2),
-                                               (learner_names[2], clf3)]}
+        sklearn_model_type = VotingClassifier if learner_type == "classifier" else VotingRegressor
+        sklearn_model_kwargs = {
+            "estimators": [
+                (learner_names[0], clf1),
+                (learner_names[1], clf2),
+                (learner_names[2], clf3),
+            ]
+        }
         if learner_type == "classifier":
             sklearn_model_kwargs["voting"] = voting_type
         sklearn_vl = sklearn_model_type(**sklearn_model_kwargs)
@@ -215,15 +213,23 @@ def check_cross_validate_with_grid_search(learner_type,
     # are close enough; we only expect them to match up to 2 decimal places
     # due to various differences between SKLL and scikit-learn
     if learner_type == "classifier":
-        skll_metrics = [accuracy_score(featureset.labels, df_preds["skll"]),
-                        f1_score(featureset.labels, df_preds["skll"], average="macro")]
-        sklearn_metrics = [accuracy_score(featureset.labels, df_preds["sklearn"]),
-                           f1_score(featureset.labels, df_preds["sklearn"], average="macro")]
+        skll_metrics = [
+            accuracy_score(featureset.labels, df_preds["skll"]),
+            f1_score(featureset.labels, df_preds["skll"], average="macro"),
+        ]
+        sklearn_metrics = [
+            accuracy_score(featureset.labels, df_preds["sklearn"]),
+            f1_score(featureset.labels, df_preds["sklearn"], average="macro"),
+        ]
     else:
-        skll_metrics = [pearsonr(featureset.labels, df_preds["skll"])[0],
-                        mean_squared_error(featureset.labels, df_preds["skll"])]
-        sklearn_metrics = [pearsonr(featureset.labels, df_preds["sklearn"])[0],
-                           mean_squared_error(featureset.labels, df_preds["sklearn"])]
+        skll_metrics = [
+            pearsonr(featureset.labels, df_preds["skll"])[0],
+            mean_squared_error(featureset.labels, df_preds["skll"]),
+        ]
+        sklearn_metrics = [
+            pearsonr(featureset.labels, df_preds["sklearn"])[0],
+            mean_squared_error(featureset.labels, df_preds["sklearn"]),
+        ]
 
     assert_almost_equal(skll_metrics[0], sklearn_metrics[0], places=2)
     assert_almost_equal(skll_metrics[1], sklearn_metrics[1], places=2)
@@ -239,20 +245,17 @@ def check_cross_validate_with_grid_search(learner_type,
 
 
 def test_cross_validate_with_grid_search():
-    for (learner_type,
-         with_soft_voting,
-         with_individual_predictions,
-         with_custom_seed) in product(["classifier", "regressor"],
-                                      [False, True],
-                                      [False, True],
-                                      [False, True]):
-
+    for learner_type, with_soft_voting, with_individual_predictions, with_custom_seed in product(
+        ["classifier", "regressor"], [False, True], [False, True], [False, True]
+    ):
         # regressors do not support soft voting or custom seeds
         if learner_type == "regressor" and with_soft_voting:
             continue
         else:
-            yield (check_cross_validate_with_grid_search,
-                   learner_type,
-                   with_soft_voting,
-                   with_individual_predictions,
-                   with_custom_seed)
+            yield (
+                check_cross_validate_with_grid_search,
+                learner_type,
+                with_soft_voting,
+                with_individual_predictions,
+                with_custom_seed,
+            )

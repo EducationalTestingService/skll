@@ -57,8 +57,7 @@ class FeatureSet(object):
     each array must be equal.
     """
 
-    def __init__(self, name, ids, labels=None, features=None,
-                 vectorizer=None):
+    def __init__(self, name, ids, labels=None, features=None, vectorizer=None):
         super(FeatureSet, self).__init__()
         self.name = name
         if isinstance(ids, list):
@@ -77,18 +76,22 @@ class FeatureSet(object):
         if self.features is not None:
             num_feats = self.features.shape[0]
             if self.ids is None:
-                raise ValueError('A list of IDs is required')
+                raise ValueError("A list of IDs is required")
             num_ids = self.ids.shape[0]
             if num_feats != num_ids:
-                raise ValueError(f'Number of IDs ({num_ids}) does not equal '
-                                 f'number of feature rows ({num_feats})')
+                raise ValueError(
+                    f"Number of IDs ({num_ids}) does not equal "
+                    f"number of feature rows ({num_feats})"
+                )
             if self.labels is None:
                 self.labels = np.empty(num_feats)
                 self.labels.fill(None)
             num_labels = self.labels.shape[0]
             if num_feats != num_labels:
-                raise ValueError(f'Number of labels ({num_labels}) does not '
-                                 f'equal number of feature rows ({num_feats})')
+                raise ValueError(
+                    f"Number of labels ({num_labels}) does not "
+                    f"equal number of feature rows ({num_feats})"
+                )
 
     def __contains__(self, value):
         """
@@ -116,16 +119,17 @@ class FeatureSet(object):
         sixth decimal place or higher.
         """
 
-        return (self.ids.shape == other.ids.shape and
-                self.labels.shape == other.labels.shape and
-                self.features.shape == other.features.shape and
-                (self.ids == other.ids).all() and
-                (self.labels == other.labels).all() and
-                np.allclose(self.features.data, other.features.data,
-                            rtol=1e-6) and
-                (self.features.indices == other.features.indices).all() and
-                (self.features.indptr == other.features.indptr).all() and
-                self.vectorizer == other.vectorizer)
+        return (
+            self.ids.shape == other.ids.shape
+            and self.labels.shape == other.labels.shape
+            and self.features.shape == other.features.shape
+            and (self.ids == other.ids).all()
+            and (self.labels == other.labels).all()
+            and np.allclose(self.features.data, other.features.data, rtol=1e-6)
+            and (self.features.indices == other.features.indices).all()
+            and (self.features.indptr == other.features.indptr).all()
+            and self.vectorizer == other.vectorizer
+        )
 
     def __iter__(self):
         """
@@ -133,11 +137,12 @@ class FeatureSet(object):
         """
         if self.features is not None:
             if not isinstance(self.vectorizer, DictVectorizer):
-                raise ValueError('FeatureSets can only be iterated through if '
-                                 'they use a DictVectorizer for their feature '
-                                 'vectorizer.')
+                raise ValueError(
+                    "FeatureSets can only be iterated through if "
+                    "they use a DictVectorizer for their feature "
+                    "vectorizer."
+                )
             for id_, label_, feats in zip(self.ids, self.labels, self.features):
-
                 # reshape to a 2D matrix if we are not using a sparse matrix
                 # to store the features
                 feats = feats.reshape(1, -1) if not sp.issparse(feats) else feats
@@ -182,56 +187,54 @@ class FeatureSet(object):
 
         # Check that the sets of IDs are equal
         if set(self.ids) != set(other.ids):
-            raise ValueError('IDs are not in the same order in each '
-                             'feature set')
+            raise ValueError("IDs are not in the same order in each " "feature set")
         # Compute the relative ordering of IDs for merging the features
         # and labels.
         ids_indices = dict((y, x) for x, y in enumerate(other.ids))
         relative_order = [ids_indices[self_id] for self_id in self.ids]
 
         # Initialize the new feature set with a name and the IDs.
-        new_set = FeatureSet('+'.join(sorted([self.name, other.name])),
-                             deepcopy(self.ids))
+        new_set = FeatureSet("+".join(sorted([self.name, other.name])), deepcopy(self.ids))
 
         # Combine feature matrices and vectorizers.
         if not isinstance(self.vectorizer, type(other.vectorizer)):
-            raise ValueError('Cannot combine FeatureSets because they are '
-                             'not both using the same type of feature '
-                             'vectorizer (e.g., DictVectorizer, '
-                             'FeatureHasher)')
+            raise ValueError(
+                "Cannot combine FeatureSets because they are "
+                "not both using the same type of feature "
+                "vectorizer (e.g., DictVectorizer, "
+                "FeatureHasher)"
+            )
         uses_feature_hasher = isinstance(self.vectorizer, FeatureHasher)
         if uses_feature_hasher:
-            if (self.vectorizer.n_features !=
-                    other.vectorizer.n_features):
-                raise ValueError('Cannot combine FeatureSets that uses '
-                                 'FeatureHashers with different values of '
-                                 'n_features setting.')
+            if self.vectorizer.n_features != other.vectorizer.n_features:
+                raise ValueError(
+                    "Cannot combine FeatureSets that uses "
+                    "FeatureHashers with different values of "
+                    "n_features setting."
+                )
         else:
             # Check for duplicate feature names.
-            if (set(self.vectorizer.feature_names_) &
-                    set(other.vectorizer.feature_names_)):
-                raise ValueError('Cannot combine FeatureSets because they '
-                                 'have duplicate feature names.')
+            if set(self.vectorizer.feature_names_) & set(other.vectorizer.feature_names_):
+                raise ValueError(
+                    "Cannot combine FeatureSets because they " "have duplicate feature names."
+                )
         num_feats = self.features.shape[1]
 
-        new_set.features = sp.hstack([self.features,
-                                      other.features[relative_order]],
-                                     'csr')
+        new_set.features = sp.hstack([self.features, other.features[relative_order]], "csr")
         new_set.vectorizer = deepcopy(self.vectorizer)
         if not uses_feature_hasher:
             for feat_name, index in other.vectorizer.vocabulary_.items():
-                new_set.vectorizer.vocabulary_[feat_name] = (index +
-                                                             num_feats)
+                new_set.vectorizer.vocabulary_[feat_name] = index + num_feats
             other_names = other.vectorizer.feature_names_
             new_set.vectorizer.feature_names_.extend(other_names)
 
         # If either set has labels, check that they don't conflict.
         if self.has_labels:
             # labels should be the same for each FeatureSet, so store once.
-            if other.has_labels and \
-                    not np.all(self.labels == other.labels[relative_order]):
-                raise ValueError('Feature sets have conflicting labels for '
-                                 'examples with the same ID.')
+            if other.has_labels and not np.all(self.labels == other.labels[relative_order]):
+                raise ValueError(
+                    "Feature sets have conflicting labels for " "examples with the same ID."
+                )
             new_set.labels = deepcopy(self.labels)
         else:
             new_set.labels = deepcopy(other.labels[relative_order])
@@ -292,22 +295,25 @@ class FeatureSet(object):
         # Filter features
         if features is not None:
             if isinstance(self.vectorizer, FeatureHasher):
-                raise ValueError('FeatureSets with FeatureHasher vectorizers'
-                                 ' cannot be filtered by feature.')
-            columns = np.array(sorted({feat_num for feat_name, feat_num in
-                                       self.vectorizer.vocabulary_.items()
-                                       if (feat_name in features or
-                                           feat_name.split('=', 1)[0] in
-                                           features)}))
+                raise ValueError(
+                    "FeatureSets with FeatureHasher vectorizers" " cannot be filtered by feature."
+                )
+            columns = np.array(
+                sorted(
+                    {
+                        feat_num
+                        for feat_name, feat_num in self.vectorizer.vocabulary_.items()
+                        if (feat_name in features or feat_name.split("=", 1)[0] in features)
+                    }
+                )
+            )
             if inverse:
                 all_columns = np.arange(self.features.shape[1])
-                columns = all_columns[np.logical_not(np.in1d(all_columns,
-                                                             columns))]
+                columns = all_columns[np.logical_not(np.in1d(all_columns, columns))]
             self.features = self.features[:, columns]
             self.vectorizer.restrict(columns, indices=True)
 
-    def filtered_iter(self, ids=None, labels=None, features=None,
-                      inverse=False):
+    def filtered_iter(self, ids=None, labels=None, features=None, inverse=False):
         """
         A version of `__iter__` that retains only the specified features
         and/or examples from the output.
@@ -354,11 +360,12 @@ class FeatureSet(object):
         ValueError
             If the vectorizer is not a ``DictVectorizer``.
         """
-        if self.features is not None and not isinstance(self.vectorizer,
-                                                        DictVectorizer):
-            raise ValueError('FeatureSets can only be iterated through if they'
-                             ' use a DictVectorizer for their feature '
-                             'vectorizer.')
+        if self.features is not None and not isinstance(self.vectorizer, DictVectorizer):
+            raise ValueError(
+                "FeatureSets can only be iterated through if they"
+                " use a DictVectorizer for their feature "
+                "vectorizer."
+            )
 
         for id_, label_, feats in zip(self.ids, self.labels, self.features):
             # Skip instances with IDs not in filter
@@ -373,10 +380,11 @@ class FeatureSet(object):
             feats = feats.reshape(1, -1) if not sp.issparse(feats) else feats
             feat_dict = self.vectorizer.inverse_transform(feats)[0]
             if features is not None:
-                feat_dict = {name: value for name, value in
-                             feat_dict.items() if
-                             (inverse != (name in features or
-                                          name.split('=', 1)[0] in features))}
+                feat_dict = {
+                    name: value
+                    for name, value in feat_dict.items()
+                    if (inverse != (name in features or name.split("=", 1)[0] in features))
+                }
             elif not inverse:
                 feat_dict = {}
             yield id_, label_, feat_dict
@@ -397,8 +405,7 @@ class FeatureSet(object):
         A copy of ``self`` with all features in ``other`` removed.
         """
         new_set = deepcopy(self)
-        new_set.filter(features=other.vectorizer.feature_names_,
-                       inverse=True)
+        new_set.filter(features=other.vectorizer.feature_names_, inverse=True)
         return new_set
 
     @property
@@ -414,8 +421,9 @@ class FeatureSet(object):
         # make sure that labels is not None or a list of Nones
         if self.labels is not None and not all(label is None for label in self.labels):
             # then check that they are not a list of NaNs
-            return not (np.issubdtype(self.labels.dtype, np.floating) and
-                        np.isnan(np.min(self.labels)))
+            return not (
+                np.issubdtype(self.labels.dtype, np.floating) and np.isnan(np.min(self.labels))
+            )
         else:
             return False
 
@@ -450,18 +458,21 @@ class FeatureSet(object):
         # Check if we're slicing
         if isinstance(value, slice):
             sliced_ids = self.ids[value]
-            sliced_feats = (self.features[value] if self.features is not None
-                            else None)
-            sliced_labels = (self.labels[value] if self.labels is not None
-                             else None)
-            return FeatureSet(f'{self.name}_{value}', sliced_ids,
-                              features=sliced_feats, labels=sliced_labels,
-                              vectorizer=self.vectorizer)
+            sliced_feats = self.features[value] if self.features is not None else None
+            sliced_labels = self.labels[value] if self.labels is not None else None
+            return FeatureSet(
+                f"{self.name}_{value}",
+                sliced_ids,
+                features=sliced_feats,
+                labels=sliced_labels,
+                vectorizer=self.vectorizer,
+            )
         else:
             label = self.labels[value] if self.labels is not None else None
             feats = self.features[value, :]
-            features = (self.vectorizer.inverse_transform(feats)[0] if
-                        self.features is not None else {})
+            features = (
+                self.vectorizer.inverse_transform(feats)[0] if self.features is not None else {}
+            )
             return self.ids[value], label, features
 
     @staticmethod
@@ -517,16 +528,12 @@ class FeatureSet(object):
             labels2 = fs.labels[ids_for_split2]
             features2 = fs.features[ids_for_split2]
 
-        fs1 = FeatureSet(f'{fs.name}_1',
-                         ids1,
-                         labels=labels1,
-                         features=features1,
-                         vectorizer=fs.vectorizer)
-        fs2 = FeatureSet(f'{fs.name}_2',
-                         ids2,
-                         labels=labels2,
-                         features=features2,
-                         vectorizer=fs.vectorizer)
+        fs1 = FeatureSet(
+            f"{fs.name}_1", ids1, labels=labels1, features=features1, vectorizer=fs.vectorizer
+        )
+        fs2 = FeatureSet(
+            f"{fs.name}_2", ids2, labels=labels2, features=features2, vectorizer=fs.vectorizer
+        )
         return fs1, fs2
 
     @staticmethod
@@ -562,9 +569,7 @@ class FeatureSet(object):
             feature_columns = df.columns
             labels = None
 
-        features = df[feature_columns].to_dict(orient='records')
-        return FeatureSet(name,
-                          ids=df.index.tolist(),
-                          labels=labels,
-                          features=features,
-                          vectorizer=vectorizer)
+        features = df[feature_columns].to_dict(orient="records")
+        return FeatureSet(
+            name, ids=df.index.tolist(), labels=labels, features=features, vectorizer=vectorizer
+        )

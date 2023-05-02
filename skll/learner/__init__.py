@@ -100,7 +100,7 @@ from .utils import (
 _REQUIRES_DENSE = copy.copy(KNOWN_REQUIRES_DENSE)
 _DEFAULT_PARAM_GRIDS = copy.deepcopy(KNOWN_DEFAULT_PARAM_GRIDS)
 
-__all__ = ['Learner', 'MAX_CONCURRENT_PROCESSES', 'load_custom_learner']
+__all__ = ["Learner", "MAX_CONCURRENT_PROCESSES", "load_custom_learner"]
 
 
 class Learner(object):
@@ -170,18 +170,20 @@ class Learner(object):
         Defaults to ``None``.
     """
 
-    def __init__(self,  # noqa: C901
-                 model_type,
-                 probability=False,
-                 pipeline=False,
-                 feature_scaling='none',
-                 model_kwargs=None,
-                 pos_label=None,
-                 min_feature_count=1,
-                 sampler=None,
-                 sampler_kwargs=None,
-                 custom_learner_path=None,
-                 logger=None):
+    def __init__(
+        self,  # noqa: C901
+        model_type,
+        probability=False,
+        pipeline=False,
+        feature_scaling="none",
+        model_kwargs=None,
+        pos_label=None,
+        min_feature_count=1,
+        sampler=None,
+        sampler_kwargs=None,
+        custom_learner_path=None,
+        logger=None,
+    ):
         """
         Initializes a learner object with the specified settings.
         """
@@ -206,16 +208,17 @@ class Learner(object):
             # to the appropriate lists of models
             globals()[model_type] = load_custom_learner(custom_learner_path, model_type)
             model_class = globals()[model_type]
-            default_param_grid = (model_class.default_param_grid()
-                                  if hasattr(model_class, 'default_param_grid')
-                                  else {})
+            default_param_grid = (
+                model_class.default_param_grid()
+                if hasattr(model_class, "default_param_grid")
+                else {}
+            )
 
             # ewww, globals :-(
             global _REQUIRES_DENSE
 
             _DEFAULT_PARAM_GRIDS.update({model_class: default_param_grid})
-            if hasattr(model_class, 'requires_dense') and \
-                    model_class.requires_dense():
+            if hasattr(model_class, "requires_dense") and model_class.requires_dense():
                 _REQUIRES_DENSE = _REQUIRES_DENSE + (model_class,)
 
         self._model_type = globals()[model_type]
@@ -228,71 +231,97 @@ class Learner(object):
         #   to accept only dense features
         # - if we are doing centering as part of feature scaling
         # - if we are using non-negative least squares regression
-        self._use_dense_features = \
-            (issubclass(self._model_type, _REQUIRES_DENSE) or
-                self._feature_scaling in {'with_mean', 'both'} or
-                (issubclass(self._model_type, LinearRegression) and
-                    model_kwargs is not None and
-                    model_kwargs.get("positive", False)))
+        self._use_dense_features = (
+            issubclass(self._model_type, _REQUIRES_DENSE)
+            or self._feature_scaling in {"with_mean", "both"}
+            or (
+                issubclass(self._model_type, LinearRegression)
+                and model_kwargs is not None
+                and model_kwargs.get("positive", False)
+            )
+        )
 
         # Set default keyword arguments for models that we have some for.
         if issubclass(self._model_type, SVC):
-            self._model_kwargs['cache_size'] = 1000
-            self._model_kwargs['probability'] = self.probability
-            self._model_kwargs['gamma'] = 'scale'
+            self._model_kwargs["cache_size"] = 1000
+            self._model_kwargs["probability"] = self.probability
+            self._model_kwargs["gamma"] = "scale"
             if self.probability:
                 self.logger.warning(
-                    'Because LibSVM does an internal cross-validation to '
-                    'produce probabilities, results will not be exactly '
-                    'replicable when using SVC and probability mode.'
+                    "Because LibSVM does an internal cross-validation to "
+                    "produce probabilities, results will not be exactly "
+                    "replicable when using SVC and probability mode."
                 )
-        elif issubclass(self._model_type,
-                        (RandomForestClassifier, RandomForestRegressor,
-                         GradientBoostingClassifier, GradientBoostingRegressor,
-                         AdaBoostClassifier, AdaBoostRegressor)):
-            self._model_kwargs['n_estimators'] = 500
+        elif issubclass(
+            self._model_type,
+            (
+                RandomForestClassifier,
+                RandomForestRegressor,
+                GradientBoostingClassifier,
+                GradientBoostingRegressor,
+                AdaBoostClassifier,
+                AdaBoostRegressor,
+            ),
+        ):
+            self._model_kwargs["n_estimators"] = 500
         elif issubclass(self._model_type, DummyClassifier):
-            self._model_kwargs['strategy'] = 'prior'
+            self._model_kwargs["strategy"] = "prior"
         elif issubclass(self._model_type, SVR):
-            self._model_kwargs['cache_size'] = 1000
-            self._model_kwargs['gamma'] = 'scale'
+            self._model_kwargs["cache_size"] = 1000
+            self._model_kwargs["gamma"] = "scale"
         elif issubclass(self._model_type, SGDClassifier):
-            self._model_kwargs['loss'] = 'log_loss'
-            self._model_kwargs['max_iter'] = 1000
-            self._model_kwargs['tol'] = 1e-3
+            self._model_kwargs["loss"] = "log_loss"
+            self._model_kwargs["max_iter"] = 1000
+            self._model_kwargs["tol"] = 1e-3
         elif issubclass(self._model_type, SGDRegressor):
-            self._model_kwargs['max_iter'] = 1000
-            self._model_kwargs['tol'] = 1e-3
+            self._model_kwargs["max_iter"] = 1000
+            self._model_kwargs["tol"] = 1e-3
         elif issubclass(self._model_type, RANSACRegressor):
-            self._model_kwargs['loss'] = 'squared_error'
+            self._model_kwargs["loss"] = "squared_error"
         elif issubclass(self._model_type, (MLPClassifier, MLPRegressor)):
-            self._model_kwargs['learning_rate'] = 'invscaling'
-            self._model_kwargs['max_iter'] = 500
+            self._model_kwargs["learning_rate"] = "invscaling"
+            self._model_kwargs["max_iter"] = 500
         elif issubclass(self._model_type, LogisticRegression):
-            self._model_kwargs['max_iter'] = 1000
-            self._model_kwargs['solver'] = 'liblinear'
-            self._model_kwargs['multi_class'] = 'auto'
+            self._model_kwargs["max_iter"] = 1000
+            self._model_kwargs["solver"] = "liblinear"
+            self._model_kwargs["multi_class"] = "auto"
 
-        if issubclass(self._model_type,
-                      (AdaBoostClassifier, AdaBoostRegressor,
-                       DecisionTreeClassifier, DecisionTreeRegressor,
-                       DummyClassifier, ElasticNet,
-                       GradientBoostingClassifier,
-                       GradientBoostingRegressor, Lasso, LinearSVC,
-                       LinearSVR, LogisticRegression, MLPClassifier,
-                       MLPRegressor, RandomForestClassifier,
-                       RandomForestRegressor, RANSACRegressor, Ridge,
-                       RidgeClassifier, SGDClassifier, SGDRegressor,
-                       SVC, TheilSenRegressor)):
-            self._model_kwargs['random_state'] = 123456789
+        if issubclass(
+            self._model_type,
+            (
+                AdaBoostClassifier,
+                AdaBoostRegressor,
+                DecisionTreeClassifier,
+                DecisionTreeRegressor,
+                DummyClassifier,
+                ElasticNet,
+                GradientBoostingClassifier,
+                GradientBoostingRegressor,
+                Lasso,
+                LinearSVC,
+                LinearSVR,
+                LogisticRegression,
+                MLPClassifier,
+                MLPRegressor,
+                RandomForestClassifier,
+                RandomForestRegressor,
+                RANSACRegressor,
+                Ridge,
+                RidgeClassifier,
+                SGDClassifier,
+                SGDRegressor,
+                SVC,
+                TheilSenRegressor,
+            ),
+        ):
+            self._model_kwargs["random_state"] = 123456789
 
         if sampler_kwargs:
             self._sampler_kwargs.update(sampler_kwargs)
         if sampler:
             sampler_type = globals()[sampler]
-            if issubclass(sampler_type, (Nystroem, RBFSampler,
-                                         SkewedChi2Sampler)):
-                self._sampler_kwargs['random_state'] = 123456789
+            if issubclass(sampler_type, (Nystroem, RBFSampler, SkewedChi2Sampler)):
+                self._sampler_kwargs["random_state"] = 123456789
             self.sampler = sampler_type(**self._sampler_kwargs)
         else:
             self.sampler = None
@@ -304,31 +333,37 @@ class Learner(object):
             # before passing it in to the learner constructor. We also
             # need to make sure where appropriate, we set the random state
             # to a fixed seed such that results are replicable
-            is_ada_has_base_estimator = (issubclass(self._model_type, (AdaBoostRegressor,
-                                                                       AdaBoostClassifier))
-                                         and 'base_estimator' in model_kwargs)
-            is_ransac_has_estimator = (issubclass(self._model_type, RANSACRegressor)
-                                       and 'estimator' in model_kwargs)
+            is_ada_has_base_estimator = (
+                issubclass(self._model_type, (AdaBoostRegressor, AdaBoostClassifier))
+                and "base_estimator" in model_kwargs
+            )
+            is_ransac_has_estimator = (
+                issubclass(self._model_type, RANSACRegressor) and "estimator" in model_kwargs
+            )
             if is_ada_has_base_estimator or is_ransac_has_estimator:
-                base_estimator_name = model_kwargs.get('base_estimator', model_kwargs.get('estimator'))
-                if base_estimator_name in ['LinearRegression', 'MultinomialNB']:
+                base_estimator_name = model_kwargs.get(
+                    "base_estimator", model_kwargs.get("estimator")
+                )
+                if base_estimator_name in ["LinearRegression", "MultinomialNB"]:
                     base_estimator_kwargs = {}
-                elif base_estimator_name in ['SGDClassifier', 'SGDRegressor']:
-                    base_estimator_kwargs = {'max_iter': 1000,
-                                             'tol': 0.001,
-                                             'random_state': 123456789}
-                elif base_estimator_name == 'SVR':
-                    base_estimator_kwargs = {'gamma': 'scale'}
-                elif base_estimator_name == 'SVC':
-                    base_estimator_kwargs = {'gamma': 'scale', 'random_state': 123456789}
+                elif base_estimator_name in ["SGDClassifier", "SGDRegressor"]:
+                    base_estimator_kwargs = {
+                        "max_iter": 1000,
+                        "tol": 0.001,
+                        "random_state": 123456789,
+                    }
+                elif base_estimator_name == "SVR":
+                    base_estimator_kwargs = {"gamma": "scale"}
+                elif base_estimator_name == "SVC":
+                    base_estimator_kwargs = {"gamma": "scale", "random_state": 123456789}
                 else:
-                    base_estimator_kwargs = {'random_state': 123456789}
+                    base_estimator_kwargs = {"random_state": 123456789}
                 base_estimator = globals()[base_estimator_name](**base_estimator_kwargs)
                 # RANSACRegressor uses 'estimator' instead of 'base_estimator'
                 if is_ransac_has_estimator:
-                    model_kwargs['estimator'] = base_estimator
+                    model_kwargs["estimator"] = base_estimator
                 else:
-                    model_kwargs['base_estimator'] = base_estimator
+                    model_kwargs["base_estimator"] = base_estimator
             self._model_kwargs.update(model_kwargs)
 
     @classmethod
@@ -389,9 +424,7 @@ class Learner(object):
         del self.__dict__
         self.__dict__ = Learner.from_file(learner_path).__dict__
 
-    def _convert_coef_array_to_feature_names(self,
-                                             coef,
-                                             feature_name_prefix=''):
+    def _convert_coef_array_to_feature_names(self, coef, feature_name_prefix=""):
         """
         A helper method used by `model_params` to convert the model
         coefficients array into a dictionary with feature names as
@@ -421,7 +454,7 @@ class Learner(object):
             feature_names = []
             for idx in range(num_features):
                 index_str = str(idx + 1).zfill(index_width_in_feature_name)
-                feature_names.append(f'hashed_feature_{index_str}')
+                feature_names.append(f"hashed_feature_{index_str}")
             feature_indices = range(num_features)
             vocabulary = dict(zip(feature_names, feature_indices))
 
@@ -434,7 +467,7 @@ class Learner(object):
         # feature names and the corresponding coefficient
         for feat, idx in vocabulary.items():
             if coef[idx]:
-                res[f'{feature_name_prefix}{feat}'] = coef[idx]
+                res[f"{feature_name_prefix}{feat}"] = coef[idx]
 
         return res
 
@@ -459,14 +492,15 @@ class Learner(object):
         """
         res = {}
         intercept = None
-        if (isinstance(self._model, LinearModel) or
-           (isinstance(self._model, SVR) and
-                self._model.kernel == 'linear') or
-           isinstance(self._model, SGDRegressor)):
+        if (
+            isinstance(self._model, LinearModel)
+            or (isinstance(self._model, SVR) and self._model.kernel == "linear")
+            or isinstance(self._model, SGDRegressor)
+        ):
             # also includes RescaledRidge, RescaledSVR, RescaledSGDRegressor
 
             coef = self.model.coef_
-            intercept = {'_intercept_': self.model.intercept_}
+            intercept = {"_intercept_": self.model.intercept_}
 
             # convert SVR coefficient from a matrix to a 1D array
             # and convert from sparse to dense also if necessary.
@@ -492,22 +526,23 @@ class Learner(object):
                 label_list = self.label_list[-1:]
 
             if isinstance(self.feat_vectorizer, FeatureHasher):
-                self.logger.warning("No feature names are available since "
-                                    "this model was trained on hashed "
-                                    "features.")
+                self.logger.warning(
+                    "No feature names are available since "
+                    "this model was trained on hashed "
+                    "features."
+                )
 
             for i, label in enumerate(label_list):
                 coef = self.model.coef_[i]
                 coef = coef.reshape(1, -1)
                 coef = self.feat_selector.inverse_transform(coef)[0]
                 label_res = self._convert_coef_array_to_feature_names(
-                    coef,
-                    feature_name_prefix=f'{label}\t'
+                    coef, feature_name_prefix=f"{label}\t"
                 )
                 res.update(label_res)
 
             if isinstance(self.model.intercept_, float):
-                intercept = {'_intercept_': self.model.intercept_}
+                intercept = {"_intercept_": self.model.intercept_}
             elif self.model.intercept_.any():
                 intercept = dict(zip(label_list, self.model.intercept_))
 
@@ -521,12 +556,14 @@ class Learner(object):
         # scikit-learn user guide and the code for the function `_one_vs_one_coef()`
         # in `svm/base.py`, the order of the rows is as follows is "0 vs 1",
         # "0 vs 2", ... "0 vs n", "1 vs 2", "1 vs 3", "1 vs n", ... "n-1 vs n".
-        elif isinstance(self._model, SVC) and self._model.kernel == 'linear':
+        elif isinstance(self._model, SVC) and self._model.kernel == "linear":
             intercept = {}
             if isinstance(self.feat_vectorizer, FeatureHasher):
-                self.logger.warning("No feature names are available since "
-                                    "this model was trained on hashed "
-                                    "features.")
+                self.logger.warning(
+                    "No feature names are available since "
+                    "this model was trained on hashed "
+                    "features."
+                )
             for i, class_pair in enumerate(combinations(range(len(self.label_list)), 2)):
                 coef = self.model.coef_[i]
                 coef = coef.toarray()
@@ -534,15 +571,16 @@ class Learner(object):
                 class1 = self.label_list[class_pair[0]]
                 class2 = self.label_list[class_pair[1]]
                 class_pair_res = self._convert_coef_array_to_feature_names(
-                    coef,
-                    feature_name_prefix=f'{class1}-vs-{class2}\t'
+                    coef, feature_name_prefix=f"{class1}-vs-{class2}\t"
                 )
                 res.update(class_pair_res)
-                intercept[f'{class1}-vs-{class2}'] = self.model.intercept_[i]
+                intercept[f"{class1}-vs-{class2}"] = self.model.intercept_[i]
         else:
             # not supported
-            raise ValueError(f"{self._model_type.__name__} is not supported "
-                             "by model_params with its current settings.")
+            raise ValueError(
+                f"{self._model_type.__name__} is not supported "
+                "by model_params with its current settings."
+            )
 
         return res, intercept
 
@@ -568,9 +606,11 @@ class Learner(object):
         # LinearSVC doesn't support predict_proba
         self._probability = value
         if not hasattr(self.model_type, "predict_proba") and value:
-            self.logger.warning("Probability was set to True, but "
-                                f"{self.model_type.__name__} does not have a "
-                                "predict_proba() method.")
+            self.logger.warning(
+                "Probability was set to True, but "
+                f"{self.model_type.__name__} does not have a "
+                "predict_proba() method."
+            )
             self._probability = False
 
     def __getstate__(self):
@@ -579,8 +619,8 @@ class Learner(object):
         because we cannot pickle loggers.
         """
         attribute_dict = dict(self.__dict__)
-        if 'logger' in attribute_dict:
-            del attribute_dict['logger']
+        if "logger" in attribute_dict:
+            del attribute_dict["logger"]
         return attribute_dict
 
     def save(self, learner_path):
@@ -616,8 +656,7 @@ class Learner(object):
             if issubclass(self._model_type, key_class):
                 default_param_grid = grid
         if default_param_grid is None:
-            raise ValueError(f"{self._model_type.__name__} is not a valid "
-                             "learner type.")
+            raise ValueError(f"{self._model_type.__name__} is not a valid " "learner type.")
 
         estimator = self._model_type(**self._model_kwargs)
 
@@ -658,12 +697,14 @@ class Learner(object):
             If any features are strings.
         """
         # Make sure the labels for a regression task are not strings.
-        if self.model_type._estimator_type == 'regressor':
+        if self.model_type._estimator_type == "regressor":
             for label in examples.labels:
                 if isinstance(label, str):
-                    raise TypeError("You are doing regression with string "
-                                    "labels.  Convert them to integers or "
-                                    "floats.")
+                    raise TypeError(
+                        "You are doing regression with string "
+                        "labels.  Convert them to integers or "
+                        "floats."
+                    )
 
         # make sure that feature values are not strings; to check this
         # we need to get a flattened version of the feature array,
@@ -674,8 +715,9 @@ class Learner(object):
             flattened_features = examples.features.flat
         for val in flattened_features:
             if isinstance(val, str):
-                raise TypeError("You have feature values that are strings.  "
-                                "Convert them to floats.")
+                raise TypeError(
+                    "You have feature values that are strings.  " "Convert them to floats."
+                )
 
     def _check_max_feature_value(self, feat_array):
         """
@@ -688,10 +730,12 @@ class Learner(object):
         """
         max_feat_abs = np.max(np.abs(feat_array.data))
         if max_feat_abs > 1000.0:
-            self.logger.warning("You have a feature with a very large "
-                                f"absolute value ({max_feat_abs}).  That may "
-                                "cause the learning algorithm to crash or "
-                                "perform poorly.")
+            self.logger.warning(
+                "You have a feature with a very large "
+                f"absolute value ({max_feat_abs}).  That may "
+                "cause the learning algorithm to crash or "
+                "perform poorly."
+            )
 
     def _create_label_dict(self, examples):
         """
@@ -705,8 +749,7 @@ class Learner(object):
 
         # we don't need to do this if we have already done it
         # or for regression models, so simply return.
-        if (self.label_dict is not None or
-                self.model_type._estimator_type == 'regressor'):
+        if self.label_dict is not None or self.model_type._estimator_type == "regressor":
             return
 
         # extract list of unique labels if we are doing classification;
@@ -720,13 +763,12 @@ class Learner(object):
         # make any sense anyway
         if self.pos_label is not None:
             if len(self.label_list) != 2:
-                self.logger.warning('Ignoring value of `pos_label` for '
-                                    'multi-class classification.')
+                self.logger.warning(
+                    "Ignoring value of `pos_label` for " "multi-class classification."
+                )
                 self.pos_label = None
             else:
-                self.label_list = sorted(self.label_list,
-                                         key=lambda x: (x == self.pos_label,
-                                                        x))
+                self.label_list = sorted(self.label_list, key=lambda x: (x == self.pos_label, x))
 
         # Given a list of all labels in the dataset and a list of the
         # unique labels in the set, convert the first list to an array of
@@ -749,34 +791,32 @@ class Learner(object):
         self.feat_vectorizer = examples.vectorizer
 
         # initialize feature selector
-        self.feat_selector = SelectByMinCount(
-            min_count=self._min_feature_count)
+        self.feat_selector = SelectByMinCount(min_count=self._min_feature_count)
 
         # Create a scaler if we weren't passed one and we are asked
         # to do feature scaling; note that we do not support feature
         # scaling for `MultinomialNB` learners
-        if (not issubclass(self._model_type, MultinomialNB) and
-                self._feature_scaling != 'none'):
-            scale_with_mean = self._feature_scaling in {'with_mean', 'both'}
-            scale_with_std = self._feature_scaling in {'with_std', 'both'}
-            self.scaler = StandardScaler(copy=True,
-                                         with_mean=scale_with_mean,
-                                         with_std=scale_with_std)
+        if not issubclass(self._model_type, MultinomialNB) and self._feature_scaling != "none":
+            scale_with_mean = self._feature_scaling in {"with_mean", "both"}
+            scale_with_std = self._feature_scaling in {"with_std", "both"}
+            self.scaler = StandardScaler(
+                copy=True, with_mean=scale_with_mean, with_std=scale_with_std
+            )
         else:
             # Doing this is to prevent any modification of feature values
             # using a dummy transformation
-            self.scaler = StandardScaler(copy=False,
-                                         with_mean=False,
-                                         with_std=False)
+            self.scaler = StandardScaler(copy=False, with_mean=False, with_std=False)
 
-    def train(self,  # noqa: C901
-              examples,
-              param_grid=None,
-              grid_search_folds=5,
-              grid_search=True,
-              grid_objective=None,
-              grid_jobs=None,
-              shuffle=False):
+    def train(
+        self,  # noqa: C901
+        examples,
+        param_grid=None,
+        grid_search_folds=5,
+        grid_search=True,
+        grid_objective=None,
+        grid_jobs=None,
+        shuffle=False,
+    ):
         """
         Train the model underlying the learner and return the grid search
         score and a dictionary of grid search results.
@@ -841,46 +881,54 @@ class Learner(object):
         # selected learner
         if grid_search:
             if not grid_objective:
-                raise ValueError("Grid search is on by default. You must "
-                                 "either specify a grid objective or turn off"
-                                 " grid search.")
+                raise ValueError(
+                    "Grid search is on by default. You must "
+                    "either specify a grid objective or turn off"
+                    " grid search."
+                )
 
             # get the list of objectives that are acceptable in the current
             # prediction scenario and raise an exception if the current
             # objective is not in this allowed list
             label_type = examples.labels.dtype.type
-            if estimator_type == 'classifier':
+            if estimator_type == "classifier":
                 sorted_unique_labels = np.unique(examples.labels)
                 allowed_objectives = get_acceptable_classification_metrics(sorted_unique_labels)
             else:
                 allowed_objectives = get_acceptable_regression_metrics()
 
             if grid_objective not in allowed_objectives:
-                raise ValueError(f"'{grid_objective}' is not a valid objective"
-                                 f" function for {self._model_type.__name__} "
-                                 "with labels of type "
-                                 f"{label_type.__name__}.")
+                raise ValueError(
+                    f"'{grid_objective}' is not a valid objective"
+                    f" function for {self._model_type.__name__} "
+                    "with labels of type "
+                    f"{label_type.__name__}."
+                )
 
             # If we're using a correlation metric for doing binary
             # classification and probability is set to true, we assume
             # that the user actually wants the `_with_probabilities`
             # version of the metric
-            if (grid_objective in CORRELATION_METRICS and
-                    estimator_type == 'classifier' and
-                    self.probability):
-                self.logger.info(f'You specified "{grid_objective}" as the '
-                                 'objective with "probability" set to "true".'
-                                 ' If this is a binary classification task '
-                                 'with integer labels, the probabilities for '
-                                 'the positive class will be used to compute '
-                                 'the correlation.')
+            if (
+                grid_objective in CORRELATION_METRICS
+                and estimator_type == "classifier"
+                and self.probability
+            ):
+                self.logger.info(
+                    f'You specified "{grid_objective}" as the '
+                    'objective with "probability" set to "true".'
+                    " If this is a binary classification task "
+                    "with integer labels, the probabilities for "
+                    "the positive class will be used to compute "
+                    "the correlation."
+                )
                 old_grid_objective = grid_objective
-                new_grid_objective = f'{grid_objective}_probs'
-                metrics_module = import_module('skll.metrics')
-                metric_func = getattr(metrics_module, 'correlation')
-                _SCORERS[new_grid_objective] = make_scorer(metric_func,
-                                                           corr_type=grid_objective,
-                                                           needs_proba=True)
+                new_grid_objective = f"{grid_objective}_probs"
+                metrics_module = import_module("skll.metrics")
+                metric_func = getattr(metrics_module, "correlation")
+                _SCORERS[new_grid_objective] = make_scorer(
+                    metric_func, corr_type=grid_objective, needs_proba=True
+                )
                 grid_objective = new_grid_objective
 
         # Shuffle so that the folds are random for the inner grid search CV.
@@ -889,15 +937,17 @@ class Learner(object):
         # we make a copy of everything (and then get rid of the old version)
         if grid_search or shuffle:
             if grid_search and not shuffle:
-                self.logger.warning('Training data will be shuffled to randomize '
-                                    'grid search folds.  Shuffling may yield '
-                                    'different results compared to scikit-learn.')
-            ids, labels, features = sk_shuffle(examples.ids, examples.labels,
-                                               examples.features,
-                                               random_state=123456789)
-            examples = FeatureSet(examples.name, ids, labels=labels,
-                                  features=features,
-                                  vectorizer=examples.vectorizer)
+                self.logger.warning(
+                    "Training data will be shuffled to randomize "
+                    "grid search folds.  Shuffling may yield "
+                    "different results compared to scikit-learn."
+                )
+            ids, labels, features = sk_shuffle(
+                examples.ids, examples.labels, examples.features, random_state=123456789
+            )
+            examples = FeatureSet(
+                examples.name, ids, labels=labels, features=features, vectorizer=examples.vectorizer
+            )
 
         # call train setup to set up the vectorizer, the labeldict, and the
         # scaler
@@ -913,20 +963,23 @@ class Learner(object):
                 xtrain = xtrain.toarray()
             except MemoryError:
                 if issubclass(self._model_type, _REQUIRES_DENSE):
-                    reason = (f'{self._model_type.__name__} does not support '
-                              'sparse matrices.')
+                    reason = f"{self._model_type.__name__} does not support " "sparse matrices."
                 else:
-                    reason = (f'{self._feature_scaling} feature scaling '
-                              'requires a dense matrix.')
-                raise MemoryError('Ran out of memory when converting training'
-                                  ' data to dense. This was required because '
-                                  f'{reason}')
+                    reason = f"{self._feature_scaling} feature scaling " "requires a dense matrix."
+                raise MemoryError(
+                    "Ran out of memory when converting training"
+                    " data to dense. This was required because "
+                    f"{reason}"
+                )
 
-        if isinstance(self.feat_vectorizer, FeatureHasher) and \
-                issubclass(self._model_type, MultinomialNB):
-            raise ValueError('Cannot use FeatureHasher with MultinomialNB '
-                             'because MultinomialNB cannot handle negative '
-                             'feature values.')
+        if isinstance(self.feat_vectorizer, FeatureHasher) and issubclass(
+            self._model_type, MultinomialNB
+        ):
+            raise ValueError(
+                "Cannot use FeatureHasher with MultinomialNB "
+                "because MultinomialNB cannot handle negative "
+                "feature values."
+            )
 
         # Scale features if necessary
         xtrain = self.scaler.fit_transform(xtrain)
@@ -935,25 +988,25 @@ class Learner(object):
         self._check_max_feature_value(xtrain)
 
         # Sampler
-        if self.sampler is not None and \
-                issubclass(self._model_type, MultinomialNB):
-            raise ValueError('Cannot use a sampler with MultinomialNB '
-                             'because MultinomialNB cannot handle negative '
-                             'feature values.')
+        if self.sampler is not None and issubclass(self._model_type, MultinomialNB):
+            raise ValueError(
+                "Cannot use a sampler with MultinomialNB "
+                "because MultinomialNB cannot handle negative "
+                "feature values."
+            )
 
         if self.sampler:
-            self.logger.warning('Sampler converts sparse matrix to dense')
+            self.logger.warning("Sampler converts sparse matrix to dense")
             if isinstance(self.sampler, SkewedChi2Sampler):
-                self.logger.warning('SkewedChi2Sampler uses a dense matrix')
+                self.logger.warning("SkewedChi2Sampler uses a dense matrix")
                 if sp.issparse(xtrain):
                     xtrain = xtrain.toarray()
             xtrain = self.sampler.fit_transform(xtrain)
 
         # use label dict transformed version of examples.labels if doing
         # classification
-        if estimator_type == 'classifier':
-            labels = np.array([self.label_dict[label] for label in
-                               examples.labels])
+        if estimator_type == "classifier":
+            labels = np.array([self.label_dict[label] for label in examples.labels])
         else:
             labels = examples.labels
 
@@ -965,11 +1018,13 @@ class Learner(object):
         # then there's no point doing the grid search at all
         if grid_search and not param_grid:
             if default_param_grid == {}:
-                self.logger.warning("SKLL has no default parameter grid "
-                                    "available for the "
-                                    f"{self._model_type.__name__} learner and"
-                                    " no parameter grids were supplied. Using"
-                                    " default values instead of grid search.")
+                self.logger.warning(
+                    "SKLL has no default parameter grid "
+                    "available for the "
+                    f"{self._model_type.__name__} learner and"
+                    " no parameter grids were supplied. Using"
+                    " default values instead of grid search."
+                )
                 grid_search = False
             else:
                 param_grid = default_param_grid
@@ -978,11 +1033,9 @@ class Learner(object):
         if grid_search:
             # set up grid search folds
             if isinstance(grid_search_folds, int):
-                grid_search_folds = \
-                    compute_num_folds_from_example_counts(grid_search_folds,
-                                                          labels,
-                                                          self.model_type._estimator_type,
-                                                          logger=self.logger)
+                grid_search_folds = compute_num_folds_from_example_counts(
+                    grid_search_folds, labels, self.model_type._estimator_type, logger=self.logger
+                )
 
                 if not grid_jobs:
                     grid_jobs = grid_search_folds
@@ -998,11 +1051,12 @@ class Learner(object):
                     grid_jobs = min(num_specified_folds, grid_jobs)
                 # Only retain IDs within folds if they're in grid_search_folds
                 dummy_label = next(iter(grid_search_folds.values()))
-                fold_groups = [grid_search_folds.get(curr_id, dummy_label) for
-                               curr_id in examples.ids]
-                kfold = FilteredLeaveOneGroupOut(grid_search_folds,
-                                                 examples.ids,
-                                                 logger=self.logger)
+                fold_groups = [
+                    grid_search_folds.get(curr_id, dummy_label) for curr_id in examples.ids
+                ]
+                kfold = FilteredLeaveOneGroupOut(
+                    grid_search_folds, examples.ids, logger=self.logger
+                )
                 folds = kfold.split(examples.features, examples.labels, fold_groups)
 
             # limit the number of grid_jobs to be no higher than five or the
@@ -1010,13 +1064,15 @@ class Learner(object):
             # `error_score` to "raise" since we want scikit-learn to explicitly
             # raise an exception if the estimator fails to fit for any reason
             grid_jobs = min(grid_jobs, cpu_count(), MAX_CONCURRENT_PROCESSES)
-            grid_searcher = GridSearchCV(estimator,
-                                         param_grid,
-                                         scoring=grid_objective,
-                                         cv=folds,
-                                         n_jobs=grid_jobs,
-                                         error_score="raise",
-                                         pre_dispatch=grid_jobs)
+            grid_searcher = GridSearchCV(
+                estimator,
+                param_grid,
+                scoring=grid_objective,
+                cv=folds,
+                n_jobs=grid_jobs,
+                error_score="raise",
+                pre_dispatch=grid_jobs,
+            )
 
             # run the grid search for hyperparameters
             grid_searcher.fit(xtrain, labels)
@@ -1031,7 +1087,7 @@ class Learner(object):
         # restore the original of the grid objective if we
         # had futzed with it to handle correlation
         # objectives and probability outputs
-        if 'old_grid_objective' in locals():
+        if "old_grid_objective" in locals():
             grid_objective = old_grid_objective
             del _SCORERS[new_grid_objective]
 
@@ -1044,7 +1100,6 @@ class Learner(object):
         # around with the pipeline and we want to let her do that
         # but keep the SKLL model the same
         if self._store_pipeline:
-
             # initialize the list that will hold the pipeline steps
             pipeline_steps = []
 
@@ -1064,8 +1119,7 @@ class Learner(object):
             # once the hashing is done since this is what happens
             # in SKLL.
             vectorizer_copy = copy.deepcopy(self.feat_vectorizer)
-            if (self._use_dense_features or
-                    isinstance(self.sampler, SkewedChi2Sampler)):
+            if self._use_dense_features or isinstance(self.sampler, SkewedChi2Sampler):
                 if isinstance(self.feat_vectorizer, DictVectorizer):
                     self.logger.warning(
                         "The `sparse` attribute of the DictVectorizer stage "
@@ -1080,34 +1134,29 @@ class Learner(object):
                         "configuration requires dense features."
                     )
                     densifier = Densifier()
-                    pipeline_steps.append(('densifier', densifier))
-            pipeline_steps.insert(0, ('vectorizer', vectorizer_copy))
+                    pipeline_steps.append(("densifier", densifier))
+            pipeline_steps.insert(0, ("vectorizer", vectorizer_copy))
 
             # next add the selector
-            pipeline_steps.append(('selector',
-                                   copy.deepcopy(self.feat_selector)))
+            pipeline_steps.append(("selector", copy.deepcopy(self.feat_selector)))
 
             # next, include the scaler
-            pipeline_steps.append(('scaler', copy.deepcopy(self.scaler)))
+            pipeline_steps.append(("scaler", copy.deepcopy(self.scaler)))
 
             # next, include the sampler, if there is one
             if self.sampler:
-                pipeline_steps.append(('sampler',
-                                       copy.deepcopy(self.sampler)))
+                pipeline_steps.append(("sampler", copy.deepcopy(self.sampler)))
 
             # finish with the estimator
-            pipeline_steps.append(('estimator', copy.deepcopy(self.model)))
+            pipeline_steps.append(("estimator", copy.deepcopy(self.model)))
 
             self.pipeline = Pipeline(steps=pipeline_steps)
 
         return grid_score, grid_cv_results
 
-    def evaluate(self,
-                 examples,
-                 prediction_prefix=None,
-                 append=False,
-                 grid_objective=None,
-                 output_metrics=[]):
+    def evaluate(
+        self, examples, prediction_prefix=None, append=False, grid_objective=None, output_metrics=[]
+    ):
         """
         Evaluates a given model on a given dev or test ``FeatureSet``.
 
@@ -1147,22 +1196,19 @@ class Learner(object):
 
         # make the prediction on the test data; note that these
         # are either class indices or class probabilities
-        yhat = self.predict(examples,
-                            prediction_prefix=prediction_prefix,
-                            append=append,
-                            class_labels=False)
+        yhat = self.predict(
+            examples, prediction_prefix=prediction_prefix, append=append, class_labels=False
+        )
 
         # for classifiers, convert class labels indices for consistency
         # but account for any unseen labels in the test set that may not
         # have occurred in the training data at all; then get acceptable
         # metrics based on the type of labels we have
-        if estimator_type == 'classifier':
+        if estimator_type == "classifier":
             sorted_unique_labels = np.unique(examples.labels)
             test_label_list = sorted_unique_labels.tolist()
-            train_and_test_label_dict = add_unseen_labels(self.label_dict,
-                                                          test_label_list)
-            ytest = np.array([train_and_test_label_dict[label]
-                              for label in examples.labels])
+            train_and_test_label_dict = add_unseen_labels(self.label_dict, test_label_list)
+            ytest = np.array([train_and_test_label_dict[label] for label in examples.labels])
             acceptable_metrics = get_acceptable_classification_metrics(sorted_unique_labels)
         # for regressors we do not need to do anything special to the labels
         else:
@@ -1174,37 +1220,40 @@ class Learner(object):
         unacceptable_metrics = set(output_metrics).difference(acceptable_metrics)
         if unacceptable_metrics:
             label_type = examples.labels.dtype.type
-            raise ValueError("The following metrics are not valid "
-                             f"for this learner ({self._model_type.__name__})"
-                             " with these labels of type "
-                             f"{label_type.__name__}: "
-                             f"{list(unacceptable_metrics)}")
+            raise ValueError(
+                "The following metrics are not valid "
+                f"for this learner ({self._model_type.__name__})"
+                " with these labels of type "
+                f"{label_type.__name__}: "
+                f"{list(unacceptable_metrics)}"
+            )
 
         # get the values of the evaluation metrics
-        (conf_matrix,
-         accuracy,
-         result_dict,
-         objective_score,
-         metric_scores) = compute_evaluation_metrics(output_metrics,
-                                                     ytest,
-                                                     yhat,
-                                                     estimator_type,
-                                                     label_dict=train_and_test_label_dict,
-                                                     grid_objective=grid_objective,
-                                                     probability=self.probability,
-                                                     logger=self.logger)
+        (
+            conf_matrix,
+            accuracy,
+            result_dict,
+            objective_score,
+            metric_scores,
+        ) = compute_evaluation_metrics(
+            output_metrics,
+            ytest,
+            yhat,
+            estimator_type,
+            label_dict=train_and_test_label_dict,
+            grid_objective=grid_objective,
+            probability=self.probability,
+            logger=self.logger,
+        )
 
         # add in the model parameters and return
         model_params = self.model.get_params()
-        res = (conf_matrix, accuracy, result_dict, model_params,
-               objective_score, metric_scores)
+        res = (conf_matrix, accuracy, result_dict, model_params, objective_score, metric_scores)
         return res
 
-    def predict(self,  # noqa: C901
-                examples,
-                prediction_prefix=None,
-                append=False,
-                class_labels=True):
+    def predict(
+        self, examples, prediction_prefix=None, append=False, class_labels=True  # noqa: C901
+    ):
         """
         Uses a given model to return, and optionally, write out predictions
         on a given ``FeatureSet`` to a file.
@@ -1290,11 +1339,9 @@ class Learner(object):
         # 4. The model vectorizer is a DictVectorizer but the prediction feature
         # set vectorizer is a FeatureHasher. Again, we should raise an error here
         # since there's no inverse available for the hasher.
-        model_is_dict = isinstance(self.feat_vectorizer,
-                                   (DictVectorizer, OldDictVectorizer))
+        model_is_dict = isinstance(self.feat_vectorizer, (DictVectorizer, OldDictVectorizer))
         model_is_hasher = isinstance(self.feat_vectorizer, FeatureHasher)
-        data_is_dict = isinstance(examples.vectorizer,
-                                  (DictVectorizer, OldDictVectorizer))
+        data_is_dict = isinstance(examples.vectorizer, (DictVectorizer, OldDictVectorizer))
         data_is_hasher = isinstance(examples.vectorizer, FeatureHasher)
 
         both_dicts = model_is_dict and data_is_dict
@@ -1304,8 +1351,7 @@ class Learner(object):
 
         # 1. both are DictVectorizers
         if both_dicts:
-            if (set(self.feat_vectorizer.feature_names_) !=
-                    set(examples.vectorizer.feature_names_)):
+            if set(self.feat_vectorizer.feature_names_) != set(examples.vectorizer.feature_names_):
                 self.logger.warning(
                     "There is mismatch between the training model features "
                     "and the data passed to predict. The prediction features "
@@ -1315,40 +1361,46 @@ class Learner(object):
                 xtest = examples.features
             else:
                 xtest = self.feat_vectorizer.transform(
-                    examples.vectorizer.inverse_transform(
-                        examples.features))
+                    examples.vectorizer.inverse_transform(examples.features)
+                )
 
         # 2. both are FeatureHashers
         elif both_hashers:
-            self_feat_vec_tuple = (self.feat_vectorizer.dtype,
-                                   self.feat_vectorizer.input_type,
-                                   self.feat_vectorizer.n_features)
-            example_feat_vec_tuple = (examples.vectorizer.dtype,
-                                      examples.vectorizer.input_type,
-                                      examples.vectorizer.n_features)
+            self_feat_vec_tuple = (
+                self.feat_vectorizer.dtype,
+                self.feat_vectorizer.input_type,
+                self.feat_vectorizer.n_features,
+            )
+            example_feat_vec_tuple = (
+                examples.vectorizer.dtype,
+                examples.vectorizer.input_type,
+                examples.vectorizer.n_features,
+            )
 
             if self_feat_vec_tuple == example_feat_vec_tuple:
                 xtest = examples.features
             else:
                 self.logger.error(
-                    'There is mismatch between the FeatureHasher '
-                    'configuration for the training data and the '
-                    'configuration for the data passed to predict'
+                    "There is mismatch between the FeatureHasher "
+                    "configuration for the training data and the "
+                    "configuration for the data passed to predict"
                 )
-                raise RuntimeError('Mismatched hasher configurations')
+                raise RuntimeError("Mismatched hasher configurations")
 
         # 3. model is a FeatureHasher and test set is a DictVectorizer
         elif model_hasher_and_data_dict:
             xtest = self.feat_vectorizer.transform(
-                examples.vectorizer.inverse_transform(
-                    examples.features))
+                examples.vectorizer.inverse_transform(examples.features)
+            )
 
         # 4. model is a DictVectorizer and test set is a FeatureHasher
         elif model_dict_and_data_hasher:
-            self.logger.error('Cannot predict with a model using a '
-                              'DictVectorizer on data that uses a '
-                              'FeatureHasher')
-            raise RuntimeError('Cannot use FeatureHasher for data')
+            self.logger.error(
+                "Cannot predict with a model using a "
+                "DictVectorizer on data that uses a "
+                "FeatureHasher"
+            )
+            raise RuntimeError("Cannot use FeatureHasher for data")
 
         # filter features based on those selected from training set
         xtest = self.feat_selector.transform(xtest)
@@ -1359,14 +1411,14 @@ class Learner(object):
                 xtest = xtest.toarray()
             except MemoryError:
                 if issubclass(self._model_type, _REQUIRES_DENSE):
-                    reason = (f'{self._model_type.__name__} does not support '
-                              'sparse matrices.')
+                    reason = f"{self._model_type.__name__} does not support " "sparse matrices."
                 else:
-                    reason = (f'{self._feature_scaling} feature scaling '
-                              'requires a dense matrix.')
-                raise MemoryError('Ran out of memory when converting test '
-                                  'data to dense. This was required because '
-                                  f'{reason}')
+                    reason = f"{self._feature_scaling} feature scaling " "requires a dense matrix."
+                raise MemoryError(
+                    "Ran out of memory when converting test "
+                    "data to dense. This was required because "
+                    f"{reason}"
+                )
 
         # Scale xtest if necessary
         if not issubclass(self._model_type, MultinomialNB):
@@ -1374,9 +1426,9 @@ class Learner(object):
 
         # Sampler
         if self.sampler:
-            self.logger.warning('Sampler converts sparse matrix to dense')
+            self.logger.warning("Sampler converts sparse matrix to dense")
             if isinstance(self.sampler, SkewedChi2Sampler):
-                self.logger.warning('SkewedChi2Sampler uses a dense matrix')
+                self.logger.warning("SkewedChi2Sampler uses a dense matrix")
                 if sp.issparse(xtest):
                     xtest = xtest.toarray()
             xtest = self.sampler.transform(xtest)
@@ -1386,7 +1438,6 @@ class Learner(object):
 
         # for classifiers ...
         if self.model_type._estimator_type == "classifier":
-
             # return and write class labels if they were explicitly asked for
             if class_labels:
                 to_return = to_write = prediction_dict["labels"]
@@ -1413,32 +1464,36 @@ class Learner(object):
 
         # write out the predictions if we are asked to
         if prediction_prefix is not None:
-            write_predictions(example_ids,
-                              to_write,
-                              prediction_prefix,
-                              self.model_type._estimator_type,
-                              append=append,
-                              label_list=self.label_list,
-                              probability=self.probability)
+            write_predictions(
+                example_ids,
+                to_write,
+                prediction_prefix,
+                self.model_type._estimator_type,
+                append=append,
+                label_list=self.label_list,
+                probability=self.probability,
+            )
 
         return to_return
 
-    def cross_validate(self,
-                       examples,
-                       stratified=True,
-                       cv_folds=10,
-                       cv_seed=123456789,
-                       grid_search=True,
-                       grid_search_folds=5,
-                       grid_jobs=None,
-                       grid_objective=None,
-                       output_metrics=[],
-                       prediction_prefix=None,
-                       param_grid=None,
-                       shuffle=False,
-                       save_cv_folds=True,
-                       save_cv_models=False,
-                       use_custom_folds_for_grid_search=True):
+    def cross_validate(
+        self,
+        examples,
+        stratified=True,
+        cv_folds=10,
+        cv_seed=123456789,
+        grid_search=True,
+        grid_search_folds=5,
+        grid_jobs=None,
+        grid_objective=None,
+        output_metrics=[],
+        prediction_prefix=None,
+        param_grid=None,
+        shuffle=False,
+        save_cv_folds=True,
+        save_cv_models=False,
+        use_custom_folds_for_grid_search=True,
+    ):
         """
         Cross-validates a given model on the training examples.
 
@@ -1547,10 +1602,12 @@ class Learner(object):
         # work with continuous labels. Note that although using random folds
         # _will_ work, we want to raise an error in general since it's better
         # to encode the labels as strings anyway for classification problems.
-        if (self.model_type._estimator_type == 'classifier' and
-                type_of_target(examples.labels) not in ['binary', 'multiclass']):
-            raise ValueError("Floating point labels must be encoded as "
-                             "strings for cross-validation.")
+        if self.model_type._estimator_type == "classifier" and type_of_target(
+            examples.labels
+        ) not in ["binary", "multiclass"]:
+            raise ValueError(
+                "Floating point labels must be encoded as " "strings for cross-validation."
+            )
 
         # check that we have an objective since grid search is on by default
         # Note that `train()` would raise this error anyway later but it's
@@ -1558,9 +1615,11 @@ class Learner(object):
         # stuff has happened
         if grid_search:
             if not grid_objective:
-                raise ValueError("Grid search is on by default. You must "
-                                 "either specify a grid objective or turn off"
-                                 " grid search.")
+                raise ValueError(
+                    "Grid search is on by default. You must "
+                    "either specify a grid objective or turn off"
+                    " grid search."
+                )
 
         # Shuffle so that the folds are random for the inner grid search CV.
         # If grid search is True but shuffle isn't, shuffle anyway.
@@ -1568,27 +1627,31 @@ class Learner(object):
         # we make a copy of everything (and then get rid of the old version)
         if grid_search or shuffle:
             if grid_search and not shuffle:
-                self.logger.warning('Training data will be shuffled to '
-                                    'randomize grid search folds. Shuffling '
-                                    'may yield different results compared to '
-                                    'scikit-learn.')
-            ids, labels, features = sk_shuffle(examples.ids, examples.labels,
-                                               examples.features,
-                                               random_state=random_state)
-            examples = FeatureSet(examples.name, ids, labels=labels,
-                                  features=features,
-                                  vectorizer=examples.vectorizer)
+                self.logger.warning(
+                    "Training data will be shuffled to "
+                    "randomize grid search folds. Shuffling "
+                    "may yield different results compared to "
+                    "scikit-learn."
+                )
+            ids, labels, features = sk_shuffle(
+                examples.ids, examples.labels, examples.features, random_state=random_state
+            )
+            examples = FeatureSet(
+                examples.name, ids, labels=labels, features=features, vectorizer=examples.vectorizer
+            )
 
         # call train setup
         self._create_label_dict(examples)
         self._train_setup(examples)
 
         # Set up the cross-validation iterator.
-        kfold, cv_groups = setup_cv_fold_iterator(cv_folds,
-                                                  examples,
-                                                  self.model_type._estimator_type,
-                                                  stratified=stratified,
-                                                  logger=self.logger)
+        kfold, cv_groups = setup_cv_fold_iterator(
+            cv_folds,
+            examples,
+            self.model_type._estimator_type,
+            stratified=stratified,
+            logger=self.logger,
+        )
 
         # When using custom CV folds (a dictionary), if we are planning to do
         # grid search, set the grid search folds to be the same as the custom
@@ -1597,8 +1660,9 @@ class Learner(object):
         # the configparser should take care of this even before this method is called
         if isinstance(cv_folds, dict):
             if grid_search and use_custom_folds_for_grid_search and grid_search_folds != cv_folds:
-                self.logger.warning("The specified custom folds will be used "
-                                    "for the inner grid search.")
+                self.logger.warning(
+                    "The specified custom folds will be used " "for the inner grid search."
+                )
                 grid_search_folds = cv_folds
 
         # handle each fold separately & accumulate the predictions and results
@@ -1608,26 +1672,28 @@ class Learner(object):
         append_predictions = False
         models = [] if save_cv_models else None
         skll_fold_ids = {} if save_cv_folds else None
-        for fold_num, (train_indices,
-                       test_indices) in enumerate(kfold.split(examples.features,
-                                                              examples.labels,
-                                                              cv_groups)):
+        for fold_num, (train_indices, test_indices) in enumerate(
+            kfold.split(examples.features, examples.labels, cv_groups)
+        ):
             # Train model
             self._model = None  # prevent feature vectorizer from being reset.
-            train_set = FeatureSet(examples.name,
-                                   examples.ids[train_indices],
-                                   labels=examples.labels[train_indices],
-                                   features=examples.features[train_indices],
-                                   vectorizer=examples.vectorizer)
+            train_set = FeatureSet(
+                examples.name,
+                examples.ids[train_indices],
+                labels=examples.labels[train_indices],
+                features=examples.features[train_indices],
+                vectorizer=examples.vectorizer,
+            )
 
-            (grid_search_score,
-             grid_search_cv_results) = self.train(train_set,
-                                                  grid_search_folds=grid_search_folds,
-                                                  grid_search=grid_search,
-                                                  grid_objective=grid_objective,
-                                                  param_grid=param_grid,
-                                                  grid_jobs=grid_jobs,
-                                                  shuffle=grid_search)
+            (grid_search_score, grid_search_cv_results) = self.train(
+                train_set,
+                grid_search_folds=grid_search_folds,
+                grid_search=grid_search,
+                grid_objective=grid_objective,
+                param_grid=param_grid,
+                grid_jobs=grid_jobs,
+                shuffle=grid_search,
+            )
             grid_search_scores.append(grid_search_score)
             if save_cv_models:
                 models.append(copy.deepcopy(self))
@@ -1636,16 +1702,22 @@ class Learner(object):
             # regardless of what the shuffle keyword argument is set to.
 
             # Evaluate model
-            test_tuple = FeatureSet(examples.name,
-                                    examples.ids[test_indices],
-                                    labels=examples.labels[test_indices],
-                                    features=examples.features[test_indices],
-                                    vectorizer=examples.vectorizer)
-            results.append(self.evaluate(test_tuple,
-                                         prediction_prefix=prediction_prefix,
-                                         append=append_predictions,
-                                         grid_objective=grid_objective,
-                                         output_metrics=output_metrics))
+            test_tuple = FeatureSet(
+                examples.name,
+                examples.ids[test_indices],
+                labels=examples.labels[test_indices],
+                features=examples.features[test_indices],
+                vectorizer=examples.vectorizer,
+            )
+            results.append(
+                self.evaluate(
+                    test_tuple,
+                    prediction_prefix=prediction_prefix,
+                    append=append_predictions,
+                    grid_objective=grid_objective,
+                    output_metrics=output_metrics,
+                )
+            )
             append_predictions = True
 
             # save the fold number for each test ID if we were asked to
@@ -1654,18 +1726,16 @@ class Learner(object):
                     skll_fold_ids[examples.ids[index]] = str(fold_num)
 
         # return list of results/outputs for all folds
-        return (results,
-                grid_search_scores,
-                grid_search_cv_results_dicts,
-                skll_fold_ids,
-                models)
+        return (results, grid_search_scores, grid_search_cv_results_dicts, skll_fold_ids, models)
 
-    def learning_curve(self,
-                       examples,
-                       metric,
-                       cv_folds=10,
-                       train_sizes=np.linspace(0.1, 1.0, 5),
-                       override_minimum=False):
+    def learning_curve(
+        self,
+        examples,
+        metric,
+        cv_folds=10,
+        train_sizes=np.linspace(0.1, 1.0, 5),
+        override_minimum=False,
+    ):
         """
         Generates learning curves for a given model on the training examples
         via cross-validation. Adapted from the scikit-learn code for learning
@@ -1737,9 +1807,11 @@ class Learner(object):
         # raise a warning if we are using a probabilistic classifier
         # since that means we cannot use the predictions directly
         if self.probability:
-            self.logger.warning("Since ``probability`` is set, the most likely "
-                                "class will be computed via an argmax before "
-                                "computing the curve.")
+            self.logger.warning(
+                "Since ``probability`` is set, the most likely "
+                "class will be computed via an argmax before "
+                "computing the curve."
+            )
 
         # Call train setup before since we need to train
         # the learner eventually
@@ -1748,15 +1820,13 @@ class Learner(object):
 
         # set up the CV split iterator over the train/test featuresets
         # which also returns the maximum number of training examples
-        (featureset_iter,
-         n_max_training_samples) = setup_cv_split_iterator(cv_folds, examples)
+        (featureset_iter, n_max_training_samples) = setup_cv_split_iterator(cv_folds, examples)
 
         # Get the `_translate_train_sizes()` function from scikit-learn
         # since we need it to get the right list of sizes after cross-validation
-        _module = import_module('sklearn.model_selection._validation')
-        _translate_train_sizes = getattr(_module, '_translate_train_sizes')
-        train_sizes_abs = _translate_train_sizes(train_sizes,
-                                                 n_max_training_samples)
+        _module = import_module("sklearn.model_selection._validation")
+        _translate_train_sizes = getattr(_module, "_translate_train_sizes")
+        train_sizes_abs = _translate_train_sizes(train_sizes, n_max_training_samples)
         n_unique_ticks = train_sizes_abs.shape[0]
 
         # Limit the number of parallel jobs for this
@@ -1767,12 +1837,11 @@ class Learner(object):
         # Run jobs in parallel that train the model on each subset
         # of the training data and compute train and test scores
         parallel = joblib.Parallel(n_jobs=n_jobs, pre_dispatch=n_jobs)
-        out = parallel(joblib.delayed(train_and_score)(self,
-                                                       train_fs[:n_train_samples],
-                                                       test_fs,
-                                                       metric)
-                       for train_fs, test_fs in featureset_iter
-                       for n_train_samples in train_sizes_abs)
+        out = parallel(
+            joblib.delayed(train_and_score)(self, train_fs[:n_train_samples], test_fs, metric)
+            for train_fs, test_fs in featureset_iter
+            for n_train_samples in train_sizes_abs
+        )
 
         # Reshape the outputs
         out = np.array(out)

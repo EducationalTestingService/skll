@@ -55,31 +55,33 @@ def tearDown():
     """
     Clean up after tests.
     """
-    fold_file_path = join(other_dir, 'custom_folds.csv')
+    fold_file_path = join(other_dir, "custom_folds.csv")
     unlink(fold_file_path)
 
-    cfg_files = [join(config_dir, 'test_save_cv_folds.cfg'),
-                 join(config_dir, 'test_save_cv_models.cfg'),
-                 join(config_dir, 'test_custom_cv_seed_classifier.cfg'),
-                 join(config_dir, 'test_custom_cv_seed_regressor.cfg'),
-                 join(config_dir, 'test_folds_file.cfg'),
-                 join(config_dir, 'test_folds_file_grid.cfg')]
+    cfg_files = [
+        join(config_dir, "test_save_cv_folds.cfg"),
+        join(config_dir, "test_save_cv_models.cfg"),
+        join(config_dir, "test_custom_cv_seed_classifier.cfg"),
+        join(config_dir, "test_custom_cv_seed_regressor.cfg"),
+        join(config_dir, "test_folds_file.cfg"),
+        join(config_dir, "test_folds_file_grid.cfg"),
+    ]
     for cfg_file in cfg_files:
         unlink(cfg_file)
 
-    for output_file in (glob(join(output_dir, 'test_save_cv_folds*')) +
-                        glob(join(output_dir, 'test_int_labels_cv_*')) +
-                        glob(join(output_dir, 'test_save_cv_models*')) +
-                        glob(join(output_dir, 'test_custom_cv_seed*')) +
-                        glob(join(output_dir, 'test_folds_file*'))):
+    for output_file in (
+        glob(join(output_dir, "test_save_cv_folds*"))
+        + glob(join(output_dir, "test_int_labels_cv_*"))
+        + glob(join(output_dir, "test_save_cv_models*"))
+        + glob(join(output_dir, "test_custom_cv_seed*"))
+        + glob(join(output_dir, "test_folds_file*"))
+    ):
         unlink(output_file)
 
     remove_jsonlines_feature_files(train_dir)
 
 
-def make_cv_folds_data(num_examples_per_fold=100,
-                       num_folds=3,
-                       use_feature_hashing=False):
+def make_cv_folds_data(num_examples_per_fold=100, num_folds=3, use_feature_hashing=False):
     """
     Create data for pre-specified CV folds tests
     with or without feature hashing
@@ -88,9 +90,14 @@ def make_cv_folds_data(num_examples_per_fold=100,
     num_total_examples = num_examples_per_fold * num_folds
 
     # create the numeric features and the binary labels
-    X, _ = make_classification(n_samples=num_total_examples,
-                               n_features=3, n_informative=3, n_redundant=0,
-                               n_classes=2, random_state=1234567890)
+    X, _ = make_classification(
+        n_samples=num_total_examples,
+        n_features=3,
+        n_informative=3,
+        n_redundant=0,
+        n_classes=2,
+        random_state=1234567890,
+    )
     y = np.array([0, 1] * int(num_total_examples / 2))
 
     # the folds mapping: the first num_examples_per_fold examples
@@ -102,23 +109,25 @@ def make_cv_folds_data(num_examples_per_fold=100,
     # now create the list of feature dictionaries
     # and add the binary features that depend on
     # the class and fold number
-    feature_names = [f'f{i}' for i in range(1, 4)]
+    feature_names = [f"f{i}" for i in range(1, 4)]
     features = []
     for row, classid, foldnum in zip(X, y, folds):
-        string_feature_name = f'is_{classid}_{foldnum}'
+        string_feature_name = f"is_{classid}_{foldnum}"
         string_feature_value = 1
         feat_dict = dict(zip(feature_names, row))
         feat_dict.update({string_feature_name: string_feature_value})
         features.append(feat_dict)
 
     # create the example IDs
-    ids = [f'EXAMPLE_{num_examples_per_fold * k + i}'
-           for k in range(num_folds) for i in range(num_examples_per_fold)]
+    ids = [
+        f"EXAMPLE_{num_examples_per_fold * k + i}"
+        for k in range(num_folds)
+        for i in range(num_examples_per_fold)
+    ]
 
     # create the cross-validation feature set with or without feature hashing
     vectorizer = FeatureHasher(n_features=4) if use_feature_hashing else None
-    cv_fs = FeatureSet('cv_folds', ids, features=features, labels=y,
-                       vectorizer=vectorizer)
+    cv_fs = FeatureSet("cv_folds", ids, features=features, labels=y, vectorizer=vectorizer)
 
     # make the custom cv folds dictionary
     custom_cv_folds = dict(zip(ids, folds))
@@ -144,23 +153,23 @@ def test_specified_cv_folds():
 
     # The fourth is the same as the second but uses an RBFSampler.
 
-    for test_value, assert_func, expected_folds, use_hashing, use_sampler in \
-            [(0.58, assert_less, 3, False, False),
-             (0.1, assert_greater, 10, True, False),
-             (0.57, assert_less, 3, False, True),
-             (0.69, assert_greater, 10, True, True)]:
-
-        sampler = 'RBFSampler' if use_sampler else None
-        learner = Learner('LogisticRegression', sampler=sampler)
-        cv_fs, custom_cv_folds = make_cv_folds_data(
-            use_feature_hashing=use_hashing)
+    for test_value, assert_func, expected_folds, use_hashing, use_sampler in [
+        (0.58, assert_less, 3, False, False),
+        (0.1, assert_greater, 10, True, False),
+        (0.57, assert_less, 3, False, True),
+        (0.69, assert_greater, 10, True, True),
+    ]:
+        sampler = "RBFSampler" if use_sampler else None
+        learner = Learner("LogisticRegression", sampler=sampler)
+        cv_fs, custom_cv_folds = make_cv_folds_data(use_feature_hashing=use_hashing)
         folds = custom_cv_folds if not use_hashing else 10
-        (grid_scores, _, _, _, _) = \
-            learner.cross_validate(cv_fs,
-                                   cv_folds=folds,
-                                   grid_search=True,
-                                   grid_objective='f1_score_micro',
-                                   save_cv_folds=False)
+        (grid_scores, _, _, _, _) = learner.cross_validate(
+            cv_fs,
+            cv_folds=folds,
+            grid_search=True,
+            grid_objective="f1_score_micro",
+            save_cv_folds=False,
+        )
         fold_test_scores = [t[-2] for t in grid_scores]
 
         overall_score = np.mean(fold_test_scores)
@@ -181,10 +190,10 @@ def test_load_cv_folds():
     custom_cv_folds = make_cv_folds_data()[1]
 
     # write the generated CV folds to a CSV file
-    fold_file_path = join(other_dir, 'custom_folds.csv')
-    with open(fold_file_path, 'w', newline='') as foldf:
+    fold_file_path = join(other_dir, "custom_folds.csv")
+    with open(fold_file_path, "w", newline="") as foldf:
         w = csv.writer(foldf)
-        w.writerow(['id', 'fold'])
+        w.writerow(["id", "fold"])
         for example_id, fold_label in custom_cv_folds.items():
             w.writerow([example_id, fold_label])
 
@@ -204,10 +213,10 @@ def test_load_cv_folds_non_float_ids():
     custom_cv_folds = make_cv_folds_data()[1]
 
     # write the generated CV folds to a CSV file
-    fold_file_path = join(other_dir, 'custom_folds.csv')
-    with open(fold_file_path, 'w', newline='') as foldf:
+    fold_file_path = join(other_dir, "custom_folds.csv")
+    with open(fold_file_path, "w", newline="") as foldf:
         w = csv.writer(foldf)
-        w.writerow(['id', 'fold'])
+        w.writerow(["id", "fold"])
         for example_id, fold_label in custom_cv_folds.items():
             w.writerow([example_id, fold_label])
 
@@ -221,56 +230,61 @@ def test_retrieve_cv_folds():
     """
 
     # Setup
-    learner = Learner('LogisticRegression')
+    learner = Learner("LogisticRegression")
     num_folds = 5
-    cv_fs, custom_cv_folds = make_cv_folds_data(num_examples_per_fold=2,
-                                                num_folds=num_folds)
+    cv_fs, custom_cv_folds = make_cv_folds_data(num_examples_per_fold=2, num_folds=num_folds)
 
     # Test 1: learner.cross_validate() makes the folds itself.
-    expected_fold_ids = {'EXAMPLE_0': '0',
-                         'EXAMPLE_1': '4',
-                         'EXAMPLE_2': '3',
-                         'EXAMPLE_3': '1',
-                         'EXAMPLE_4': '2',
-                         'EXAMPLE_5': '2',
-                         'EXAMPLE_6': '1',
-                         'EXAMPLE_7': '0',
-                         'EXAMPLE_8': '4',
-                         'EXAMPLE_9': '3'}
-    _, _, _, skll_fold_ids, _ = learner.cross_validate(cv_fs,
-                                                       stratified=True,
-                                                       cv_folds=num_folds,
-                                                       grid_search=True,
-                                                       grid_objective='f1_score_micro',
-                                                       shuffle=False)
+    expected_fold_ids = {
+        "EXAMPLE_0": "0",
+        "EXAMPLE_1": "4",
+        "EXAMPLE_2": "3",
+        "EXAMPLE_3": "1",
+        "EXAMPLE_4": "2",
+        "EXAMPLE_5": "2",
+        "EXAMPLE_6": "1",
+        "EXAMPLE_7": "0",
+        "EXAMPLE_8": "4",
+        "EXAMPLE_9": "3",
+    }
+    _, _, _, skll_fold_ids, _ = learner.cross_validate(
+        cv_fs,
+        stratified=True,
+        cv_folds=num_folds,
+        grid_search=True,
+        grid_objective="f1_score_micro",
+        shuffle=False,
+    )
     eq_(skll_fold_ids, expected_fold_ids)
 
     # Test 2: if we pass in custom fold ids, those are also preserved.
-    _, _, _, skll_fold_ids, _ = learner.cross_validate(cv_fs,
-                                                       stratified=True,
-                                                       cv_folds=custom_cv_folds,
-                                                       grid_search=True,
-                                                       grid_objective='f1_score_micro',
-                                                       shuffle=False)
+    _, _, _, skll_fold_ids, _ = learner.cross_validate(
+        cv_fs,
+        stratified=True,
+        cv_folds=custom_cv_folds,
+        grid_search=True,
+        grid_objective="f1_score_micro",
+        shuffle=False,
+    )
     eq_(skll_fold_ids, custom_cv_folds)
 
     # Test 3: when learner.cross_validate() makes the folds but stratified=False
     # and grid_search=False, so that KFold is used.
-    expected_fold_ids = {'EXAMPLE_0': '0',
-                         'EXAMPLE_1': '0',
-                         'EXAMPLE_2': '1',
-                         'EXAMPLE_3': '1',
-                         'EXAMPLE_4': '2',
-                         'EXAMPLE_5': '2',
-                         'EXAMPLE_6': '3',
-                         'EXAMPLE_7': '3',
-                         'EXAMPLE_8': '4',
-                         'EXAMPLE_9': '4'}
-    _, _, _, skll_fold_ids, _ = learner.cross_validate(cv_fs,
-                                                       stratified=False,
-                                                       cv_folds=num_folds,
-                                                       grid_search=False,
-                                                       shuffle=False)
+    expected_fold_ids = {
+        "EXAMPLE_0": "0",
+        "EXAMPLE_1": "0",
+        "EXAMPLE_2": "1",
+        "EXAMPLE_3": "1",
+        "EXAMPLE_4": "2",
+        "EXAMPLE_5": "2",
+        "EXAMPLE_6": "3",
+        "EXAMPLE_7": "3",
+        "EXAMPLE_8": "4",
+        "EXAMPLE_9": "4",
+    }
+    _, _, _, skll_fold_ids, _ = learner.cross_validate(
+        cv_fs, stratified=False, cv_folds=num_folds, grid_search=False, shuffle=False
+    )
     eq_(skll_fold_ids, custom_cv_folds)
 
 
@@ -279,29 +293,26 @@ def test_folds_file_logging_num_folds():
     Test when using `folds_file`, log shows number of folds and appropriate warning.
     """
     # Run experiment
-    suffix = '.jsonlines'
-    train_path = join(train_dir, f'f0{suffix}')
+    suffix = ".jsonlines"
+    train_path = join(train_dir, f"f0{suffix}")
 
     config_path = fill_in_config_paths_for_single_file(
-        join(config_dir, "test_folds_file.template.cfg"),
-        train_path,
-        None
+        join(config_dir, "test_folds_file.template.cfg"), train_path, None
     )
     run_configuration(config_path, quiet=True, local=True)
 
     # Check experiment log output
-    with open(join(output_dir, 'test_folds_file_logging.log')) as f:
+    with open(join(output_dir, "test_folds_file_logging.log")) as f:
         cv_file_pattern = re.compile(
-            r'Specifying "folds_file" overrides both explicit and default '
-            r'"num_cv_folds".'
+            r'Specifying "folds_file" overrides both explicit and default ' r'"num_cv_folds".'
         )
         matches = re.findall(cv_file_pattern, f.read())
         eq_(len(matches), 1)
 
     # Check job log output
-    with open(join(output_dir,
-                   'test_folds_file_logging_train_f0.'
-                   'jsonlines_LogisticRegression.log')) as f:
+    with open(
+        join(output_dir, "test_folds_file_logging_train_f0." "jsonlines_LogisticRegression.log")
+    ) as f:
         cv_folds_pattern = re.compile(
             r"(Task: cross_validate\n)(.+)(Cross-validating \([0-9]+ folds, seed=[0-9]+\))"
         )
@@ -314,23 +325,20 @@ def test_folds_file_with_fewer_ids_than_featureset():
     Test when using `folds_file`, log shows warning for extra IDs in featureset.
     """
     # Run experiment with a special featureset that has extra IDs
-    suffix = '.jsonlines'
-    train_path = join(train_dir, f'f5{suffix}')
+    suffix = ".jsonlines"
+    train_path = join(train_dir, f"f5{suffix}")
 
     config_path = fill_in_config_paths_for_single_file(
-        join(config_dir, "test_folds_file.template.cfg"),
-        train_path,
-        None
+        join(config_dir, "test_folds_file.template.cfg"), train_path, None
     )
     run_configuration(config_path, quiet=True, local=True)
 
     # Check job log output
-    with open(join(output_dir,
-                   'test_folds_file_logging_train_f5.'
-                   'jsonlines_LogisticRegression.log')) as f:
+    with open(
+        join(output_dir, "test_folds_file_logging_train_f5." "jsonlines_LogisticRegression.log")
+    ) as f:
         cv_file_pattern = re.compile(
-            r'Feature set contains IDs that are not in folds dictionary. '
-            r'Skipping those IDs.'
+            r"Feature set contains IDs that are not in folds dictionary. " r"Skipping those IDs."
         )
         matches = re.findall(cv_file_pattern, f.read())
         eq_(len(matches), 1)
@@ -342,22 +350,20 @@ def test_folds_file_logging_grid_search():
     is specified, that we get an appropriate message in the log.
     """
     # Run experiment
-    suffix = '.jsonlines'
-    train_path = join(train_dir, f'f0{suffix}')
+    suffix = ".jsonlines"
+    train_path = join(train_dir, f"f0{suffix}")
 
     config_path = fill_in_config_paths_for_single_file(
-        join(config_dir, "test_folds_file_grid.template.cfg"),
-        train_path,
-        None
+        join(config_dir, "test_folds_file_grid.template.cfg"), train_path, None
     )
     run_configuration(config_path, quiet=True, local=True)
 
     # Check experiment log output
-    with open(join(output_dir, 'test_folds_file_logging.log')) as f:
+    with open(join(output_dir, "test_folds_file_logging.log")) as f:
         cv_file_pattern = re.compile(
             r'Specifying "folds_file" overrides both explicit and default '
             r'"num_cv_folds".\n(.+)The specified "folds_file" will not be '
-            r'used for inner grid search.'
+            r"used for inner grid search."
         )
         matches = re.findall(cv_file_pattern, f.read())
         eq_(len(matches), 1)
@@ -369,39 +375,36 @@ def test_cross_validate_task():
     """
 
     # Run experiment
-    suffix = '.jsonlines'
-    train_path = join(train_dir, f'f0{suffix}')
+    suffix = ".jsonlines"
+    train_path = join(train_dir, f"f0{suffix}")
 
     config_path = fill_in_config_paths_for_single_file(
-        join(config_dir, "test_save_cv_folds.template.cfg"),
-        train_path,
-        None
+        join(config_dir, "test_save_cv_folds.template.cfg"), train_path, None
     )
     run_configuration(config_path, quiet=True, local=True)
 
     # Check final average results
-    with open(join(output_dir,
-                   'test_save_cv_folds_train_f0.jsonlines_LogisticRegression'
-                   '.results.json')) as f:
+    with open(
+        join(output_dir, "test_save_cv_folds_train_f0.jsonlines_LogisticRegression" ".results.json")
+    ) as f:
         result_dict = json.load(f)[10]
 
-    assert_almost_equal(result_dict['accuracy'], 0.517)
+    assert_almost_equal(result_dict["accuracy"], 0.517)
 
     # Check that the fold ids were saved correctly
     # First compute the expected fold IDs
-    examples = load_featureset(train_path, '', suffix, quiet=True)
-    expected_skll_ids = compute_expected_folds_for_cv_testing(examples,
-                                                              num_folds=10)
+    examples = load_featureset(train_path, "", suffix, quiet=True)
+    expected_skll_ids = compute_expected_folds_for_cv_testing(examples, num_folds=10)
     # read in the computed fold IDs
     skll_fold_ids = {}
-    with open(join(output_dir, 'test_save_cv_folds_skll_fold_ids.csv')) as f:
+    with open(join(output_dir, "test_save_cv_folds_skll_fold_ids.csv")) as f:
         reader = csv.DictReader(f)
         for row in reader:
-            skll_fold_ids[row['id']] = row['cv_test_fold']
+            skll_fold_ids[row["id"]] = row["cv_test_fold"]
 
     # convert the dictionary to strings (sorted by key) for quick comparison
-    skll_fold_ids_str = ''.join(f'{key}{val}' for key, val in sorted(skll_fold_ids.items()))
-    expected_skll_ids_str = ''.join(f'{key}{val}' for key, val in sorted(expected_skll_ids.items()))
+    skll_fold_ids_str = "".join(f"{key}{val}" for key, val in sorted(skll_fold_ids.items()))
+    expected_skll_ids_str = "".join(f"{key}{val}" for key, val in sorted(expected_skll_ids.items()))
 
     eq_(skll_fold_ids_str, expected_skll_ids_str)
 
@@ -412,16 +415,13 @@ def test_cross_validate_task_save_cv_models():
     are correctly saved.
     """
 
-    suffix = '.jsonlines'
-    train_path = join(train_dir, f'f0{suffix}')
+    suffix = ".jsonlines"
+    train_path = join(train_dir, f"f0{suffix}")
     config_path = fill_in_config_paths_for_single_file(
-        join(config_dir, "test_save_cv_models.template.cfg"),
-        train_path,
-        None
+        join(config_dir, "test_save_cv_models.template.cfg"), train_path, None
     )
     run_configuration(config_path, quiet=True, local=True)
-    cv_model_prefix = \
-        "test_save_cv_models_train_f0.jsonlines_LogisticRegression_fold"
+    cv_model_prefix = "test_save_cv_models_train_f0.jsonlines_LogisticRegression_fold"
     for i in range(1, 11):
         assert exists(join(output_dir, f"{cv_model_prefix}{i}.model")) is True
 
@@ -435,54 +435,56 @@ def check_cross_validate_task_with_custom_seed(learner_type, use_config):
     """
 
     # load in the featureset
-    suffix = '.jsonlines'
-    train_path = join(train_dir, f'f0{suffix}')
+    suffix = ".jsonlines"
+    train_path = join(train_dir, f"f0{suffix}")
     if learner_type == "classifier":
-        examples = load_featureset(train_path, '', suffix, quiet=True)
+        examples = load_featureset(train_path, "", suffix, quiet=True)
     else:
-        examples = load_featureset(train_path, '', suffix, class_map={"dog": 0, "cat": 1}, quiet=True)
+        examples = load_featureset(
+            train_path, "", suffix, class_map={"dog": 0, "cat": 1}, quiet=True
+        )
 
     # use a configuration file or the API, as specified
-    template_name = ("test_custom_cv_seed_classifier.template.cfg"
-                     if learner_type == "classifier"
-                     else "test_custom_cv_seed_regressor.template.cfg")
+    template_name = (
+        "test_custom_cv_seed_classifier.template.cfg"
+        if learner_type == "classifier"
+        else "test_custom_cv_seed_regressor.template.cfg"
+    )
     if use_config:
         config_path = fill_in_config_paths_for_single_file(
-            join(config_dir, template_name),
-            train_path,
-            None
+            join(config_dir, template_name), train_path, None
         )
         run_configuration(config_path, quiet=True, local=True)
 
         # read in the folds file produced by SKLL
         computed_fold_ids = {}
-        cv_folds_file_name = ("test_custom_cv_seed_clf_skll_fold_ids.csv"
-                              if learner_type == "classifier"
-                              else "test_custom_cv_seed_reg_skll_fold_ids.csv")
+        cv_folds_file_name = (
+            "test_custom_cv_seed_clf_skll_fold_ids.csv"
+            if learner_type == "classifier"
+            else "test_custom_cv_seed_reg_skll_fold_ids.csv"
+        )
         with open(join(output_dir, cv_folds_file_name)) as f:
             reader = csv.DictReader(f)
             for row in reader:
-                computed_fold_ids[row['id']] = row['cv_test_fold']
+                computed_fold_ids[row["id"]] = row["cv_test_fold"]
 
     else:
         learner_name = "LogisticRegression" if learner_type == "classifier" else "Ridge"
         learner = Learner(learner_name)
         objective = "accuracy" if learner_type == "classifier" else "pearson"
-        (_, _, _, computed_fold_ids, _) = learner.cross_validate(examples,
-                                                                 cv_folds=10,
-                                                                 cv_seed=54321,
-                                                                 grid_search=True,
-                                                                 grid_objective=objective)
+        (_, _, _, computed_fold_ids, _) = learner.cross_validate(
+            examples, cv_folds=10, cv_seed=54321, grid_search=True, grid_objective=objective
+        )
 
     # compute the fold IDs we expect from SKLL using the custom seed directly;
     # obviously, we only use stratified fold splitting with classifiers
-    expected_fold_ids = compute_expected_folds_for_cv_testing(examples,
-                                                              stratified=learner_type == "classifier",
-                                                              seed=54321)
+    expected_fold_ids = compute_expected_folds_for_cv_testing(
+        examples, stratified=learner_type == "classifier", seed=54321
+    )
 
     # convert the dictionary to strings (sorted by key) for quick comparison
-    computed_fold_ids_str = ''.join(f'{key}{val}' for key, val in sorted(computed_fold_ids.items()))
-    expected_fold_ids_str = ''.join(f'{key}{val}' for key, val in sorted(expected_fold_ids.items()))
+    computed_fold_ids_str = "".join(f"{key}{val}" for key, val in sorted(computed_fold_ids.items()))
+    expected_fold_ids_str = "".join(f"{key}{val}" for key, val in sorted(expected_fold_ids.items()))
 
     # the two sets of folds must be equal
     eq_(computed_fold_ids_str, expected_fold_ids_str)

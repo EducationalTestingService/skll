@@ -40,7 +40,7 @@ def setup():
 
 
 def tearDown():
-    """ Clean up after tests"""
+    """Clean up after tests"""
     for output_file_path in Path(output_dir).glob("test_voting_learner_learning_curve*"):
         output_file_path.unlink()
 
@@ -58,21 +58,21 @@ def check_learning_curve_task(learner_type, options_dict):
     """Check given combination of prediction configuration options"""
 
     # create a configuration file with the given options
-    (config_path,
-     estimator_names,
-     _,
-     custom_learner,
-     _,
-     output_metrics,
-     model_kwargs_list,
-     _,
-     sampler_list,
-     _,
-     _,
-     learning_curve_cv_folds,
-     learning_curve_train_sizes) = fill_in_config_options_for_voting_learners(learner_type,
-                                                                              "learning_curve",
-                                                                              options_dict)
+    (
+        config_path,
+        estimator_names,
+        _,
+        custom_learner,
+        _,
+        output_metrics,
+        model_kwargs_list,
+        _,
+        sampler_list,
+        _,
+        _,
+        learning_curve_cv_folds,
+        learning_curve_train_sizes,
+    ) = fill_in_config_options_for_voting_learners(learner_type, "learning_curve", options_dict)
 
     #  mock the `__init__()` method for the `VotingLearner` class so
     # that we can check that the voting learner was instantiated with
@@ -84,22 +84,23 @@ def check_learning_curve_task(learner_type, options_dict):
     # mock the `learning_curve()` method for the `VotingLearner` class;
     # this method needs to return a tuple of 3 values
     learning_curve_return_value = ([[0, 0]], [[0, 0]], [[0, 0]])
-    learning_curve_patcher = patch.object(VotingLearner,
-                                          "learning_curve",
-                                          return_value=learning_curve_return_value)
+    learning_curve_patcher = patch.object(
+        VotingLearner, "learning_curve", return_value=learning_curve_return_value
+    )
 
     # we also need to patch the `_create_learner_result_dicts()` function
     # since there are no actual results
-    clrd_patcher = patch("skll.experiments._create_learner_result_dicts",
-                         return_value={})
+    clrd_patcher = patch("skll.experiments._create_learner_result_dicts", return_value={})
 
     # we also need to patch some other output functions that write
     # various results to disk since we are not actually producing
     # any results from `evaluate()`
-    output_patchers = patch.multiple("skll.experiments",
-                                     _print_fancy_output=DEFAULT,
-                                     _write_summary_file=DEFAULT,
-                                     generate_learning_curve_plots=DEFAULT)
+    output_patchers = patch.multiple(
+        "skll.experiments",
+        _print_fancy_output=DEFAULT,
+        _write_summary_file=DEFAULT,
+        generate_learning_curve_plots=DEFAULT,
+    )
 
     mock_vl_init = init_patcher.start()
     mock_vl_learning_curve = learning_curve_patcher.start()
@@ -109,10 +110,7 @@ def check_learning_curve_task(learner_type, options_dict):
     # run the configuration file but with various methods/attributes for
     # `VotingLearner` mocked so that we can check that things were called
     # as expected without actually needing to evaluate any models
-    with patch.multiple(VotingLearner,
-                        model=DEFAULT,
-                        create=True):
-
+    with patch.multiple(VotingLearner, model=DEFAULT, create=True):
         run_configuration(config_path, quiet=True, local=True)
 
         # check that init was called the expected number of times which
@@ -121,14 +119,16 @@ def check_learning_curve_task(learner_type, options_dict):
 
         # check that the init call had the expected arguments
         expected_init_args = (estimator_names,)
-        expected_init_kwargs = {"voting": "soft" if options_dict["with_soft_voting"] else "hard",
-                                "custom_learner_path": custom_learner,
-                                "feature_scaling": "none",
-                                "pos_label": None,
-                                "min_feature_count": 1,
-                                "model_kwargs_list": model_kwargs_list,
-                                "sampler_list": sampler_list,
-                                "sampler_kwargs_list": None}
+        expected_init_kwargs = {
+            "voting": "soft" if options_dict["with_soft_voting"] else "hard",
+            "custom_learner_path": custom_learner,
+            "feature_scaling": "none",
+            "pos_label": None,
+            "min_feature_count": 1,
+            "model_kwargs_list": model_kwargs_list,
+            "sampler_list": sampler_list,
+            "sampler_kwargs_list": None,
+        }
 
         actual_call = mock_vl_init.call_args
         eq_(actual_call[0], expected_init_args)
@@ -140,8 +140,10 @@ def check_learning_curve_task(learner_type, options_dict):
         eq_(mock_vl_learning_curve.call_count, len(output_metrics))
 
         # check that each predict call had the expected arguments
-        expected_learning_curve_kwargs = {"cv_folds": learning_curve_cv_folds,
-                                          "train_sizes": learning_curve_train_sizes}
+        expected_learning_curve_kwargs = {
+            "cv_folds": learning_curve_cv_folds,
+            "train_sizes": learning_curve_train_sizes,
+        }
 
         for idx, actual_call in enumerate(mock_vl_learning_curve.call_args_list):
             actual_args = actual_call[0]
@@ -160,22 +162,24 @@ def check_learning_curve_task(learner_type, options_dict):
 
 
 def test_learning_curve_task():
-
     # test various combinations of experiment configuration options
-    option_names = ["with_soft_voting",
-                    "with_model_kwargs_list",
-                    "with_learning_curve_cv_folds",
-                    "with_train_sizes",
-                    "with_output_metrics"]
+    option_names = [
+        "with_soft_voting",
+        "with_model_kwargs_list",
+        "with_learning_curve_cv_folds",
+        "with_train_sizes",
+        "with_output_metrics",
+    ]
 
     # metrics _always_ need to be specified for learning curve tasks
-    for option_values in product(["classifier", "regressor"],
-                                 [False, True],
-                                 [False, True],
-                                 [False, True],
-                                 [False, True],
-                                 [True]):
-
+    for option_values in product(
+        ["classifier", "regressor"],
+        [False, True],
+        [False, True],
+        [False, True],
+        [False, True],
+        [True],
+    ):
         # assign the learner type separately
         learner_type = option_values[0]
 

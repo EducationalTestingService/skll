@@ -107,17 +107,20 @@ class VotingLearner(object):
         A logging object. If ``None`` is passed, get logger from ``__name__``.
         Defaults to ``None``.
     """
-    def __init__(self,
-                 learner_names,
-                 voting="hard",
-                 custom_learner_path=None,
-                 feature_scaling="none",
-                 pos_label=None,
-                 min_feature_count=1,
-                 model_kwargs_list=None,
-                 sampler_list=None,
-                 sampler_kwargs_list=None,
-                 logger=None):
+
+    def __init__(
+        self,
+        learner_names,
+        voting="hard",
+        custom_learner_path=None,
+        feature_scaling="none",
+        pos_label=None,
+        min_feature_count=1,
+        model_kwargs_list=None,
+        sampler_list=None,
+        sampler_kwargs_list=None,
+        logger=None,
+    ):
         """
         Initializes a ``VotingLearner`` object with the specified settings.
         """
@@ -133,62 +136,58 @@ class VotingLearner(object):
 
         # check that the arguments that are supposed to be lists are lists;
         # if they are `None`, set them to be empty lists
-        for argument_name in ["model_kwargs_list",
-                              "sampler_list",
-                              "sampler_kwargs_list"]:
+        for argument_name in ["model_kwargs_list", "sampler_list", "sampler_kwargs_list"]:
             argument_value = locals()[argument_name]
             if argument_value is None:
                 setattr(self, argument_name, [])
             else:
                 if not isinstance(argument_value, list):
-                    raise ValueError(f"{argument_name} should be a list, you "
-                                     f"specified {argument_value}")
+                    raise ValueError(
+                        f"{argument_name} should be a list, you " f"specified {argument_value}"
+                    )
                 else:
                     setattr(self, argument_name, argument_value)
 
         # check that the list arguments, if not empty, have the right length
-        for attribute_name in ["model_kwargs_list",
-                               "sampler_list",
-                               "sampler_kwargs_list"]:
+        for attribute_name in ["model_kwargs_list", "sampler_list", "sampler_kwargs_list"]:
             attribute_value = getattr(self, attribute_name)
             try:
-                assert (len(attribute_value) == 0 or
-                        len(attribute_value) == len(learner_names))
+                assert len(attribute_value) == 0 or len(attribute_value) == len(learner_names)
             except AssertionError:
-                raise ValueError(f"'{attribute_name}' must have {len(learner_names)} "
-                                 "entries, same as the number of learners") from None
+                raise ValueError(
+                    f"'{attribute_name}' must have {len(learner_names)} "
+                    "entries, same as the number of learners"
+                ) from None
 
         # instantiate each of the given estimators
         self._learners = []
         learner_types = set()
         self._learner_names = learner_names
-        for (learner_name,
-             model_kwargs,
-             sampler,
-             sampler_kwargs) in zip_longest(self._learner_names,
-                                            self.model_kwargs_list,
-                                            self.sampler_list,
-                                            self.sampler_kwargs_list):
-            learner = Learner(learner_name,
-                              custom_learner_path=custom_learner_path,
-                              feature_scaling=feature_scaling,
-                              min_feature_count=min_feature_count,
-                              model_kwargs=model_kwargs,
-                              pipeline=True,
-                              pos_label=pos_label,
-                              probability=self.voting == "soft",
-                              sampler=sampler,
-                              sampler_kwargs=sampler_kwargs,
-                              logger=logger)
+        for learner_name, model_kwargs, sampler, sampler_kwargs in zip_longest(
+            self._learner_names, self.model_kwargs_list, self.sampler_list, self.sampler_kwargs_list
+        ):
+            learner = Learner(
+                learner_name,
+                custom_learner_path=custom_learner_path,
+                feature_scaling=feature_scaling,
+                min_feature_count=min_feature_count,
+                model_kwargs=model_kwargs,
+                pipeline=True,
+                pos_label=pos_label,
+                probability=self.voting == "soft",
+                sampler=sampler,
+                sampler_kwargs=sampler_kwargs,
+                logger=logger,
+            )
             learner_types.add(learner.model_type._estimator_type)
             self._learners.append(learner)
 
         # infer what type of metalearner we have - a classifier or
         # a regressor; it can only be one or the other
         try:
-            assert (len(learner_types) == 1 and
-                    (learner_types == {"classifier"} or
-                     learner_types == {"regressor"}))
+            assert len(learner_types) == 1 and (
+                learner_types == {"classifier"} or learner_types == {"regressor"}
+            )
         except AssertionError:
             raise ValueError("cannot mix classifiers and regressors for voting")
         else:
@@ -233,8 +232,8 @@ class VotingLearner(object):
         because we do not want to dump loggers.
         """
         attribute_dict = dict(self.__dict__)
-        if 'logger' in attribute_dict:
-            del attribute_dict['logger']
+        if "logger" in attribute_dict:
+            del attribute_dict["logger"]
         return attribute_dict
 
     def save(self, learner_path):
@@ -273,14 +272,16 @@ class VotingLearner(object):
         # call the learner loding utility function
         return _load_learner_from_disk(cls, learner_path, logger)
 
-    def train(self,
-              examples,
-              param_grid_list=None,
-              grid_search_folds=5,
-              grid_search=True,
-              grid_objective=None,
-              grid_jobs=None,
-              shuffle=False):
+    def train(
+        self,
+        examples,
+        param_grid_list=None,
+        grid_search_folds=5,
+        grid_search=True,
+        grid_objective=None,
+        grid_jobs=None,
+        shuffle=False,
+    ):
         """
         Train the voting meta-estimator.
 
@@ -337,28 +338,31 @@ class VotingLearner(object):
             self._param_grids = []
         else:
             if not isinstance(param_grid_list, list):
-                raise ValueError(f"`param_grid_list` should be a list of dictionaries, you specified: {param_grid_list}")
+                raise ValueError(
+                    f"`param_grid_list` should be a list of dictionaries, "
+                    f"you specified: {param_grid_list}"
+                )
             else:
                 self._param_grids = param_grid_list
 
         # train each of the underlying estimators with grid search, if required;
         # basically, we are just running grid search to find good hyperparameter
         # values that we can then pass to scikit-learn below
-        for (learner, param_grid) in zip_longest(self.learners,
-                                                 self._param_grids):
-            _ = learner.train(examples,
-                              grid_search=grid_search,
-                              grid_objective=grid_objective,
-                              param_grid=param_grid,
-                              grid_search_folds=grid_search_folds,
-                              grid_jobs=grid_jobs,
-                              shuffle=shuffle)
+        for learner, param_grid in zip_longest(self.learners, self._param_grids):
+            _ = learner.train(
+                examples,
+                grid_search=grid_search,
+                grid_objective=grid_objective,
+                param_grid=param_grid,
+                grid_search_folds=grid_search_folds,
+                grid_jobs=grid_jobs,
+                shuffle=shuffle,
+            )
 
         # once we have our instantiated learners, we use their `pipeline`
         # attribute as the input estimators to the specific voting learner type
-        estimators = list(zip(self._learner_names,
-                              [learner.pipeline for learner in self.learners]))
-        if self.learner_type == 'classifier':
+        estimators = list(zip(self._learner_names, [learner.pipeline for learner in self.learners]))
+        if self.learner_type == "classifier":
             self._model_type = VotingClassifier
             model_kwargs = {"voting": self.voting}
         else:
@@ -392,12 +396,14 @@ class VotingLearner(object):
         # differences in results and/or floating point precision.
         self._model = meta_learner.fit(X_train, y_train)
 
-    def predict(self,
-                examples,
-                prediction_prefix=None,
-                append=False,
-                class_labels=True,
-                individual_predictions=False):
+    def predict(
+        self,
+        examples,
+        prediction_prefix=None,
+        append=False,
+        class_labels=True,
+        individual_predictions=False,
+    ):
         """
         Generate predictions from the meta-estimator and, optionally, the
         underlying estimators on given ``FeatureSet``. The predictions are
@@ -463,7 +469,6 @@ class VotingLearner(object):
 
         # for classifiers ...
         if self.learner_type == "classifier":
-
             # return and write class labels if they were explicitly asked for
             if class_labels:
                 to_return = to_write = prediction_dict["labels"]
@@ -482,28 +487,32 @@ class VotingLearner(object):
 
         # write out the meta-estimator predictions if we are asked to
         if prediction_prefix is not None:
-            write_predictions(example_ids,
-                              to_write,
-                              prediction_prefix,
-                              self.learner_type,
-                              append=append,
-                              label_list=self.learners[0].label_list)
+            write_predictions(
+                example_ids,
+                to_write,
+                prediction_prefix,
+                self.learner_type,
+                append=append,
+                label_list=self.learners[0].label_list,
+            )
 
         # get and write each underlying learner's predictions if asked for
         if individual_predictions:
-
             # create a dictionary to hold the individual predictions
             individual_predictions_dict = {}
 
             # iterate over each underlying learner along with names
-            for (name, learner) in zip(self.model.named_estimators_, self.learners):
-
+            for name, learner in zip(self.model.named_estimators_, self.learners):
                 # the learner's `predict()` method should handle everything
-                learner_prediction_prefix = f"{prediction_prefix}_{name}" if prediction_prefix is not None else None
-                learner_predictions = learner.predict(examples,
-                                                      prediction_prefix=learner_prediction_prefix,
-                                                      append=append,
-                                                      class_labels=class_labels)
+                learner_prediction_prefix = (
+                    f"{prediction_prefix}_{name}" if prediction_prefix is not None else None
+                )
+                learner_predictions = learner.predict(
+                    examples,
+                    prediction_prefix=learner_prediction_prefix,
+                    append=append,
+                    class_labels=class_labels,
+                )
 
                 # save this estimator's predictions in the dictionary
                 individual_predictions_dict[name] = learner_predictions
@@ -514,13 +523,15 @@ class VotingLearner(object):
         # and the dictionary containing the individual predictions
         return (to_return, individual_predictions_dict)
 
-    def evaluate(self,
-                 examples,
-                 prediction_prefix=None,
-                 append=False,
-                 grid_objective=None,
-                 individual_predictions=False,
-                 output_metrics=[]):
+    def evaluate(
+        self,
+        examples,
+        prediction_prefix=None,
+        append=False,
+        grid_objective=None,
+        individual_predictions=False,
+        output_metrics=[],
+    ):
         """
         Evaluates the meta-estimator on a given ``FeatureSet``.
 
@@ -559,23 +570,23 @@ class VotingLearner(object):
 
         # make the prediction on the test data; note that these
         # are either class indices or class probabilities
-        yhat, _ = self.predict(examples,
-                               class_labels=False,
-                               prediction_prefix=prediction_prefix,
-                               append=append,
-                               individual_predictions=individual_predictions)
+        yhat, _ = self.predict(
+            examples,
+            class_labels=False,
+            prediction_prefix=prediction_prefix,
+            append=append,
+            individual_predictions=individual_predictions,
+        )
 
         # for classifiers, convert class labels indices for consistency
         # but account for any unseen labels in the test set that may not
         # have occurred in the training data for the underlying learners
         # at all; then get acceptable metrics based on the type of labels we have
-        if self.learner_type == 'classifier':
+        if self.learner_type == "classifier":
             sorted_unique_labels = np.unique(examples.labels)
             test_label_list = sorted_unique_labels.tolist()
-            train_and_test_label_dict = add_unseen_labels(self.label_dict,
-                                                          test_label_list)
-            ytest = np.array([train_and_test_label_dict[label]
-                              for label in examples.labels])
+            train_and_test_label_dict = add_unseen_labels(self.label_dict, test_label_list)
+            ytest = np.array([train_and_test_label_dict[label] for label in examples.labels])
             acceptable_metrics = get_acceptable_classification_metrics(sorted_unique_labels)
         # for regressors we do not need to do anything special to the labels
         else:
@@ -587,49 +598,56 @@ class VotingLearner(object):
         unacceptable_metrics = set(output_metrics).difference(acceptable_metrics)
         if unacceptable_metrics:
             label_type = examples.labels.dtype.type
-            raise ValueError(f"The following metrics are not valid "
-                             f"for this learner({self.model_type.__name__}) "
-                             f"with these labels of type {label_type.__name__}: "
-                             f"{list(unacceptable_metrics)}")
+            raise ValueError(
+                f"The following metrics are not valid "
+                f"for this learner({self.model_type.__name__}) "
+                f"with these labels of type {label_type.__name__}: "
+                f"{list(unacceptable_metrics)}"
+            )
 
         # get the values of the evaluation metrics
-        (conf_matrix,
-         accuracy,
-         result_dict,
-         objective_score,
-         metric_scores) = compute_evaluation_metrics(output_metrics,
-                                                     ytest,
-                                                     yhat,
-                                                     self.learner_type,
-                                                     label_dict=train_and_test_label_dict,
-                                                     grid_objective=grid_objective,
-                                                     probability=self.voting == "soft",
-                                                     logger=self.logger)
+        (
+            conf_matrix,
+            accuracy,
+            result_dict,
+            objective_score,
+            metric_scores,
+        ) = compute_evaluation_metrics(
+            output_metrics,
+            ytest,
+            yhat,
+            self.learner_type,
+            label_dict=train_and_test_label_dict,
+            grid_objective=grid_objective,
+            probability=self.voting == "soft",
+            logger=self.logger,
+        )
 
         # add in the model parameters, excluding the ones
         # for the underlying estimators, and return
         model_params = self.model.get_params(deep=False)
-        res = (conf_matrix, accuracy, result_dict, model_params,
-               objective_score, metric_scores)
+        res = (conf_matrix, accuracy, result_dict, model_params, objective_score, metric_scores)
         return res
 
-    def cross_validate(self,
-                       examples,
-                       stratified=True,
-                       cv_folds=10,
-                       cv_seed=123456789,
-                       grid_search=True,
-                       grid_search_folds=5,
-                       grid_jobs=None,
-                       grid_objective=None,
-                       output_metrics=[],
-                       prediction_prefix=None,
-                       param_grid_list=None,
-                       shuffle=False,
-                       save_cv_folds=True,
-                       save_cv_models=False,
-                       individual_predictions=False,
-                       use_custom_folds_for_grid_search=True):
+    def cross_validate(
+        self,
+        examples,
+        stratified=True,
+        cv_folds=10,
+        cv_seed=123456789,
+        grid_search=True,
+        grid_search_folds=5,
+        grid_jobs=None,
+        grid_objective=None,
+        output_metrics=[],
+        prediction_prefix=None,
+        param_grid_list=None,
+        shuffle=False,
+        save_cv_folds=True,
+        save_cv_models=False,
+        individual_predictions=False,
+        use_custom_folds_for_grid_search=True,
+    ):
         """
         Cross-validate the meta-estimator on the given examples.
 
@@ -747,18 +765,24 @@ class VotingLearner(object):
         # work with continuous labels. Note that although using random folds
         # _will_ work, we want to raise an error in general since it's better
         # to encode the labels as strings anyway for classification problems.
-        if (self.learner_type == 'classifier' and
-                type_of_target(examples.labels) not in ['binary', 'multiclass']):
-            raise ValueError("Floating point labels must be encoded as strings for cross-validation.")
+        if self.learner_type == "classifier" and type_of_target(examples.labels) not in [
+            "binary",
+            "multiclass",
+        ]:
+            raise ValueError(
+                "Floating point labels must be encoded as strings for cross-validation."
+            )
 
         # check that we have an objective since grid search is on by default
         # Note that `train()` would raise this error anyway later but it's
         # better to raise this early on so rather than after a whole bunch of
         # stuff has happened
         if grid_search and not grid_objective:
-            raise ValueError("Grid search is on by default. You must "
-                             "either specify a grid objective or turn off "
-                             "grid search.")
+            raise ValueError(
+                "Grid search is on by default. You must "
+                "either specify a grid objective or turn off "
+                "grid search."
+            )
 
         # Shuffle so that the folds are random for the inner grid search CV.
         # If grid search is True but shuffle isn't, shuffle anyway.
@@ -766,26 +790,26 @@ class VotingLearner(object):
         # we make a copy of everything (and then get rid of the old version)
         if grid_search or shuffle:
             if grid_search and not shuffle:
-                self.logger.warning('Training data will be shuffled to randomize '
-                                    'grid search folds.  Shuffling may yield '
-                                    'different results compared to scikit-learn.')
-            ids, labels, features = sk_shuffle(examples.ids, examples.labels,
-                                               examples.features,
-                                               random_state=random_state)
-            examples = FeatureSet(examples.name, ids, labels=labels,
-                                  features=features,
-                                  vectorizer=examples.vectorizer)
+                self.logger.warning(
+                    "Training data will be shuffled to randomize "
+                    "grid search folds.  Shuffling may yield "
+                    "different results compared to scikit-learn."
+                )
+            ids, labels, features = sk_shuffle(
+                examples.ids, examples.labels, examples.features, random_state=random_state
+            )
+            examples = FeatureSet(
+                examples.name, ids, labels=labels, features=features, vectorizer=examples.vectorizer
+            )
 
         # Call some setup code which will properly initialize the underlying
         # learners before they are eventually trained
         self._setup_underlying_learners(examples)
 
         # Set up the cross-validation iterator.
-        kfold, cv_groups = setup_cv_fold_iterator(cv_folds,
-                                                  examples,
-                                                  self.learner_type,
-                                                  stratified=stratified,
-                                                  logger=self.logger)
+        kfold, cv_groups = setup_cv_fold_iterator(
+            cv_folds, examples, self.learner_type, stratified=stratified, logger=self.logger
+        )
 
         # When using custom CV folds (a dictionary), if we are planning to do
         # grid search, set the grid search folds to be the same as the custom
@@ -794,8 +818,9 @@ class VotingLearner(object):
         # the configparser should take care of this even before this method is called
         if isinstance(cv_folds, dict):
             if grid_search and use_custom_folds_for_grid_search and grid_search_folds != cv_folds:
-                self.logger.warning("The specified custom folds will be used for "
-                                    "the inner grid search.")
+                self.logger.warning(
+                    "The specified custom folds will be used for " "the inner grid search."
+                )
                 grid_search_folds = cv_folds
 
         # handle each fold separately & accumulate the predictions and results
@@ -803,43 +828,52 @@ class VotingLearner(object):
         append_predictions = False
         models = [] if save_cv_models else None
         skll_fold_ids = {} if save_cv_folds else None
-        for fold_num, (train_indices,
-                       test_indices) in enumerate(kfold.split(examples.features,
-                                                              examples.labels,
-                                                              cv_groups)):
+        for fold_num, (train_indices, test_indices) in enumerate(
+            kfold.split(examples.features, examples.labels, cv_groups)
+        ):
             # Train model
             self._model = None  # prevent feature vectorizer from being reset.
-            train_set = FeatureSet(examples.name,
-                                   examples.ids[train_indices],
-                                   labels=examples.labels[train_indices],
-                                   features=examples.features[train_indices],
-                                   vectorizer=examples.vectorizer)
+            train_set = FeatureSet(
+                examples.name,
+                examples.ids[train_indices],
+                labels=examples.labels[train_indices],
+                features=examples.features[train_indices],
+                vectorizer=examples.vectorizer,
+            )
 
-            self.train(train_set,
-                       param_grid_list=param_grid_list,
-                       grid_search_folds=grid_search_folds,
-                       grid_search=grid_search,
-                       grid_objective=grid_objective,
-                       grid_jobs=grid_jobs,
-                       shuffle=grid_search)
+            self.train(
+                train_set,
+                param_grid_list=param_grid_list,
+                grid_search_folds=grid_search_folds,
+                grid_search=grid_search,
+                grid_objective=grid_objective,
+                grid_jobs=grid_jobs,
+                shuffle=grid_search,
+            )
 
             if save_cv_models:
                 models.append(copy.deepcopy(self))
 
             # evaluate the voting meta-estimator on the test fold
-            test_tuple = FeatureSet(examples.name,
-                                    examples.ids[test_indices],
-                                    labels=examples.labels[test_indices],
-                                    features=examples.features[test_indices],
-                                    vectorizer=examples.vectorizer)
+            test_tuple = FeatureSet(
+                examples.name,
+                examples.ids[test_indices],
+                labels=examples.labels[test_indices],
+                features=examples.features[test_indices],
+                vectorizer=examples.vectorizer,
+            )
 
             # save the results
-            results.append(self.evaluate(test_tuple,
-                                         prediction_prefix=prediction_prefix,
-                                         append=append_predictions,
-                                         grid_objective=grid_objective,
-                                         output_metrics=output_metrics,
-                                         individual_predictions=individual_predictions))
+            results.append(
+                self.evaluate(
+                    test_tuple,
+                    prediction_prefix=prediction_prefix,
+                    append=append_predictions,
+                    grid_objective=grid_objective,
+                    output_metrics=output_metrics,
+                    individual_predictions=individual_predictions,
+                )
+            )
             append_predictions = True
 
             # save the fold number for each test ID if we were asked to
@@ -850,12 +884,14 @@ class VotingLearner(object):
         # return list of results/outputs for all folds
         return (results, skll_fold_ids, models)
 
-    def learning_curve(self,
-                       examples,
-                       metric,
-                       cv_folds=10,
-                       train_sizes=np.linspace(0.1, 1.0, 5),
-                       override_minimum=False):
+    def learning_curve(
+        self,
+        examples,
+        metric,
+        cv_folds=10,
+        train_sizes=np.linspace(0.1, 1.0, 5),
+        override_minimum=False,
+    ):
         """
         Generates learning curves for the voting meta-estimator on the training
         examples via cross-validation. Adapted from the scikit-learn code for
@@ -926,9 +962,11 @@ class VotingLearner(object):
         # raise a warning if we are using a probabilistic classifier
         # since that means we cannot use the predictions directly
         if self.voting == "soft":
-            self.logger.warning("For soft-voting classifiers, the most likely "
-                                "class will be computed via an argmax before "
-                                "computing the curve.")
+            self.logger.warning(
+                "For soft-voting classifiers, the most likely "
+                "class will be computed via an argmax before "
+                "computing the curve."
+            )
 
         # Call some setup code which will properly initialize the underlying
         # learners before they are eventually trained
@@ -936,15 +974,13 @@ class VotingLearner(object):
 
         # set up the CV split iterator over the train/test featuresets
         # which also returns the maximum number of training examples
-        (featureset_iter,
-         n_max_training_samples) = setup_cv_split_iterator(cv_folds, examples)
+        (featureset_iter, n_max_training_samples) = setup_cv_split_iterator(cv_folds, examples)
 
         # Get the `_translate_train_sizes()` function from scikit-learn
         # since we need it to get the right list of sizes after cross-validation
-        _module = import_module('sklearn.model_selection._validation')
-        _translate_train_sizes = getattr(_module, '_translate_train_sizes')
-        train_sizes_abs = _translate_train_sizes(train_sizes,
-                                                 n_max_training_samples)
+        _module = import_module("sklearn.model_selection._validation")
+        _translate_train_sizes = getattr(_module, "_translate_train_sizes")
+        train_sizes_abs = _translate_train_sizes(train_sizes, n_max_training_samples)
         n_unique_ticks = train_sizes_abs.shape[0]
 
         # limit the number of parallel jobs for this to be no higher than
@@ -954,12 +990,11 @@ class VotingLearner(object):
         # Run jobs in parallel that train the model on each subset
         # of the training data and compute train and test scores
         parallel = joblib.Parallel(n_jobs=n_jobs, pre_dispatch=n_jobs)
-        out = parallel(joblib.delayed(train_and_score)(self,
-                                                       train_fs[:n_train_samples],
-                                                       test_fs,
-                                                       metric)
-                       for train_fs, test_fs in featureset_iter
-                       for n_train_samples in train_sizes_abs)
+        out = parallel(
+            joblib.delayed(train_and_score)(self, train_fs[:n_train_samples], test_fs, metric)
+            for train_fs, test_fs in featureset_iter
+            for n_train_samples in train_sizes_abs
+        )
 
         # Reshape the outputs
         out = np.array(out)
