@@ -43,43 +43,41 @@ def setup():
 
 
 def tearDown():
-    """ Clean up after tests"""
+    """Clean up after tests"""
     for output_file_path in Path(output_dir).glob("test_xval_voting_no_gs*"):
         output_file_path.unlink()
 
 
 def test_cross_validate_with_continuous_labels():
     """Test that voting learner cross validation fails with continuous labels"""
-    fs, _ = make_classification_data(num_examples=500,
-                                     train_test_ratio=0.8,
-                                     num_labels=3,
-                                     non_negative=True)
+    fs, _ = make_classification_data(
+        num_examples=500, train_test_ratio=0.8, num_labels=3, non_negative=True
+    )
     fs.labels = fs.labels.astype(float) + 0.5
     voting_learner = VotingLearner(["LogisticRegression", "SVC", "MultinomialNB"])
-    assert_raises_regex(ValueError,
-                        "must be encoded as strings",
-                        voting_learner.cross_validate,
-                        fs,
-                        grid_search=False)
+    assert_raises_regex(
+        ValueError,
+        "must be encoded as strings",
+        voting_learner.cross_validate,
+        fs,
+        grid_search=False,
+    )
 
 
 def test_cross_validate_grid_search_but_no_objective():
     """Test that voting learner cross validation fails with continuous labels"""
-    fs, _ = make_classification_data(num_examples=500,
-                                     train_test_ratio=0.8,
-                                     num_labels=3,
-                                     non_negative=True)
+    fs, _ = make_classification_data(
+        num_examples=500, train_test_ratio=0.8, num_labels=3, non_negative=True
+    )
     voting_learner = VotingLearner(["LogisticRegression", "SVC", "MultinomialNB"])
-    assert_raises_regex(ValueError,
-                        "must either specify a grid objective",
-                        voting_learner.cross_validate,
-                        fs)
+    assert_raises_regex(
+        ValueError, "must either specify a grid objective", voting_learner.cross_validate, fs
+    )
 
 
-def check_cross_validate_without_grid_search(learner_type,
-                                             with_soft_voting,
-                                             with_individual_predictions):
-
+def check_cross_validate_without_grid_search(
+    learner_type, with_soft_voting, with_individual_predictions
+):
     # to test the cross_validate() method without grid search, we
     # instantiate the SKLL voting learner, call `cross_validate()` on it
     # while writing out the predictions and also asking it to return
@@ -90,9 +88,9 @@ def check_cross_validate_without_grid_search(learner_type,
     # test set and compare their values.
 
     # set the prediction prefix in case we need to write out the predictions
-    prediction_prefix = (Path(output_dir) / f"test_xval_voting_no_gs_"
-                                            f"{learner_type}_"
-                                            f"{with_soft_voting}")
+    prediction_prefix = (
+        Path(output_dir) / f"test_xval_voting_no_gs_" f"{learner_type}_" f"{with_soft_voting}"
+    )
     prediction_prefix = str(prediction_prefix)
 
     # set various parameters based on whether we are using
@@ -110,22 +108,21 @@ def check_cross_validate_without_grid_search(learner_type,
 
     # instantiate and cross-validate the SKLL voting learner
     # on the full digits dataset
-    skll_vl = VotingLearner(learner_names,
-                            feature_scaling="none",
-                            min_feature_count=0,
-                            voting=voting_type)
-    (xval_results,
-     used_fold_ids,
-     used_models) = skll_vl.cross_validate(featureset,
-                                           grid_search=False,
-                                           prediction_prefix=prediction_prefix,
-                                           output_metrics=[extra_metric],
-                                           save_cv_folds=True,
-                                           save_cv_models=True,
-                                           individual_predictions=with_individual_predictions)
+    skll_vl = VotingLearner(
+        learner_names, feature_scaling="none", min_feature_count=0, voting=voting_type
+    )
+    (xval_results, used_fold_ids, used_models) = skll_vl.cross_validate(
+        featureset,
+        grid_search=False,
+        prediction_prefix=prediction_prefix,
+        output_metrics=[extra_metric],
+        save_cv_folds=True,
+        save_cv_models=True,
+        individual_predictions=with_individual_predictions,
+    )
 
     # check that the results are as expected
-    ok_(len(xval_results), 10)               # number of folds
+    ok_(len(xval_results), 10)  # number of folds
     for i in range(10):
         if learner_type == "classifier":
             ok_(isinstance(xval_results[i][0], list))  # confusion matrix
@@ -133,10 +130,10 @@ def check_cross_validate_without_grid_search(learner_type,
         else:
             eq_(xval_results[i][0], None)  # no confusion matrix
             eq_(xval_results[i][1], None)  # no accuracy
-        ok_(isinstance(xval_results[i][2], dict))   # result dict
-        ok_(isinstance(xval_results[i][3], dict))   # model params
-        eq_(xval_results[i][4], None)               # No objective
-        ok_(isinstance(xval_results[i][5], dict))   # metric scores
+        ok_(isinstance(xval_results[i][2], dict))  # result dict
+        ok_(isinstance(xval_results[i][3], dict))  # model params
+        eq_(xval_results[i][4], None)  # No objective
+        ok_(isinstance(xval_results[i][5], dict))  # metric scores
 
     # create a pandas dataframe with the returned fold IDs
     # and create a scikit-learn CV splitter with the exact folds
@@ -177,11 +174,10 @@ def check_cross_validate_without_grid_search(learner_type,
     clf3 = used_estimators[learner_names[2]]["estimator"]
 
     # instantiate the scikit-learn voting classifier
-    sklearn_model_type = (VotingClassifier if learner_type == "classifier"
-                          else VotingRegressor)
-    sklearn_model_kwargs = {"estimators": [(learner_names[0], clf1),
-                                           (learner_names[1], clf2),
-                                           (learner_names[2], clf3)]}
+    sklearn_model_type = VotingClassifier if learner_type == "classifier" else VotingRegressor
+    sklearn_model_kwargs = {
+        "estimators": [(learner_names[0], clf1), (learner_names[1], clf2), (learner_names[2], clf3)]
+    }
     if learner_type == "classifier":
         sklearn_model_kwargs["voting"] = voting_type
     sklearn_vl = sklearn_model_type(**sklearn_model_kwargs)
@@ -191,11 +187,13 @@ def check_cross_validate_without_grid_search(learner_type,
     # also set the prediction method to be `predict_proba` if
     # we are doing soft voting so that we get probabiities back
     sklearn_predict_method = "predict_proba" if with_soft_voting else "predict"
-    sklearn_preds = cross_val_predict(sklearn_vl,
-                                      featureset.features,
-                                      featureset.labels,
-                                      cv=splitter,
-                                      method=sklearn_predict_method)
+    sklearn_preds = cross_val_predict(
+        sklearn_vl,
+        featureset.features,
+        featureset.labels,
+        cv=splitter,
+        method=sklearn_predict_method,
+    )
 
     # save the (argmax-ed) sklearn predictions into our data frame
     if with_soft_voting:
@@ -210,15 +208,23 @@ def check_cross_validate_without_grid_search(learner_type,
     # are close enough; we only expect them to match up to 2 decimal places
     # due to various differences between SKLL and scikit-learn
     if learner_type == "classifier":
-        skll_metrics = [accuracy_score(featureset.labels, df_preds["skll"]),
-                        f1_score(featureset.labels, df_preds["skll"], average="macro")]
-        sklearn_metrics = [accuracy_score(featureset.labels, df_preds["sklearn"]),
-                           f1_score(featureset.labels, df_preds["sklearn"], average="macro")]
+        skll_metrics = [
+            accuracy_score(featureset.labels, df_preds["skll"]),
+            f1_score(featureset.labels, df_preds["skll"], average="macro"),
+        ]
+        sklearn_metrics = [
+            accuracy_score(featureset.labels, df_preds["sklearn"]),
+            f1_score(featureset.labels, df_preds["sklearn"], average="macro"),
+        ]
     else:
-        skll_metrics = [pearsonr(featureset.labels, df_preds["skll"])[0],
-                        mean_squared_error(featureset.labels, df_preds["skll"])]
-        sklearn_metrics = [pearsonr(featureset.labels, df_preds["sklearn"])[0],
-                           mean_squared_error(featureset.labels, df_preds["sklearn"])]
+        skll_metrics = [
+            pearsonr(featureset.labels, df_preds["skll"])[0],
+            mean_squared_error(featureset.labels, df_preds["skll"]),
+        ]
+        sklearn_metrics = [
+            pearsonr(featureset.labels, df_preds["sklearn"])[0],
+            mean_squared_error(featureset.labels, df_preds["sklearn"]),
+        ]
 
     assert_almost_equal(skll_metrics[0], sklearn_metrics[0], places=2)
     assert_almost_equal(skll_metrics[1], sklearn_metrics[1], places=2)
@@ -234,16 +240,16 @@ def check_cross_validate_without_grid_search(learner_type,
 
 
 def test_cross_validate_without_grid_search():
-    for (learner_type,
-         with_soft_voting,
-         with_individual_predictions) in product(["classifier", "regressor"],
-                                                 [False, True],
-                                                 [False, True]):
+    for learner_type, with_soft_voting, with_individual_predictions in product(
+        ["classifier", "regressor"], [False, True], [False, True]
+    ):
         # regressors do not support soft voting
         if learner_type == "regressor" and with_soft_voting:
             continue
         else:
-            yield (check_cross_validate_without_grid_search,
-                   learner_type,
-                   with_soft_voting,
-                   with_individual_predictions)
+            yield (
+                check_cross_validate_without_grid_search,
+                learner_type,
+                with_soft_voting,
+                with_individual_predictions,
+            )

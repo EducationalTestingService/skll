@@ -39,13 +39,14 @@ def tearDown():
         output_file_path.unlink()
 
 
-def check_predict(learner_type,
-                  with_grid_search,
-                  with_soft_voting,
-                  with_class_labels,
-                  with_file_output,
-                  with_individual_predictions):
-
+def check_predict(
+    learner_type,
+    with_grid_search,
+    with_soft_voting,
+    with_class_labels,
+    with_file_output,
+    with_individual_predictions,
+):
     # to test the predict() method, we instantiate the SKLL voting learner,
     # train it on either the digits (classification) or housing (regression)
     # data set, and generate predictions on the corresponding test set; then
@@ -53,10 +54,14 @@ def check_predict(learner_type,
     # compare the SKLL and scikit-learn predictions
 
     # set the prediction prefix in case we need to write out the predictions
-    prediction_prefix = (Path(output_dir) / f"test_predict_voting_"
-                                            f"{learner_type}_"
-                                            f"{with_grid_search}_"
-                                            f"{with_class_labels}" if with_file_output else None)
+    prediction_prefix = (
+        Path(output_dir) / f"test_predict_voting_"
+        f"{learner_type}_"
+        f"{with_grid_search}_"
+        f"{with_class_labels}"
+        if with_file_output
+        else None
+    )
     prediction_prefix = str(prediction_prefix) if prediction_prefix else None
 
     # set various parameters based on whether we are using
@@ -73,21 +78,20 @@ def check_predict(learner_type,
         objective = "pearson"
 
     # instantiate and train the SKLL voting learner on the digits dataset
-    skll_vl = VotingLearner(learner_names,
-                            feature_scaling="none",
-                            min_feature_count=0,
-                            voting=voting_type)
-    skll_vl.train(train_fs,
-                  grid_objective=objective,
-                  grid_search=with_grid_search,
-                  grid_search_folds=3)
+    skll_vl = VotingLearner(
+        learner_names, feature_scaling="none", min_feature_count=0, voting=voting_type
+    )
+    skll_vl.train(
+        train_fs, grid_objective=objective, grid_search=with_grid_search, grid_search_folds=3
+    )
 
     # get the overall and individual predictions from SKLL
-    (skll_predictions,
-     skll_individual_dict) = skll_vl.predict(test_fs,
-                                             class_labels=with_class_labels,
-                                             prediction_prefix=prediction_prefix,
-                                             individual_predictions=with_individual_predictions)
+    (skll_predictions, skll_individual_dict) = skll_vl.predict(
+        test_fs,
+        class_labels=with_class_labels,
+        prediction_prefix=prediction_prefix,
+        individual_predictions=with_individual_predictions,
+    )
 
     # get the underlying scikit-learn estimators from SKLL
     named_estimators = skll_vl.model.named_estimators_
@@ -96,11 +100,10 @@ def check_predict(learner_type,
     clf3 = named_estimators[learner_names[2]]["estimator"]
 
     # instantiate and train the scikit-learn voting classifer
-    sklearn_model_type = (VotingClassifier if learner_type == "classifier"
-                          else VotingRegressor)
-    sklearn_model_kwargs = {"estimators": [(learner_names[0], clf1),
-                                           (learner_names[1], clf2),
-                                           (learner_names[2], clf3)]}
+    sklearn_model_type = VotingClassifier if learner_type == "classifier" else VotingRegressor
+    sklearn_model_kwargs = {
+        "estimators": [(learner_names[0], clf1), (learner_names[1], clf2), (learner_names[2], clf3)]
+    }
     if learner_type == "classifier":
         sklearn_model_kwargs["voting"] = voting_type
     sklearn_vl = sklearn_model_type(**sklearn_model_kwargs)
@@ -116,8 +119,9 @@ def check_predict(learner_type,
         if voting_type == "soft":
             sklearn_predictions = sklearn_vl.predict_proba(test_fs.features)
         else:
-            sklearn_predictions = np.array([skll_vl.label_dict[class_]
-                                            for class_ in sklearn_predictions])
+            sklearn_predictions = np.array(
+                [skll_vl.label_dict[class_] for class_ in sklearn_predictions]
+            )
 
     # get the individual scikit-learn predictions, if necessary
     sklearn_individual_dict = {}
@@ -127,8 +131,9 @@ def check_predict(learner_type,
             # scikit-learn individual predictions are indices not class labels
             # so we need to convert them to labels if required
             if with_class_labels:
-                estimator_predictions = [sklearn_vl.classes_[index]
-                                         for index in estimator_predictions]
+                estimator_predictions = [
+                    sklearn_vl.classes_[index] for index in estimator_predictions
+                ]
             # if no class labels, then get the probabilities with soft
             # voting; note that since the individual predictions from
             # scikit-learn are already indices, we do not need to do
@@ -160,12 +165,16 @@ def check_predict(learner_type,
             assert_array_equal(skll_max_prob_indices, sklearn_max_prob_indices)
             # check individual probabilities but only for non-SVC estimators
             if with_individual_predictions:
-                assert_array_almost_equal(skll_individual_dict["LogisticRegression"],
-                                          sklearn_individual_dict["LogisticRegression"],
-                                          decimal=2)
-                assert_array_almost_equal(skll_individual_dict["MultinomialNB"],
-                                          sklearn_individual_dict["MultinomialNB"],
-                                          decimal=2)
+                assert_array_almost_equal(
+                    skll_individual_dict["LogisticRegression"],
+                    sklearn_individual_dict["LogisticRegression"],
+                    decimal=2,
+                )
+                assert_array_almost_equal(
+                    skll_individual_dict["MultinomialNB"],
+                    sklearn_individual_dict["MultinomialNB"],
+                    decimal=2,
+                )
         # in all other cases, we expect the actual class labels or class indices
         # to be identical between SKLL and scikit-learn
         else:
@@ -176,15 +185,21 @@ def check_predict(learner_type,
     else:
         assert_array_equal(skll_predictions, sklearn_predictions)
         if with_individual_predictions:
-            assert_array_almost_equal(skll_individual_dict[learner_names[0]],
-                                      sklearn_individual_dict[learner_names[0]],
-                                      decimal=2)
-            assert_array_almost_equal(skll_individual_dict[learner_names[1]],
-                                      sklearn_individual_dict[learner_names[1]],
-                                      decimal=2)
-            assert_array_almost_equal(skll_individual_dict[learner_names[2]],
-                                      sklearn_individual_dict[learner_names[2]],
-                                      decimal=2)
+            assert_array_almost_equal(
+                skll_individual_dict[learner_names[0]],
+                sklearn_individual_dict[learner_names[0]],
+                decimal=2,
+            )
+            assert_array_almost_equal(
+                skll_individual_dict[learner_names[1]],
+                sklearn_individual_dict[learner_names[1]],
+                decimal=2,
+            )
+            assert_array_almost_equal(
+                skll_individual_dict[learner_names[2]],
+                sklearn_individual_dict[learner_names[2]],
+                decimal=2,
+            )
 
     # if we were asked to write output to disk, then check that
     # the files actually exist
@@ -197,26 +212,31 @@ def check_predict(learner_type,
 
 
 def test_predict():
-    for (learner_type,
-         with_grid_search,
-         with_soft_voting,
-         with_class_labels,
-         with_file_output,
-         with_individual_predictions) in product(["classifier", "regressor"],
-                                                 [False, True],
-                                                 [False, True],
-                                                 [False, True],
-                                                 [False, True],
-                                                 [False, True]):
+    for (
+        learner_type,
+        with_grid_search,
+        with_soft_voting,
+        with_class_labels,
+        with_file_output,
+        with_individual_predictions,
+    ) in product(
+        ["classifier", "regressor"],
+        [False, True],
+        [False, True],
+        [False, True],
+        [False, True],
+        [False, True],
+    ):
         # regressors do not support soft voting or class labels
-        if (learner_type == "regressor" and
-                (with_soft_voting or with_class_labels)):
+        if learner_type == "regressor" and (with_soft_voting or with_class_labels):
             continue
         else:
-            yield (check_predict,
-                   learner_type,
-                   with_grid_search,
-                   with_soft_voting,
-                   with_class_labels,
-                   with_file_output,
-                   with_individual_predictions)
+            yield (
+                check_predict,
+                learner_type,
+                with_grid_search,
+                with_soft_voting,
+                with_class_labels,
+                with_file_output,
+                with_individual_predictions,
+            )

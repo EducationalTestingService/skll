@@ -41,7 +41,7 @@ def setup():
 
 
 def tearDown():
-    """ Clean up after tests"""
+    """Clean up after tests"""
     for output_file_path in Path(output_dir).glob("test_voting_learner_evaluate*"):
         output_file_path.unlink()
 
@@ -59,21 +59,21 @@ def check_evaluate_task(learner_type, options_dict):
     """Check given combination of training configuration options"""
 
     # create a configuration file with the given options
-    (config_path,
-     estimator_names,
-     job_name,
-     custom_learner,
-     objectives,
-     output_metrics,
-     model_kwargs_list,
-     param_grid_list,
-     sampler_list,
-     _,
-     _,
-     _,
-     _) = fill_in_config_options_for_voting_learners(learner_type,
-                                                     "evaluate",
-                                                     options_dict)
+    (
+        config_path,
+        estimator_names,
+        job_name,
+        custom_learner,
+        objectives,
+        output_metrics,
+        model_kwargs_list,
+        param_grid_list,
+        sampler_list,
+        _,
+        _,
+        _,
+        _,
+    ) = fill_in_config_options_for_voting_learners(learner_type, "evaluate", options_dict)
 
     #  mock the `__init__()` method for the `VotingLearner` class so
     # that we can check that the voting learner was instantiated with
@@ -84,21 +84,20 @@ def check_evaluate_task(learner_type, options_dict):
 
     # mock the `from_file()` method for the `VotingLearner` class;
     # this method needs to return an instance of VotingLearner
-    from_file_patcher = patch.object(VotingLearner,
-                                     "from_file",
-                                     return_value=VotingLearner(["SVC"]))
+    from_file_patcher = patch.object(
+        VotingLearner, "from_file", return_value=VotingLearner(["SVC"])
+    )
 
     # we also need to patch the `_create_learner_result_dicts()` function
     # since there are no actual results
-    clrd_patcher = patch("skll.experiments._create_learner_result_dicts",
-                         return_value={})
+    clrd_patcher = patch("skll.experiments._create_learner_result_dicts", return_value={})
 
     # we also need to patch some other output functions that write
     # various results to disk since we are not actually producing
     # any results from `evaluate()`
-    output_patchers = patch.multiple("skll.experiments",
-                                     _print_fancy_output=DEFAULT,
-                                     _write_summary_file=DEFAULT)
+    output_patchers = patch.multiple(
+        "skll.experiments", _print_fancy_output=DEFAULT, _write_summary_file=DEFAULT
+    )
 
     mock_vl_init = init_patcher.start()
     mock_vl_from_file = from_file_patcher.start()
@@ -108,17 +107,12 @@ def check_evaluate_task(learner_type, options_dict):
     # run the configuration file but with various methods/attributes for
     # `VotingLearner` mocked so that we can check that things were called
     # as expected without actually needing to evaluate any models
-    with patch.multiple(VotingLearner,
-                        evaluate=DEFAULT,
-                        train=DEFAULT,
-                        save=DEFAULT,
-                        model=DEFAULT,
-                        create=True) as mocks:
-
-        run_configuration(config_path,
-                          overwrite=not options_dict["with_existing_model"],
-                          quiet=True,
-                          local=True)
+    with patch.multiple(
+        VotingLearner, evaluate=DEFAULT, train=DEFAULT, save=DEFAULT, model=DEFAULT, create=True
+    ) as mocks:
+        run_configuration(
+            config_path, overwrite=not options_dict["with_existing_model"], quiet=True, local=True
+        )
 
         # check that init was called the expected number of times;
         # if we are loading an existing model from disk, it should
@@ -132,14 +126,16 @@ def check_evaluate_task(learner_type, options_dict):
 
         # note that the init arguments are the same no matter the call
         expected_init_args = (estimator_names,)
-        expected_init_kwargs = {"voting": "soft" if options_dict["with_soft_voting"] else "hard",
-                                "custom_learner_path": custom_learner,
-                                "feature_scaling": "none",
-                                "pos_label": None,
-                                "min_feature_count": 1,
-                                "model_kwargs_list": model_kwargs_list,
-                                "sampler_list": sampler_list,
-                                "sampler_kwargs_list": None}
+        expected_init_kwargs = {
+            "voting": "soft" if options_dict["with_soft_voting"] else "hard",
+            "custom_learner_path": custom_learner,
+            "feature_scaling": "none",
+            "pos_label": None,
+            "min_feature_count": 1,
+            "model_kwargs_list": model_kwargs_list,
+            "sampler_list": sampler_list,
+            "sampler_kwargs_list": None,
+        }
 
         # check that each init call had the expected arguments
         for actual_call in mock_vl_init.call_args_list:
@@ -152,14 +148,18 @@ def check_evaluate_task(learner_type, options_dict):
         # model via `from_file()`; check that they were called with
         # the expected arguments
         if not options_dict["with_existing_model"]:
-            eq_(mocks['train'].call_count,
-                len(objectives) if options_dict["with_grid_search"] else 1)
-            expected_train_kwargs = {"param_grid_list": param_grid_list,
-                                     "grid_search_folds": 5,
-                                     "grid_search": options_dict["with_grid_search"],
-                                     "grid_jobs": None,
-                                     "shuffle": False}
-            for idx, actual_call in enumerate(mocks['train'].call_args_list):
+            eq_(
+                mocks["train"].call_count,
+                len(objectives) if options_dict["with_grid_search"] else 1,
+            )
+            expected_train_kwargs = {
+                "param_grid_list": param_grid_list,
+                "grid_search_folds": 5,
+                "grid_search": options_dict["with_grid_search"],
+                "grid_jobs": None,
+                "shuffle": False,
+            }
+            for idx, actual_call in enumerate(mocks["train"].call_args_list):
                 actual_arg = actual_call[0][0]
                 ok_(isinstance(actual_arg, FeatureSet))
                 eq_(set(actual_arg.labels), {"cat", "dog"})
@@ -168,26 +168,36 @@ def check_evaluate_task(learner_type, options_dict):
                     eq_(actual_value, expected_value)
 
                 # if we aren't doing grid search, then the objective should be `None`
-                eq_(actual_call[1]["grid_objective"],
-                    objectives[idx] if options_dict["with_grid_search"] else None)
+                eq_(
+                    actual_call[1]["grid_objective"],
+                    objectives[idx] if options_dict["with_grid_search"] else None,
+                )
 
             # if we trained a model, we also saved it
-            eq_(mocks['save'].call_count, len(objectives) if options_dict["with_grid_search"] else 1)
-            eq_(mocks['save'].call_args[0][0], join(output_dir, f"{job_name}.model"))
+            eq_(
+                mocks["save"].call_count, len(objectives) if options_dict["with_grid_search"] else 1
+            )
+            eq_(mocks["save"].call_args[0][0], join(output_dir, f"{job_name}.model"))
         else:
             eq_(mock_vl_from_file.call_count, 1)
             eq_(mock_vl_from_file.call_args[0][0], join(other_dir, f"{job_name}.model"))
 
         # check that evaluate was called the expected number of times
-        eq_(mocks['evaluate'].call_count, len(objectives) if options_dict["with_grid_search"] else 1)
+        eq_(
+            mocks["evaluate"].call_count, len(objectives) if options_dict["with_grid_search"] else 1
+        )
 
         # check that each evaluate call had the expected arguments
-        expected_eval_kwargs = {"grid_objective": objectives[idx] if options_dict["with_grid_search"] else None,
-                                "prediction_prefix": join(output_dir, job_name) if options_dict["with_prediction_prefix"] else job_name,
-                                "individual_predictions": options_dict["with_individual_predictions"],
-                                "output_metrics": output_metrics}
+        expected_eval_kwargs = {
+            "grid_objective": objectives[idx] if options_dict["with_grid_search"] else None,
+            "prediction_prefix": join(output_dir, job_name)
+            if options_dict["with_prediction_prefix"]
+            else job_name,
+            "individual_predictions": options_dict["with_individual_predictions"],
+            "output_metrics": output_metrics,
+        }
 
-        for idx, actual_call in enumerate(mocks['evaluate'].call_args_list):
+        for idx, actual_call in enumerate(mocks["evaluate"].call_args_list):
             actual_arg = actual_call[0][0]
             ok_(isinstance(actual_arg, FeatureSet))
             eq_(set(actual_arg.labels), {"cat", "dog"})
@@ -203,25 +213,27 @@ def check_evaluate_task(learner_type, options_dict):
 
 
 def test_evaluate_task():
-
     # test various combinations of experiment configuration options
-    option_names = ["with_soft_voting",
-                    "with_model_kwargs_list",
-                    "with_grid_search",
-                    "with_existing_model",
-                    "with_prediction_prefix",
-                    "with_individual_predictions",
-                    "with_output_metrics"]
+    option_names = [
+        "with_soft_voting",
+        "with_model_kwargs_list",
+        "with_grid_search",
+        "with_existing_model",
+        "with_prediction_prefix",
+        "with_individual_predictions",
+        "with_output_metrics",
+    ]
 
-    for option_values in product(["classifier", "regressor"],
-                                 [False, True],
-                                 [False, True],
-                                 [False, True],
-                                 [False, True],
-                                 [False, True],
-                                 [False, True],
-                                 [False, True]):
-
+    for option_values in product(
+        ["classifier", "regressor"],
+        [False, True],
+        [False, True],
+        [False, True],
+        [False, True],
+        [False, True],
+        [False, True],
+        [False, True],
+    ):
         # assign the learner type separately
         learner_type = option_values[0]
 

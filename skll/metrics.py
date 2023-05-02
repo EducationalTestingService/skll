@@ -82,7 +82,7 @@ def kappa(y_true, y_pred, weights=None, allow_off_by_one=False):
     """
 
     # Ensure that the lists are both the same length
-    assert(len(y_true) == len(y_pred))
+    assert len(y_true) == len(y_pred)
 
     # This rather crazy looking typecast is intended to work as follows:
     # If an input is an int, the operations will have no effect.
@@ -95,9 +95,11 @@ def kappa(y_true, y_pred, weights=None, allow_off_by_one=False):
         y_true = [int(np.round(float(y))) for y in y_true]
         y_pred = [int(np.round(float(y))) for y in y_pred]
     except ValueError:
-        raise ValueError("For kappa, the labels should be integers or strings"
-                         " that can be converted to ints (E.g., '4.0' or "
-                         "'3').")
+        raise ValueError(
+            "For kappa, the labels should be integers or strings"
+            " that can be converted to ints (E.g., '4.0' or "
+            "'3')."
+        )
 
     # Figure out normalized expected values
     min_rating = min(min(y_true), min(y_pred))
@@ -110,8 +112,7 @@ def kappa(y_true, y_pred, weights=None, allow_off_by_one=False):
 
     # Build the observed/confusion matrix
     num_ratings = max_rating - min_rating + 1
-    observed = confusion_matrix(y_true, y_pred,
-                                labels=list(range(num_ratings)))
+    observed = confusion_matrix(y_true, y_pred, labels=list(range(num_ratings)))
     num_scored_items = float(len(y_true))
 
     # Build weight array if weren't passed one
@@ -119,7 +120,7 @@ def kappa(y_true, y_pred, weights=None, allow_off_by_one=False):
         wt_scheme = weights
         weights = None
     else:
-        wt_scheme = ''
+        wt_scheme = ""
     if weights is None:
         weights = np.empty((num_ratings, num_ratings))
         for i in range(num_ratings):
@@ -127,20 +128,19 @@ def kappa(y_true, y_pred, weights=None, allow_off_by_one=False):
                 diff = abs(i - j)
                 if allow_off_by_one and diff:
                     diff -= 1
-                if wt_scheme == 'linear':
+                if wt_scheme == "linear":
                     weights[i, j] = diff
-                elif wt_scheme == 'quadratic':
-                    weights[i, j] = diff ** 2
+                elif wt_scheme == "quadratic":
+                    weights[i, j] = diff**2
                 elif not wt_scheme:  # unweighted
                     weights[i, j] = bool(diff)
                 else:
-                    raise ValueError('Invalid weight scheme specified for '
-                                     f'kappa: {wt_scheme}')
+                    raise ValueError("Invalid weight scheme specified for " f"kappa: {wt_scheme}")
 
     hist_true = np.bincount(y_true, minlength=num_ratings)
-    hist_true = hist_true[: num_ratings] / num_scored_items
+    hist_true = hist_true[:num_ratings] / num_scored_items
     hist_pred = np.bincount(y_pred, minlength=num_ratings)
-    hist_pred = hist_pred[: num_ratings] / num_scored_items
+    hist_pred = hist_pred[:num_ratings] / num_scored_items
     expected = np.outer(hist_true, hist_pred)
 
     # Normalize observed array
@@ -149,12 +149,12 @@ def kappa(y_true, y_pred, weights=None, allow_off_by_one=False):
     # If all weights are zero, that means no disagreements matter.
     k = 1.0
     if np.count_nonzero(weights):
-        k -= (sum(sum(weights * observed)) / sum(sum(weights * expected)))
+        k -= sum(sum(weights * observed)) / sum(sum(weights * expected))
 
     return k
 
 
-def correlation(y_true, y_pred, corr_type='pearson'):
+def correlation(y_true, y_pred, corr_type="pearson"):
     """
     Calculate given correlation between ``y_true`` and ``y_pred``. ``y_pred``
     can be multi-dimensional. If ``y_pred`` is 1-dimensional, it may either
@@ -185,9 +185,9 @@ def correlation(y_true, y_pred, corr_type='pearson'):
 
     # get the correlation function to use based on the given type
     corr_func = pearsonr
-    if corr_type == 'spearman':
+    if corr_type == "spearman":
         corr_func = spearmanr
-    elif corr_type == 'kendall_tau':
+    elif corr_type == "kendall_tau":
         corr_func = kendalltau
 
     # convert to numpy array in case we are passed a list
@@ -249,16 +249,17 @@ def register_custom_metric(custom_metric_path, custom_metric_name):
         or SKLL metric.
     """
     if not custom_metric_path:
-        raise ValueError(f"custom metric path was not set and "
-                         f"metric {custom_metric_name} was not found.")
+        raise ValueError(
+            f"custom metric path was not set and " f"metric {custom_metric_name} was not found."
+        )
 
     if not exists(custom_metric_path):
-        raise ValueError(f"custom metric path '{custom_metric_path}' "
-                         f"does not exist.")
+        raise ValueError(f"custom metric path '{custom_metric_path}' " f"does not exist.")
 
-    if not custom_metric_path.endswith('.py'):
-        raise ValueError(f"custom metric path must end in .py, you specified "
-                         f"{custom_metric_path}")
+    if not custom_metric_path.endswith(".py"):
+        raise ValueError(
+            f"custom metric path must end in .py, you specified " f"{custom_metric_path}"
+        )
 
     # get the name of the module containing the custom metric
     custom_metric_module_name = basename(custom_metric_path)[:-3]
@@ -266,9 +267,11 @@ def register_custom_metric(custom_metric_path, custom_metric_name):
     # once we know that the module name is okay, we need to make sure
     # that the metric function name is also okay
     if custom_metric_name in _SCORERS:
-        raise NameError(f"a metric called '{custom_metric_name}' already "
-                        f"exists in SKLL; rename the metric function "
-                        f"in {custom_metric_module_name}.py and try again.")
+        raise NameError(
+            f"a metric called '{custom_metric_name}' already "
+            f"exists in SKLL; rename the metric function "
+            f"in {custom_metric_module_name}.py and try again."
+        )
 
     # dynamically import the module unless we have already done it
     if custom_metric_module_name not in sys.modules:
@@ -281,17 +284,14 @@ def register_custom_metric(custom_metric_path, custom_metric_name):
         globals()[custom_metric_module_name] = metric_module
 
     # get the metric function from this imported module
-    metric_func = getattr(sys.modules[custom_metric_module_name],
-                          custom_metric_name)
+    metric_func = getattr(sys.modules[custom_metric_module_name], custom_metric_name)
     # again, we need this for multiprocessing serialization
     metric_func.__module__ = f"skll.metrics.{custom_metric_module_name}"
 
     # extract any "special" keyword arguments from the metric function
     metric_func_parameters = signature(metric_func).parameters
     make_scorer_kwargs = {}
-    for make_scorer_kwarg in ['greater_is_better',
-                              'needs_proba',
-                              'needs_threshold']:
+    for make_scorer_kwarg in ["greater_is_better", "needs_proba", "needs_threshold"]:
         if make_scorer_kwarg in metric_func_parameters:
             parameter_value = metric_func_parameters.get(make_scorer_kwarg).default
             make_scorer_kwargs.update({make_scorer_kwarg: parameter_value})

@@ -111,10 +111,19 @@ class Reader(object):
         a new one by default.
     """
 
-    def __init__(self, path_or_list, quiet=True, ids_to_floats=False,
-                 label_col='y', id_col='id', class_map=None, sparse=True,
-                 feature_hasher=False, num_features=None,
-                 logger=None):
+    def __init__(
+        self,
+        path_or_list,
+        quiet=True,
+        ids_to_floats=False,
+        label_col="y",
+        id_col="id",
+        class_map=None,
+        sparse=True,
+        feature_hasher=False,
+        num_features=None,
+        logger=None,
+    ):
         super(Reader, self).__init__()
         self.path_or_list = path_or_list
         self.quiet = quiet
@@ -122,7 +131,7 @@ class Reader(object):
         self.label_col = label_col
         self.id_col = id_col
         self.class_map = class_map
-        self._progress_msg = ''
+        self._progress_msg = ""
         self._use_pandas = False
 
         if feature_hasher:
@@ -161,11 +170,13 @@ class Reader(object):
             return DictListReader(path_or_list)
         else:
             # Get lowercase extension for file extension checking
-            ext = '.' + path_or_list.rsplit('.', 1)[-1].lower()
+            ext = "." + path_or_list.rsplit(".", 1)[-1].lower()
             if ext not in EXT_TO_READER:
-                raise ValueError('Example files must be in either .arff, '
-                                 '.csv, .jsonlines, .ndj, or .tsv format. You'
-                                 f'specified: {path_or_list}')
+                raise ValueError(
+                    "Example files must be in either .arff, "
+                    ".csv, .jsonlines, .ndj, or .tsv format. You"
+                    f"specified: {path_or_list}"
+                )
         return EXT_TO_READER[ext](path_or_list, **kwargs)
 
     def _sub_read(self, file):
@@ -208,8 +219,7 @@ class Reader(object):
         """
         # Print out status
         if not self.quiet:
-            print(f"{self._progress_msg}{progress_num:>15}",
-                  end=end, file=sys.stderr)
+            print(f"{self._progress_msg}{progress_num:>15}", end=end, file=sys.stderr)
             sys.stderr.flush()
 
     def _sub_read_rows(self, file):
@@ -252,17 +262,18 @@ class Reader(object):
         ids = []
         labels = []
         ex_num = 0
-        with open(file, encoding='utf-8') as f:
+        with open(file, encoding="utf-8") as f:
             for ex_num, (id_, class_, _) in enumerate(self._sub_read(f), start=1):
-
                 # Update lists of IDs, classes, and features
                 if self.ids_to_floats:
                     try:
                         id_ = float(id_)
                     except ValueError:
-                        raise ValueError('You set ids_to_floats to true, but '
-                                         f'ID {id_} could not be converted to'
-                                         f' float in {self.path_or_list}')
+                        raise ValueError(
+                            "You set ids_to_floats to true, but "
+                            f"ID {id_} could not be converted to"
+                            f" float in {self.path_or_list}"
+                        )
                 ids.append(id_)
                 labels.append(class_)
                 if ex_num % 100 == 0:
@@ -272,19 +283,18 @@ class Reader(object):
         # Remember total number of examples for percentage progress meter
         total = ex_num
         if total == 0:
-            raise ValueError("No features found in possibly empty file "
-                             f"'{self.path_or_list}'.")
+            raise ValueError("No features found in possibly empty file " f"'{self.path_or_list}'.")
 
         # Convert everything to numpy arrays
         ids = np.array(ids)
         labels = np.array(labels)
 
         def feat_dict_generator():
-            with open(self.path_or_list, encoding='utf-8') as f:
+            with open(self.path_or_list, encoding="utf-8") as f:
                 for ex_num, (_, _, feat_dict) in enumerate(self._sub_read(f)):
                     yield feat_dict
                     if ex_num % 100 == 0:
-                        self._print_progress(f'{100 * ex_num / total:.8}%')
+                        self._print_progress(f"{100 * ex_num / total:.8}%")
                 self._print_progress("100%")
 
         # extract the features dictionary
@@ -292,12 +302,7 @@ class Reader(object):
 
         return ids, labels, features
 
-    def _parse_dataframe(self,
-                         df,
-                         id_col,
-                         label_col,
-                         replace_blanks_with=None,
-                         drop_blanks=False):
+    def _parse_dataframe(self, df, id_col, label_col, replace_blanks_with=None, drop_blanks=False):
         """
         Parse the data frame into ids, labels, and features.
         For ``Reader`` objects that rely on ``pandas``, this function
@@ -341,31 +346,34 @@ class Reader(object):
             The features for the feature set.
         """
         if df.empty:
-            raise ValueError("No features found in possibly empty file "
-                             f"'{self.path_or_list}'.")
+            raise ValueError("No features found in possibly empty file " f"'{self.path_or_list}'.")
 
         if drop_blanks and replace_blanks_with is not None:
-            raise ValueError("You cannot both drop blanks and replace them. "
-                             "'replace_blanks_with' can only have a value when "
-                             "'drop_blanks' is `False`.")
+            raise ValueError(
+                "You cannot both drop blanks and replace them. "
+                "'replace_blanks_with' can only have a value when "
+                "'drop_blanks' is `False`."
+            )
 
         # should we replace blank values with something?
         if replace_blanks_with is not None:
-            self.logger.info('Blank values in all rows/lines will be replaced with '
-                             'user-specified value(s).')
+            self.logger.info(
+                "Blank values in all rows/lines will be replaced with " "user-specified value(s)."
+            )
             df = df.fillna(replace_blanks_with)
 
         # should we remove lines that have any NaNs?
         if drop_blanks:
-            self.logger.info('Rows/lines with any blank values will be dropped.')
+            self.logger.info("Rows/lines with any blank values will be dropped.")
             df = df.dropna().reset_index(drop=True)
 
             # if the dataframe has no rows left after removing blanks,
             # raise an exception here because downstream processing
             # will run into issues
             if df.empty:
-                raise ValueError("No rows/lines left in the feature file "
-                                 "after dropping blank values.")
+                raise ValueError(
+                    "No rows/lines left in the feature file " "after dropping blank values."
+                )
 
         # if the id column exists,
         # get them from the data frame and
@@ -381,7 +389,7 @@ class Reader(object):
             ids = ids.values
         else:
             # create ids with the prefix `EXAMPLE_`
-            ids = np.array([f'EXAMPLE_{i}' for i in range(df.shape[0])])
+            ids = np.array([f"EXAMPLE_{i}" for i in range(df.shape[0])])
 
         # if the label column exists,
         # get them from the data frame and
@@ -404,7 +412,7 @@ class Reader(object):
 
         # convert the remaining features to
         # a list of dictionaries
-        features = df.to_dict(orient='records')
+        features = df.to_dict(orient="records")
 
         return ids, labels, features
 
@@ -429,7 +437,7 @@ class Reader(object):
         ValueError
             If the example IDs are not unique.
         """
-        self.logger.debug(f'Path: {self.path_or_list}')
+        self.logger.debug(f"Path: {self.path_or_list}")
 
         if not self.quiet:
             self._progress_msg = f"Loading {self.path_or_list}..."
@@ -451,11 +459,11 @@ class Reader(object):
         assert ids.shape[0] == labels.shape[0] == features.shape[0]
 
         if ids.shape[0] != len(set(ids)):
-            raise ValueError('The example IDs are not unique in '
-                             f'{self.path_or_list}.')
+            raise ValueError("The example IDs are not unique in " f"{self.path_or_list}.")
 
-        return FeatureSet(self.path_or_list, ids, labels=labels,
-                          features=features, vectorizer=self.vectorizer)
+        return FeatureSet(
+            self.path_or_list, ids, labels=labels, features=features, vectorizer=self.vectorizer
+        )
 
 
 class DictListReader(Reader):
@@ -485,22 +493,26 @@ class DictListReader(Reader):
                 try:
                     curr_id = float(curr_id)
                 except ValueError:
-                    raise ValueError('You set ids_to_floats to true, but ID '
-                                     f'{curr_id} could not be converted to '
-                                     f'float in {example}')
-            class_name = (safe_float(example['y'],
-                                     replace_dict=self.class_map)
-                          if 'y' in example else None)
-            example = example['x']
+                    raise ValueError(
+                        "You set ids_to_floats to true, but ID "
+                        f"{curr_id} could not be converted to "
+                        f"float in {example}"
+                    )
+            class_name = (
+                safe_float(example["y"], replace_dict=self.class_map) if "y" in example else None
+            )
+            example = example["x"]
 
             # Update lists of IDs, labels, and feature dictionaries
             if self.ids_to_floats:
                 try:
                     curr_id = float(curr_id)
                 except ValueError:
-                    raise ValueError('You set ids_to_floats to true, but ID '
-                                     f'{curr_id} could not be converted to '
-                                     f'float in {self.path_or_list}')
+                    raise ValueError(
+                        "You set ids_to_floats to true, but ID "
+                        f"{curr_id} could not be converted to "
+                        f"float in {self.path_or_list}"
+                    )
             ids.append(curr_id)
             labels.append(class_name)
             feat_dicts.append(example)
@@ -514,8 +526,9 @@ class DictListReader(Reader):
         labels = np.array(labels)
         features = self.vectorizer.fit_transform(feat_dicts)
 
-        return FeatureSet('converted', ids, labels=labels,
-                          features=features, vectorizer=self.vectorizer)
+        return FeatureSet(
+            "converted", ids, labels=labels, features=features, vectorizer=self.vectorizer
+        )
 
 
 class NDJReader(Reader):
@@ -559,7 +572,7 @@ class NDJReader(Reader):
             line = line.strip()
 
             # If this is a comment line or a blank line, move on
-            if line.startswith('//') or not line:
+            if line.startswith("//") or not line:
                 continue
 
             # Process good lines
@@ -567,18 +580,20 @@ class NDJReader(Reader):
             # Convert all IDs to strings initially,
             # for consistency with csv formats.
             curr_id = str(example.get("id", f"EXAMPLE_{example_num}"))
-            class_name = (safe_float(example['y'],
-                                     replace_dict=self.class_map)
-                          if 'y' in example else None)
+            class_name = (
+                safe_float(example["y"], replace_dict=self.class_map) if "y" in example else None
+            )
             example = example["x"]
 
             if self.ids_to_floats:
                 try:
                     curr_id = float(curr_id)
                 except ValueError:
-                    raise ValueError('You set ids_to_floats to true, but ID '
-                                     f'{curr_id} could not be converted to '
-                                     'float')
+                    raise ValueError(
+                        "You set ids_to_floats to true, but ID "
+                        f"{curr_id} could not be converted to "
+                        "float"
+                    )
 
             yield curr_id, class_name, example
 
@@ -595,16 +610,21 @@ class LibSVMReader(Reader):
         ExampleID | 1=FirstClass | 1=FirstFeature 2=SecondFeature
     """
 
-    line_regex = re.compile(r'^(?P<label_num>[^ ]+)\s+(?P<features>[^#]*)\s*'
-                            r'(?P<comments>#\s*(?P<example_id>[^|]+)\s*\|\s*'
-                            r'(?P<label_map>[^|]+)\s*\|\s*'
-                            r'(?P<feat_map>.*)\s*)?$', flags=re.UNICODE)
+    line_regex = re.compile(
+        r"^(?P<label_num>[^ ]+)\s+(?P<features>[^#]*)\s*"
+        r"(?P<comments>#\s*(?P<example_id>[^|]+)\s*\|\s*"
+        r"(?P<label_map>[^|]+)\s*\|\s*"
+        r"(?P<feat_map>.*)\s*)?$",
+        flags=re.UNICODE,
+    )
 
-    LIBSVM_REPLACE_DICT = {'\u2236': ':',
-                           '\uFF03': '#',
-                           '\u2002': ' ',
-                           '\ua78a': '=',
-                           '\u2223': '|'}
+    LIBSVM_REPLACE_DICT = {
+        "\u2236": ":",
+        "\uFF03": "#",
+        "\u2002": " ",
+        "\ua78a": "=",
+        "\u2223": "|",
+    }
 
     @staticmethod
     def _pair_to_tuple(pair, feat_map):
@@ -625,7 +645,7 @@ class LibSVMReader(Reader):
         value
             The value of the example.
         """
-        name, value = pair.split(':')
+        name, value = pair.split(":")
         if feat_map is not None:
             name = feat_map[name]
         value = safe_float(value)
@@ -656,50 +676,49 @@ class LibSVMReader(Reader):
             If line does not look like valid libsvm format.
         """
         for example_num, line in enumerate(file):
-            curr_id = ''
+            curr_id = ""
             # Decode line if it's not already str
             if isinstance(line, bytes):
-                line = UnicodeDammit(line, ['utf-8',
-                                            'windows-1252']).unicode_markup
+                line = UnicodeDammit(line, ["utf-8", "windows-1252"]).unicode_markup
             match = self.line_regex.search(line.strip())
             if not match:
-                raise ValueError('Line does not look like valid libsvm format'
-                                 f'\n{line}')
+                raise ValueError("Line does not look like valid libsvm format" f"\n{line}")
             # Metadata is stored in comments if this was produced by SKLL
-            if match.group('comments') is not None:
+            if match.group("comments") is not None:
                 # Store mapping from feature numbers to names
-                if match.group('feat_map'):
+                if match.group("feat_map"):
                     feat_map = {}
-                    for pair in match.group('feat_map').split():
-                        number, name = pair.split('=')
-                        for orig, replacement in \
-                                LibSVMReader.LIBSVM_REPLACE_DICT.items():
+                    for pair in match.group("feat_map").split():
+                        number, name = pair.split("=")
+                        for orig, replacement in LibSVMReader.LIBSVM_REPLACE_DICT.items():
                             name = name.replace(orig, replacement)
                         feat_map[number] = name
                 else:
                     feat_map = None
                 # Store mapping from label/class numbers to names
-                if match.group('label_map'):
-                    label_map = dict(pair.split('=') for pair in
-                                     match.group('label_map').strip().split())
+                if match.group("label_map"):
+                    label_map = dict(
+                        pair.split("=") for pair in match.group("label_map").strip().split()
+                    )
                 else:
                     label_map = None
-                curr_id = match.group('example_id').strip()
+                curr_id = match.group("example_id").strip()
 
             if not curr_id:
-                curr_id = f'EXAMPLE_{example_num}'
+                curr_id = f"EXAMPLE_{example_num}"
 
-            class_num = match.group('label_num')
+            class_num = match.group("label_num")
             # If we have a mapping from class numbers to labels, get label
             if label_map:
                 class_name = label_map[class_num]
             else:
                 class_name = class_num
-            class_name = safe_float(class_name,
-                                    replace_dict=self.class_map)
+            class_name = safe_float(class_name, replace_dict=self.class_map)
 
-            curr_info_dict = dict(self._pair_to_tuple(pair, feat_map) for pair
-                                  in match.group('features').strip().split())
+            curr_info_dict = dict(
+                self._pair_to_tuple(pair, feat_map)
+                for pair in match.group("features").strip().split()
+            )
 
             yield curr_id, class_name, curr_info_dict
 
@@ -741,18 +760,20 @@ class CSVReader(Reader):
         Other arguments to the Reader object.
     """
 
-    def __init__(self,
-                 path_or_list,
-                 replace_blanks_with=None,
-                 drop_blanks=False,
-                 pandas_kwargs=None,
-                 **kwargs):
+    def __init__(
+        self,
+        path_or_list,
+        replace_blanks_with=None,
+        drop_blanks=False,
+        pandas_kwargs=None,
+        **kwargs,
+    ):
         super(CSVReader, self).__init__(path_or_list, **kwargs)
         self._replace_blanks_with = replace_blanks_with
         self._drop_blanks = drop_blanks
         self._pandas_kwargs = {} if pandas_kwargs is None else pandas_kwargs
-        self._sep = self._pandas_kwargs.pop('sep', str(','))
-        self._engine = self._pandas_kwargs.pop('engine', 'c')
+        self._sep = self._pandas_kwargs.pop("sep", str(","))
+        self._engine = self._pandas_kwargs.pop("engine", "c")
         self._use_pandas = True
 
     def _sub_read(self, file):
@@ -774,11 +795,13 @@ class CSVReader(Reader):
             The features for the features set.
         """
         df = pd.read_csv(file, sep=self._sep, engine=self._engine, **self._pandas_kwargs)
-        return self._parse_dataframe(df,
-                                     self.id_col,
-                                     self.label_col,
-                                     replace_blanks_with=self._replace_blanks_with,
-                                     drop_blanks=self._drop_blanks)
+        return self._parse_dataframe(
+            df,
+            self.id_col,
+            self.label_col,
+            replace_blanks_with=self._replace_blanks_with,
+            drop_blanks=self._drop_blanks,
+        )
 
 
 class TSVReader(CSVReader):
@@ -818,18 +841,22 @@ class TSVReader(CSVReader):
         Other arguments to the Reader object.
     """
 
-    def __init__(self,
-                 path_or_list,
-                 replace_blanks_with=None,
-                 drop_blanks=False,
-                 pandas_kwargs=None,
-                 **kwargs):
-        super(TSVReader, self).__init__(path_or_list,
-                                        replace_blanks_with=replace_blanks_with,
-                                        drop_blanks=drop_blanks,
-                                        pandas_kwargs=pandas_kwargs,
-                                        **kwargs)
-        self._sep = str('\t')
+    def __init__(
+        self,
+        path_or_list,
+        replace_blanks_with=None,
+        drop_blanks=False,
+        pandas_kwargs=None,
+        **kwargs,
+    ):
+        super(TSVReader, self).__init__(
+            path_or_list,
+            replace_blanks_with=replace_blanks_with,
+            drop_blanks=drop_blanks,
+            pandas_kwargs=pandas_kwargs,
+            **kwargs,
+        )
+        self._sep = str("\t")
 
 
 class DelimitedReader(Reader):
@@ -855,7 +882,7 @@ class DelimitedReader(Reader):
     """
 
     def __init__(self, path_or_list, **kwargs):
-        self.dialect = kwargs.pop('dialect', 'excel-tab')
+        self.dialect = kwargs.pop("dialect", "excel-tab")
         super(DelimitedReader, self).__init__(path_or_list, **kwargs)
 
     def _sub_read(self, file):
@@ -880,8 +907,7 @@ class DelimitedReader(Reader):
         reader = DictReader(file, dialect=self.dialect)
         for example_num, row in enumerate(reader):
             if self.label_col is not None and self.label_col in row:
-                class_name = safe_float(row[self.label_col],
-                                        replace_dict=self.class_map)
+                class_name = safe_float(row[self.label_col], replace_dict=self.class_map)
                 del row[self.label_col]
             else:
                 class_name = None
@@ -931,13 +957,13 @@ class ARFFReader(DelimitedReader):
     """
 
     def __init__(self, path_or_list, **kwargs):
-        kwargs['dialect'] = 'arff'
+        kwargs["dialect"] = "arff"
         super(ARFFReader, self).__init__(path_or_list, **kwargs)
-        self.relation = ''
+        self.relation = ""
         self.regression = False
 
     @staticmethod
-    def split_with_quotes(string, delimiter=' ', quote_char="'", escape_char='\\'):
+    def split_with_quotes(string, delimiter=" ", quote_char="'", escape_char="\\"):
         """
         A replacement for ``string.split()`` that won't split delimiters
         enclosed in quotes.
@@ -956,10 +982,9 @@ class ARFFReader(DelimitedReader):
         escape_char : str, default='\\\\'
             The escape character.
         """
-        return next(csv.reader([string],
-                               delimiter=delimiter,
-                               quotechar=quote_char,
-                               escapechar=escape_char))
+        return next(
+            csv.reader([string], delimiter=delimiter, quotechar=quote_char, escapechar=escape_char)
+        )
 
     def _sub_read(self, file):
         """
@@ -985,9 +1010,7 @@ class ARFFReader(DelimitedReader):
         for line in file:
             # Process encoding
             if not isinstance(line, str):
-                decoded_line = UnicodeDammit(line,
-                                             ['utf-8',
-                                              'windows-1252']).unicode_markup
+                decoded_line = UnicodeDammit(line, ["utf-8", "windows-1252"]).unicode_markup
             else:
                 decoded_line = line
             line = decoded_line.strip()
@@ -997,26 +1020,25 @@ class ARFFReader(DelimitedReader):
                 # quoted delimiters.
                 split_header = self.split_with_quotes(line)
                 row_type = split_header[0].lower()
-                if row_type == '@attribute':
+                if row_type == "@attribute":
                     # Add field name to list
                     field_name = split_header[1]
                     field_names.append(field_name)
                     # Check if we're doing regression
                     if field_name == self.label_col:
-                        self.regression = (len(split_header) > 2 and
-                                           split_header[2] == 'numeric')
+                        self.regression = len(split_header) > 2 and split_header[2] == "numeric"
                 # Save relation if specified
-                elif row_type == '@relation':
+                elif row_type == "@relation":
                     self.relation = split_header[1]
                 # Stop at data
-                elif row_type == '@data':
+                elif row_type == "@data":
                     break
                 # Skip other types of rows (relations)
 
         # Create header for CSV
         io_type = StringIO
         with io_type() as field_buffer:
-            csv.writer(field_buffer, dialect='arff').writerow(field_names)
+            csv.writer(field_buffer, dialect="arff").writerow(field_names)
             field_str = field_buffer.getvalue()
 
         # Set label_col to be the name of the last field, since that's standard
@@ -1066,8 +1088,10 @@ def safe_float(text, replace_dict=None, logger=None):
         if text in replace_dict:
             text = replace_dict[text]
         else:
-            logger.warning('Encountered value that was not in replacement '
-                           f'dictionary (e.g., class_map): {text}')
+            logger.warning(
+                "Encountered value that was not in replacement "
+                f"dictionary (e.g., class_map): {text}"
+            )
     try:
         return int(text)
     except ValueError:
@@ -1082,9 +1106,11 @@ def safe_float(text, replace_dict=None, logger=None):
 
 
 # Constants
-EXT_TO_READER = {".arff": ARFFReader,
-                 ".csv": CSVReader,
-                 ".jsonlines": NDJReader,
-                 ".libsvm": LibSVMReader,
-                 '.ndj': NDJReader,
-                 ".tsv": TSVReader}
+EXT_TO_READER = {
+    ".arff": ARFFReader,
+    ".csv": CSVReader,
+    ".jsonlines": NDJReader,
+    ".libsvm": LibSVMReader,
+    ".ndj": NDJReader,
+    ".tsv": TSVReader,
+}

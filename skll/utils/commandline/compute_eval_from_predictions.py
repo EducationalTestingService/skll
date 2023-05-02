@@ -18,15 +18,13 @@ from skll.version import __version__
 
 # Make warnings from built-in warnings module get formatted more nicely
 logging.captureWarnings(True)
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - '
-                           '%(message)s')
+logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - " "%(message)s")
 logger = logging.getLogger(__name__)
 
 
-def get_prediction_from_probabilities(classes,
-                                      probabilities,
-                                      prediction_method,
-                                      random_state=1234567890):
+def get_prediction_from_probabilities(
+    classes, probabilities, prediction_method, random_state=1234567890
+):
     """
     Convert a list of class-probabilities into a class prediction. This function assumes
     that, if the prediction method is 'expected_value', the class labels are integers.
@@ -55,7 +53,7 @@ def get_prediction_from_probabilities(classes,
 
     """
     prng = RandomState(random_state)
-    if prediction_method == 'highest':
+    if prediction_method == "highest":
         highest_p = max(probabilities)
         best_classes = [classes[i] for i, p in enumerate(probabilities) if p == highest_p]
         if len(best_classes) > 1:
@@ -63,15 +61,14 @@ def get_prediction_from_probabilities(classes,
         else:
             return best_classes[0]
 
-    elif prediction_method == 'expected_value':
+    elif prediction_method == "expected_value":
         exp_val = sum([classes[i] * prob for i, prob in enumerate(probabilities)])
         return int(round(exp_val))
 
 
-def compute_eval_from_predictions(examples_file,
-                                  predictions_file,
-                                  metric_names,
-                                  prediction_method=None):
+def compute_eval_from_predictions(
+    examples_file, predictions_file, metric_names, prediction_method=None
+):
     """
     Compute evaluation metrics from prediction files after you have run an
     experiment.
@@ -121,23 +118,25 @@ def compute_eval_from_predictions(examples_file,
             if prediction_method is None:
                 prediction_method = "highest"
                 logger.info("No prediction method specified. Using 'highest'.")
-            if prediction_method == 'expected_value':
+            if prediction_method == "expected_value":
                 try:
                     classes = [int(c) for c in classes]
                 except ValueError as e:
                     raise e
             for row in reader:
                 probabilities = [safe_float(p) for p in row[1:]]
-                prediction = get_prediction_from_probabilities(classes,
-                                                               probabilities,
-                                                               prediction_method)
+                prediction = get_prediction_from_probabilities(
+                    classes, probabilities, prediction_method
+                )
                 pred[row[0]] = safe_float(prediction)
         else:
             if prediction_method is not None:
-                logger.warning("A prediction method was provided, but the "
-                               "predictions file doesn't contain "
-                               "probabilities. Ignoring prediction method "
-                               f"'{prediction_method}'.")
+                logger.warning(
+                    "A prediction method was provided, but the "
+                    "predictions file doesn't contain "
+                    "probabilities. Ignoring prediction method "
+                    f"'{prediction_method}'."
+                )
 
             for row in reader:
                 pred[row[0]] = safe_float(row[1])
@@ -145,14 +144,16 @@ def compute_eval_from_predictions(examples_file,
     # make a sorted list of example ids in order to match up
     # labels and predictions
     if set(gold.keys()) != set(pred.keys()):
-        raise ValueError('The example and prediction IDs do not match.')
+        raise ValueError("The example and prediction IDs do not match.")
     example_ids = sorted(gold.keys())
 
     res = {}
     for metric_name in metric_names:
-        score = use_score_func(metric_name,
-                               [gold[ex_id] for ex_id in example_ids],
-                               [pred[ex_id] for ex_id in example_ids])
+        score = use_score_func(
+            metric_name,
+            [gold[ex_id] for ex_id in example_ids],
+            [pred[ex_id] for ex_id in example_ids],
+        )
         res[metric_name] = score
     return res
 
@@ -170,39 +171,38 @@ def main(argv=None):
     # Get command line arguments
     parser = argparse.ArgumentParser(
         description="Computes evaluation metrics from prediction files after "
-                    "you have run an experiment.",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+        "you have run an experiment.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    parser.add_argument('examples_file',
-                        help='SKLL input file with labeled examples')
-    parser.add_argument('predictions_file',
-                        help='file with predictions from SKLL')
-    parser.add_argument('metric_names',
-                        help='metrics to compute',
-                        nargs='+')
-    parser.add_argument('--method', '-m',
-                        help="How to generate a prediction from the class "
-                             "probabilities. Supported methods are 'highest' "
-                             "(default) and 'expected_value' (only works with"
-                             " integer classes).")
-    parser.add_argument('--version', action='version',
-                        version=f'%(prog)s {__version__}')
+    parser.add_argument("examples_file", help="SKLL input file with labeled examples")
+    parser.add_argument("predictions_file", help="file with predictions from SKLL")
+    parser.add_argument("metric_names", help="metrics to compute", nargs="+")
+    parser.add_argument(
+        "--method",
+        "-m",
+        help="How to generate a prediction from the class "
+        "probabilities. Supported methods are 'highest' "
+        "(default) and 'expected_value' (only works with"
+        " integer classes).",
+    )
+    parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     args = parser.parse_args(argv)
 
     supported_prediction_methods = {"highest", "expected_value"}
     if (args.method is not None) and (args.method not in supported_prediction_methods):
-        raise KeyError(f"Unrecognized prediction method '{args.method}'. "
-                       "Supported methods are 'highest' and "
-                       "'expected_value'.")
+        raise KeyError(
+            f"Unrecognized prediction method '{args.method}'. "
+            "Supported methods are 'highest' and "
+            "'expected_value'."
+        )
 
-    scores = compute_eval_from_predictions(args.examples_file,
-                                           args.predictions_file,
-                                           args.metric_names,
-                                           args.method)
+    scores = compute_eval_from_predictions(
+        args.examples_file, args.predictions_file, args.metric_names, args.method
+    )
 
     for metric_name in args.metric_names:
         print(f"{scores[metric_name]}\t{metric_name}\t{args.predictions_file}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

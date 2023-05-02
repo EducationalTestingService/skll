@@ -40,7 +40,7 @@ def setup():
 
 
 def tearDown():
-    """ Clean up after tests"""
+    """Clean up after tests"""
     for output_file_path in Path(output_dir).glob("test_voting_learner_train*"):
         output_file_path.unlink()
 
@@ -57,21 +57,21 @@ def check_train_task(learner_type, options_dict):
     """Check given combination of training configuration options"""
 
     # create a configuration file with the given options
-    (config_path,
-     estimator_names,
-     job_name,
-     custom_learner,
-     objectives,
-     _,
-     model_kwargs_list,
-     param_grid_list,
-     sampler_list,
-     _,
-     _,
-     _,
-     _) = fill_in_config_options_for_voting_learners(learner_type,
-                                                     "train",
-                                                     options_dict)
+    (
+        config_path,
+        estimator_names,
+        job_name,
+        custom_learner,
+        objectives,
+        _,
+        model_kwargs_list,
+        param_grid_list,
+        sampler_list,
+        _,
+        _,
+        _,
+        _,
+    ) = fill_in_config_options_for_voting_learners(learner_type, "train", options_dict)
 
     #  mock the `__init__()` method for the `VotingLearner` class so
     # that we can check that the voting learner was instantiated with
@@ -84,11 +84,9 @@ def check_train_task(learner_type, options_dict):
     # run the configuration file but with various methods/attributes for
     # `VotingLearner` mocked so that we can check that things were called
     # as expected without actually needing to train any models
-    with patch.multiple(VotingLearner,
-                        train=DEFAULT,
-                        save=DEFAULT,
-                        model=DEFAULT,
-                        create=True) as mocks:
+    with patch.multiple(
+        VotingLearner, train=DEFAULT, save=DEFAULT, model=DEFAULT, create=True
+    ) as mocks:
         run_configuration(config_path, quiet=True, local=True)
 
         # check that init was called the expected number of times;
@@ -100,14 +98,16 @@ def check_train_task(learner_type, options_dict):
 
         # note that the init arguments are the same no matter the call
         expected_init_args = (estimator_names,)
-        expected_init_kwargs = {"voting": "soft" if options_dict["with_soft_voting"] else "hard",
-                                "custom_learner_path": custom_learner,
-                                "feature_scaling": "with_mean" if options_dict["with_centering"] else "none",
-                                "pos_label": "dog" if options_dict["with_pos_label"] else None,
-                                "min_feature_count": 2 if options_dict["with_min_feature_count"] else 1,
-                                "model_kwargs_list": model_kwargs_list,
-                                "sampler_list": sampler_list,
-                                "sampler_kwargs_list": None}
+        expected_init_kwargs = {
+            "voting": "soft" if options_dict["with_soft_voting"] else "hard",
+            "custom_learner_path": custom_learner,
+            "feature_scaling": "with_mean" if options_dict["with_centering"] else "none",
+            "pos_label": "dog" if options_dict["with_pos_label"] else None,
+            "min_feature_count": 2 if options_dict["with_min_feature_count"] else 1,
+            "model_kwargs_list": model_kwargs_list,
+            "sampler_list": sampler_list,
+            "sampler_kwargs_list": None,
+        }
 
         # check that each init call had the expected arguments
         for actual_call in mock_vl_init.call_args_list:
@@ -117,16 +117,18 @@ def check_train_task(learner_type, options_dict):
                 eq_(actual_value, expected_value)
 
         # check that train was called the expected number of times
-        eq_(mocks['train'].call_count, num_expected_calls)
+        eq_(mocks["train"].call_count, num_expected_calls)
 
         # check that each train call had the expected arguments
-        expected_train_kwargs = {"param_grid_list": param_grid_list,
-                                 "grid_search_folds": 4 if options_dict["with_gs_folds"] else 5,
-                                 "grid_search": options_dict["with_grid_search"],
-                                 "grid_jobs": None,
-                                 "shuffle": options_dict["with_shuffle"]}
+        expected_train_kwargs = {
+            "param_grid_list": param_grid_list,
+            "grid_search_folds": 4 if options_dict["with_gs_folds"] else 5,
+            "grid_search": options_dict["with_grid_search"],
+            "grid_jobs": None,
+            "shuffle": options_dict["with_shuffle"],
+        }
 
-        for idx, actual_call in enumerate(mocks['train'].call_args_list):
+        for idx, actual_call in enumerate(mocks["train"].call_args_list):
             actual_arg = actual_call[0][0]
             ok_(isinstance(actual_arg, FeatureSet))
             eq_(set(actual_arg.labels), {"cat", "dog"})
@@ -135,16 +137,19 @@ def check_train_task(learner_type, options_dict):
                 eq_(actual_value, expected_value)
 
             # if we aren't doing grid search, then the objective should be `None`
-            eq_(actual_call[1]["grid_objective"],
-                objectives[idx] if options_dict["with_grid_search"] else None)
+            eq_(
+                actual_call[1]["grid_objective"],
+                objectives[idx] if options_dict["with_grid_search"] else None,
+            )
 
         # check that save was called the expected number of times
-        eq_(mocks['save'].call_count, num_expected_calls)
+        eq_(mocks["save"].call_count, num_expected_calls)
 
         # check that each save call had the expected arguments
-        for idx, actual_call in enumerate(mocks['save'].call_args_list):
-            if (not options_dict["with_grid_search"] or
-                    (options_dict["with_grid_search"] and not options_dict["with_multiple_objectives"])):
+        for idx, actual_call in enumerate(mocks["save"].call_args_list):
+            if not options_dict["with_grid_search"] or (
+                options_dict["with_grid_search"] and not options_dict["with_multiple_objectives"]
+            ):
                 expected_save_args = (join(output_dir, f"{job_name}.model"),)
             else:
                 expected_save_args = (join(output_dir, f"{job_name}_{objectives[idx]}.model"),)
@@ -155,35 +160,37 @@ def check_train_task(learner_type, options_dict):
 
 
 def test_train_task():
-
     # test various combinations of experiment configuration options
-    option_names = ["with_soft_voting",
-                    "with_centering",
-                    "with_min_feature_count",
-                    "with_custom_learner_path",
-                    "with_pos_label",
-                    "with_model_kwargs_list",
-                    "with_sampler_list",
-                    "with_grid_search",
-                    "with_param_grid_list",
-                    "with_shuffle",
-                    "with_multiple_objectives",
-                    "with_gs_folds"]
+    option_names = [
+        "with_soft_voting",
+        "with_centering",
+        "with_min_feature_count",
+        "with_custom_learner_path",
+        "with_pos_label",
+        "with_model_kwargs_list",
+        "with_sampler_list",
+        "with_grid_search",
+        "with_param_grid_list",
+        "with_shuffle",
+        "with_multiple_objectives",
+        "with_gs_folds",
+    ]
 
-    for option_values in product(["classifier", "regressor"],
-                                 [False, True],
-                                 [False, True],
-                                 [False, True],
-                                 [False, True],
-                                 [False, True],
-                                 [False, True],
-                                 [False, True],
-                                 [False, True],
-                                 [False, True],
-                                 [False, True],
-                                 [False, True],
-                                 [False, True]):
-
+    for option_values in product(
+        ["classifier", "regressor"],
+        [False, True],
+        [False, True],
+        [False, True],
+        [False, True],
+        [False, True],
+        [False, True],
+        [False, True],
+        [False, True],
+        [False, True],
+        [False, True],
+        [False, True],
+        [False, True],
+    ):
         # assign the learner type separately
         learner_type = option_values[0]
 
@@ -192,8 +199,9 @@ def test_train_task():
         options_dict = BoolDict(zip(option_names, option_values[1:]))
 
         # voting regressors do not support soft voting or `pos_label`
-        if (learner_type == "regressor" and
-                (options_dict["with_soft_voting"] or options_dict["with_pos_label"])):
+        if learner_type == "regressor" and (
+            options_dict["with_soft_voting"] or options_dict["with_pos_label"]
+        ):
             continue
 
         yield check_train_task, learner_type, options_dict

@@ -109,18 +109,16 @@ class FilteredLeaveOneGroupOut(LeaveOneGroupOut):
         test_index : np.array
             The testing set indices for that split.
         """
-        for train_index, test_index in super(FilteredLeaveOneGroupOut,
-                                             self).split(X, y, groups):
+        for train_index, test_index in super(FilteredLeaveOneGroupOut, self).split(X, y, groups):
             train_len = len(train_index)
             test_len = len(test_index)
-            train_index = [i for i in train_index if self.example_ids[i] in
-                           self.keep]
-            test_index = [i for i in test_index if self.example_ids[i] in
-                          self.keep]
-            if not self._warned and (train_len != len(train_index) or
-                                     test_len != len(test_index)):
-                self.logger.warning('Feature set contains IDs that are not '
-                                    'in folds dictionary. Skipping those IDs.')
+            train_index = [i for i in train_index if self.example_ids[i] in self.keep]
+            test_index = [i for i in test_index if self.example_ids[i] in self.keep]
+            if not self._warned and (train_len != len(train_index) or test_len != len(test_index)):
+                self.logger.warning(
+                    "Feature set contains IDs that are not "
+                    "in folds dictionary. Skipping those IDs."
+                )
                 self._warned = True
 
             yield train_index, test_index
@@ -210,13 +208,13 @@ def add_unseen_labels(train_label_dict, test_label_list):
     train_label_list = list(train_label_dict.keys())
 
     # identify any unseen labels in the test set
-    unseen_test_label_list = [label for label in test_label_list
-                              if label not in train_label_list]
+    unseen_test_label_list = [label for label in test_label_list if label not in train_label_list]
 
     # create a new dictionary for these unseen labels with label indices
     # for them starting _after_ those for the training set labels
-    unseen_label_dict = {label: i for i, label in enumerate(unseen_test_label_list,
-                                                            start=len(train_label_list))}
+    unseen_label_dict = {
+        label: i for i, label in enumerate(unseen_test_label_list, start=len(train_label_list))
+    }
 
     # combine the train label dictionary with this unseen label one & return
     train_and_test_label_dict = train_label_dict.copy()
@@ -224,14 +222,16 @@ def add_unseen_labels(train_label_dict, test_label_list):
     return train_and_test_label_dict
 
 
-def compute_evaluation_metrics(metrics,
-                               labels,
-                               predictions,
-                               model_type,
-                               label_dict=None,
-                               grid_objective=None,
-                               probability=False,
-                               logger=None):
+def compute_evaluation_metrics(
+    metrics,
+    labels,
+    predictions,
+    model_type,
+    label_dict=None,
+    grid_objective=None,
+    probability=False,
+    logger=None,
+):
     """
     Compute given metrics to evaluate the given predictions generated
     by the given type of estimator against the given true labels.
@@ -275,11 +275,13 @@ def compute_evaluation_metrics(metrics,
 
     # warn if grid objective was also specified in metrics
     if len(metrics) > 0 and grid_objective in metrics:
-        logger.warning(f"The grid objective '{grid_objective}' is also "
-                       "specified as an evaluation metric. Since its value "
-                       "is already included in the results as the objective "
-                       "score, it will not be printed again in the list of "
-                       "metrics.")
+        logger.warning(
+            f"The grid objective '{grid_objective}' is also "
+            "specified as an evaluation metric. Since its value "
+            "is already included in the results as the objective "
+            "score, it will not be printed again in the list of "
+            "metrics."
+        )
         metrics = [metric for metric in metrics if metric != grid_objective]
 
     # initialize a dictionary that will hold all of the metric scores
@@ -289,7 +291,7 @@ def compute_evaluation_metrics(metrics,
     # learner or a soft-voting meta learner, then `yhat` are
     # probabilities so we need to compute the class indices
     # separately and save them too
-    if model_type == 'classifier' and probability:
+    if model_type == "classifier" and probability:
         class_probs = predictions
         predictions = np.argmax(class_probs, axis=1)
     # if we are a regressor or classifier not in probability
@@ -302,7 +304,6 @@ def compute_evaluation_metrics(metrics,
     # since it's easier to compute everything together
     metrics_to_compute = [grid_objective] + metrics
     for metric in metrics_to_compute:
-
         # skip the None if we are not doing grid search
         if not metric:
             continue
@@ -311,7 +312,6 @@ def compute_evaluation_metrics(metrics,
         # need to either use the probabilities directly or infer the labels
         # from them depending on the metric
         if probability:
-
             # there are three possible cases here:
             # (a) if we are using a correlation metric or
             #     `average_precision` or `roc_auc` in a binary
@@ -322,14 +322,17 @@ def compute_evaluation_metrics(metrics,
             # (c) we compute the most likely labels from the
             #     probabilities via argmax and use those
             #     for all other metrics
-            if (len(label_dict) == 2 and
-                    (metric in CORRELATION_METRICS or
-                     metric in ['average_precision', 'roc_auc']) and
-                    metric != grid_objective):
-                logger.info("using probabilities for the positive class to "
-                            f"compute '{metric}' for evaluation.")
+            if (
+                len(label_dict) == 2
+                and (metric in CORRELATION_METRICS or metric in ["average_precision", "roc_auc"])
+                and metric != grid_objective
+            ):
+                logger.info(
+                    "using probabilities for the positive class to "
+                    f"compute '{metric}' for evaluation."
+                )
                 preds_for_metric = class_probs[:, 1]
-            elif metric == 'neg_log_loss':
+            elif metric == "neg_log_loss":
                 preds_for_metric = class_probs
             else:
                 preds_for_metric = predictions
@@ -342,7 +345,7 @@ def compute_evaluation_metrics(metrics,
         try:
             metric_scores[metric] = use_score_func(metric, labels, preds_for_metric)
         except ValueError:
-            metric_scores[metric] = float('NaN')
+            metric_scores[metric] = float("NaN")
 
     # now separate out the grid objective score from the additional metric scores
     # if a grid objective was actually passed in. If no objective was passed in
@@ -354,27 +357,26 @@ def compute_evaluation_metrics(metrics,
         del additional_scores[grid_objective]
 
     # compute some basic statistics for regressors
-    if model_type == 'regressor':
-        result_dict = {'descriptive': defaultdict(dict)}
-        for table_label, y in zip(['actual', 'predicted'], [labels, predictions]):
-            result_dict['descriptive'][table_label]['min'] = min(y)
-            result_dict['descriptive'][table_label]['max'] = max(y)
-            result_dict['descriptive'][table_label]['avg'] = np.mean(y)
-            result_dict['descriptive'][table_label]['std'] = np.std(y)
-        result_dict['pearson'] = use_score_func('pearson', labels, predictions)
+    if model_type == "regressor":
+        result_dict = {"descriptive": defaultdict(dict)}
+        for table_label, y in zip(["actual", "predicted"], [labels, predictions]):
+            result_dict["descriptive"][table_label]["min"] = min(y)
+            result_dict["descriptive"][table_label]["max"] = max(y)
+            result_dict["descriptive"][table_label]["avg"] = np.mean(y)
+            result_dict["descriptive"][table_label]["std"] = np.std(y)
+        result_dict["pearson"] = use_score_func("pearson", labels, predictions)
         res = (None, None, result_dict, objective_score, additional_scores)
     else:
         # compute the confusion matrix and precision/recall/f1
         # note that we are using the class indices here
         # and not the actual class labels themselves
         num_labels = len(label_dict)
-        conf_mat = confusion_matrix(labels,
-                                    predictions,
-                                    labels=list(range(num_labels)))
+        conf_mat = confusion_matrix(labels, predictions, labels=list(range(num_labels)))
         # Calculate metrics
         overall_accuracy = accuracy_score(labels, predictions)
         result_matrix = precision_recall_fscore_support(
-            labels, predictions, labels=list(range(num_labels)), average=None)
+            labels, predictions, labels=list(range(num_labels)), average=None
+        )
 
         # Store results
         result_dict = defaultdict(dict)
@@ -384,16 +386,12 @@ def compute_evaluation_metrics(metrics,
             result_dict[actual_label]["Recall"] = result_matrix[1][col]
             result_dict[actual_label]["F-measure"] = result_matrix[2][col]
 
-        res = (conf_mat.tolist(), overall_accuracy, result_dict,
-               objective_score, additional_scores)
+        res = (conf_mat.tolist(), overall_accuracy, result_dict, objective_score, additional_scores)
 
     return res
 
 
-def compute_num_folds_from_example_counts(cv_folds,
-                                          labels,
-                                          model_type,
-                                          logger=None):
+def compute_num_folds_from_example_counts(cv_folds, labels, model_type, logger=None):
     """
     Calculate the number of folds we should use for cross-validation, based
     on the number of examples we have for each label.
@@ -429,17 +427,20 @@ def compute_num_folds_from_example_counts(cv_folds,
         raise ValueError("`cv_folds` must be an integer.")
 
     # For regression models, we can just return the current cv_folds
-    if model_type == 'regressor':
+    if model_type == "regressor":
         return cv_folds
 
     min_examples_per_label = min(Counter(labels).values())
     if min_examples_per_label <= 1:
-        raise ValueError(f"The training set has only {min_examples_per_label}"
-                         " example for a label.")
+        raise ValueError(
+            f"The training set has only {min_examples_per_label}" " example for a label."
+        )
     if min_examples_per_label < cv_folds:
-        logger.warning("The minimum number of examples per label was "
-                       f"{min_examples_per_label}. Setting the number of "
-                       "cross-validation folds to that value.")
+        logger.warning(
+            "The minimum number of examples per label was "
+            f"{min_examples_per_label}. Setting the number of "
+            "cross-validation folds to that value."
+        )
         cv_folds = min_examples_per_label
     return cv_folds
 
@@ -472,7 +473,6 @@ def contiguous_ints_or_floats(numbers):
     """
 
     try:
-
         # make sure that number is not empty
         assert len(numbers) > 0
 
@@ -485,10 +485,10 @@ def contiguous_ints_or_floats(numbers):
         contiguous = np.all(np.diff(numbers) == 1)
 
     except AssertionError:
-        raise ValueError('Input cannot be empty.')
+        raise ValueError("Input cannot be empty.")
 
     except TypeError:
-        raise TypeError('Input should only contain numbers.')
+        raise TypeError("Input should only contain numbers.")
 
     # we need both conditions to be true
     return ints_or_int_like_floats and contiguous
@@ -534,12 +534,7 @@ def get_acceptable_classification_metrics(label_array):
     # class indices will be sorted in the same order
     # as the class labels therefore, ranking metrics
     # such as various correlations should work fine.
-    elif issubclass(label_type, (int,
-                                 np.int32,
-                                 np.int64,
-                                 float,
-                                 np.float32,
-                                 np.float64)):
+    elif issubclass(label_type, (int, np.int32, np.int64, float, np.float32, np.float64)):
         acceptable_metrics.update(CORRELATION_METRICS)
 
         # CASE 3: labels are numerically contiguous integers
@@ -570,10 +565,12 @@ def get_acceptable_regression_metrics():
 
     # it's fairly straightforward for regression since
     # we do not have to check the labels
-    acceptable_metrics = (REGRESSION_ONLY_METRICS |
-                          UNWEIGHTED_KAPPA_METRICS |
-                          WEIGHTED_KAPPA_METRICS |
-                          CORRELATION_METRICS)
+    acceptable_metrics = (
+        REGRESSION_ONLY_METRICS
+        | UNWEIGHTED_KAPPA_METRICS
+        | WEIGHTED_KAPPA_METRICS
+        | CORRELATION_METRICS
+    )
 
     # if there are any custom metrics registered, include them too
     if len(_CUSTOM_METRICS) > 0:
@@ -604,12 +601,12 @@ def load_custom_learner(custom_learner_path, custom_learner_name):
         The SKLL learner object loaded from the given path.
     """
     if not custom_learner_path:
-        raise ValueError('custom_learner_path was not set and learner '
-                         f'{custom_learner_name} was not found.')
+        raise ValueError(
+            "custom_learner_path was not set and learner " f"{custom_learner_name} was not found."
+        )
 
-    if not custom_learner_path.endswith('.py'):
-        raise ValueError('custom_learner_path must end in .py '
-                         f'({custom_learner_path})')
+    if not custom_learner_path.endswith(".py"):
+        raise ValueError("custom_learner_path must end in .py " f"({custom_learner_path})")
 
     custom_learner_module_name = os.path.basename(custom_learner_path)[:-3]
     sys.path.append(os.path.dirname(os.path.abspath(custom_learner_path)))
@@ -667,7 +664,6 @@ def get_predictions(learner, xtest):
 
     # next, if it's a classifier ...
     if learner.model_type._estimator_type == "classifier":
-
         # get the list of labels from the learner (or meta-learner)
         if isinstance(learner, VotingLearner):
             label_list = learner.learners[0].label_list
@@ -680,13 +676,15 @@ def get_predictions(learner, xtest):
 
         # then get the class probabilities too if the learner
         # (or meta-learner) is probabilistic
-        if ((hasattr(learner, "probability") and learner.probability) or
-                (hasattr(learner, "voting") and learner.voting == "soft")):
+        if (hasattr(learner, "probability") and learner.probability) or (
+            hasattr(learner, "voting") and learner.voting == "soft"
+        ):
             try:
                 yhat_probs = learner.model.predict_proba(xtest)
             except NotImplementedError as e:
-                learner.logger.error(f"Model type: {learner.model_type.__name__}\n"
-                                     f"Model: {learner.model}\n")
+                learner.logger.error(
+                    f"Model type: {learner.model_type.__name__}\n" f"Model: {learner.model}\n"
+                )
                 raise e
             else:
                 prediction_dict["probabilities"] = yhat_probs
@@ -717,7 +715,7 @@ def rescaled(cls):
         If classifier cannot be rescaled (i.e. is not a regressor).
     """
     # If this class has already been run through the decorator, return it
-    if hasattr(cls, 'rescale'):
+    if hasattr(cls, "rescale"):
         return cls
 
     # Save original versions of functions to use later.
@@ -725,9 +723,8 @@ def rescaled(cls):
     orig_fit = cls.fit
     orig_predict = cls.predict
 
-    if cls._estimator_type == 'classifier':
-        raise ValueError('Classifiers cannot be rescaled. Only regressors '
-                         'can.')
+    if cls._estimator_type == "classifier":
+        raise ValueError("Classifiers cannot be rescaled. Only regressors " "can.")
 
     # Define all new versions of functions
     @wraps(cls.fit)
@@ -791,8 +788,7 @@ def rescaled(cls):
 
         if self.constrain:
             # apply min and max constraints
-            res = np.array([max(self.y_min, min(self.y_max, pred))
-                            for pred in res])
+            res = np.array([max(self.y_min, min(self.y_max, pred)) for pred in res])
 
         return res
 
@@ -825,12 +821,15 @@ def rescaled(cls):
 
         try:
             # get signature of the original init method
-            init = getattr(orig_init, 'deprecated_original', orig_init)
+            init = getattr(orig_init, "deprecated_original", orig_init)
             init_signature = inspect.signature(init)
 
             # get all parameters excluding 'self'
-            original_parameters = [p for p in init_signature.parameters.values()
-                                   if p.name != 'self' and p.kind != p.VAR_KEYWORD]
+            original_parameters = [
+                p
+                for p in init_signature.parameters.values()
+                if p.name != "self" and p.kind != p.VAR_KEYWORD
+            ]
 
             # there should be no varargs
             for parameter in original_parameters:
@@ -898,11 +897,7 @@ def rescaled(cls):
     return cls
 
 
-def setup_cv_fold_iterator(cv_folds,
-                           examples,
-                           model_type,
-                           stratified=False,
-                           logger=None):
+def setup_cv_fold_iterator(cv_folds, examples, model_type, stratified=False, logger=None):
     """
     Set up a cross-validation fold iterator for the given ``FeatureSet``.
 
@@ -932,12 +927,11 @@ def setup_cv_fold_iterator(cv_folds,
     """
     # Set up the cross-validation iterator.
     if isinstance(cv_folds, int):
-        cv_folds = compute_num_folds_from_example_counts(cv_folds,
-                                                         examples.labels,
-                                                         model_type,
-                                                         logger=logger)
+        cv_folds = compute_num_folds_from_example_counts(
+            cv_folds, examples.labels, model_type, logger=logger
+        )
 
-        stratified = (stratified and model_type == 'classifier')
+        stratified = stratified and model_type == "classifier"
         if stratified:
             kfold = StratifiedKFold(n_splits=cv_folds)
             cv_groups = None
@@ -954,9 +948,7 @@ def setup_cv_fold_iterator(cv_folds,
         dummy_label = next(iter(cv_folds.values()))
         fold_groups = [cv_folds.get(curr_id, dummy_label) for curr_id in examples.ids]
         # Only retain IDs within folds if they're in cv_folds
-        kfold = FilteredLeaveOneGroupOut(cv_folds,
-                                         examples.ids,
-                                         logger=logger)
+        kfold = FilteredLeaveOneGroupOut(cv_folds, examples.ids, logger=logger)
         cv_groups = fold_groups
 
     return kfold, cv_groups
@@ -985,24 +977,18 @@ def setup_cv_split_iterator(cv_folds, examples):
 
     # set up the cross-validation split iterator with 20% of
     # the data always reserved for testing
-    cv = ShuffleSplit(n_splits=cv_folds,
-                      test_size=0.2,
-                      random_state=random_state)
+    cv = ShuffleSplit(n_splits=cv_folds, test_size=0.2, random_state=random_state)
     cv_iter = list(cv.split(examples.features, examples.labels, None))
     n_max_training_samples = len(cv_iter[0][0])
 
     # create an iterator over train/test featuresets based on the
     # cross-validation index iterator
-    featureset_iter = (FeatureSet.split_by_ids(examples, train, test)
-                       for train, test in cv_iter)
+    featureset_iter = (FeatureSet.split_by_ids(examples, train, test) for train, test in cv_iter)
 
     return featureset_iter, n_max_training_samples
 
 
-def train_and_score(learner,
-                    train_examples,
-                    test_examples,
-                    metric):
+def train_and_score(learner, train_examples, test_examples, metric):
     """
     A utility method to train a given learner instance on the given
     training examples, generate predictions on the training set itself
@@ -1054,21 +1040,21 @@ def train_and_score(learner,
     # if we got probabilities, then we need to run argmax over them
     # to convert them into indices; this needs to handle both
     # regular learners as well as voting learners
-    if ((hasattr(learner, "probability") and learner.probability) or
-            (hasattr(learner, "voting") and learner.voting == "soft")):
+    if (hasattr(learner, "probability") and learner.probability) or (
+        hasattr(learner, "voting") and learner.voting == "soft"
+    ):
         train_predictions = np.argmax(train_predictions, axis=1)
         test_predictions = np.argmax(test_predictions, axis=1)
 
     # now get the training and test labels and convert them to indices
     # but make sure to include any unseen labels in the test data
-    if learner.model_type._estimator_type == 'classifier':
+    if learner.model_type._estimator_type == "classifier":
         test_label_list = np.unique(test_examples.labels).tolist()
-        train_and_test_label_dict = add_unseen_labels(learner.label_dict,
-                                                      test_label_list)
-        train_labels = np.array([train_and_test_label_dict[label]
-                                 for label in train_examples.labels])
-        test_labels = np.array([train_and_test_label_dict[label]
-                                for label in test_examples.labels])
+        train_and_test_label_dict = add_unseen_labels(learner.label_dict, test_label_list)
+        train_labels = np.array(
+            [train_and_test_label_dict[label] for label in train_examples.labels]
+        )
+        test_labels = np.array([train_and_test_label_dict[label] for label in test_examples.labels])
     else:
         train_labels = train_examples.labels
         test_labels = test_examples.labels
@@ -1079,13 +1065,15 @@ def train_and_score(learner,
     return train_score, test_score
 
 
-def write_predictions(example_ids,
-                      predictions_to_write,
-                      file_prefix,
-                      model_type,
-                      append=False,
-                      label_list=None,
-                      probability=False):
+def write_predictions(
+    example_ids,
+    predictions_to_write,
+    file_prefix,
+    model_type,
+    append=False,
+    label_list=None,
+    probability=False,
+):
     """
     Write example IDs and predictions to a tab-separated file with given prefix.
 
@@ -1113,10 +1101,7 @@ def write_predictions(example_ids,
     """
     # create a new file starting with the given prefix
     prediction_file = f"{file_prefix}_predictions.tsv"
-    with open(prediction_file,
-              mode='w' if not append else 'a',
-              newline='') as predictionfh:
-
+    with open(prediction_file, mode="w" if not append else "a", newline="") as predictionfh:
         # create a DictWriter with the appropriate field names
         if predictions_to_write.ndim > 1:
             fieldnames = ["id"] + [label for label in label_list]
@@ -1129,7 +1114,6 @@ def write_predictions(example_ids,
             writer.writeheader()
 
         for example_id, pred in zip(example_ids, predictions_to_write):
-
             # for regressors, we just write out the prediction as-is
             if model_type == "regressor":
                 row = {"id": example_id, "prediction": pred}
@@ -1139,7 +1123,7 @@ def write_predictions(example_ids,
             # either a class label or an index
             else:
                 if isinstance(pred, np.ndarray):
-                    row = {'id': example_id}
+                    row = {"id": example_id}
                     row.update(dict(zip(label_list, pred)))
                 else:
                     row = {"id": example_id, "prediction": pred}
@@ -1200,19 +1184,22 @@ def _load_learner_from_disk(learner_type, filepath, logger):
 
     # Check that we've actually loaded an instance of the requested type
     if not isinstance(learner, learner_type):
-        raise ValueError(f"'{filepath}' does not contain an object "
-                         f"of type '{learner_type.__name__}'.")
+        raise ValueError(
+            f"'{filepath}' does not contain an object " f"of type '{learner_type.__name__}'."
+        )
 
     # check that versions are compatible
     elif skll_version < (2, 5, 0):
-        model_version_str = '.'.join(map(str, skll_version))
-        current_version_str = '.'.join(map(str, VERSION))
-        raise ValueError(f"The learner stored in '{filepath}' was "
-                         f"created with v{model_version_str} of SKLL, "
-                         "which is incompatible with the current "
-                         f"v{current_version_str}.")
+        model_version_str = ".".join(map(str, skll_version))
+        current_version_str = ".".join(map(str, VERSION))
+        raise ValueError(
+            f"The learner stored in '{filepath}' was "
+            f"created with v{model_version_str} of SKLL, "
+            "which is incompatible with the current "
+            f"v{current_version_str}."
+        )
     else:
-        if not hasattr(learner, 'sampler'):
+        if not hasattr(learner, "sampler"):
             learner.sampler = None
 
         # For backward compatibility, convert string model types to actual classes
