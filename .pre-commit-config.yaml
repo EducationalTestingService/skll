@@ -2,27 +2,28 @@
 # See https://pre-commit.com/hooks.html for more git_hooks
 
 repos:
--   repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.0.1
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
     hooks:
-    -   id: trailing-whitespace
-    -   id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
         exclude: .(tsv|csv|json|json)$
-    -   id: check-yaml
-    -   id: check-added-large-files
-    -   id: check-ast
-    -   id: check-json
-    -   id: debug-statements
--   repo: https://github.com/pycqa/flake8
-    rev: 6.0.0
+      - id: check-yaml
+      - id: check-added-large-files
+      - id: check-ast
+      - id: check-json
+      - id: debug-statements
+  - repo: https://github.com/ikamensh/flynt/
+    rev: '0.78'
     hooks:
-    - id: flake8
--   repo: https://github.com/PyCQA/isort
-    rev: 5.11.4
+      - id: flynt
+  - repo: https://github.com/psf/black
+    rev: 23.3.0
     hooks:
-    -   id: isort
-        args: ["--multi-line", "3", "--trailing-comma", "--use-parentheses", "--ensure-newline-before-comments", "--line-length", "88"]
--   repo: https://github.com/ikamensh/flynt/
-    rev: '0.77'
+      - id: black
+        args: [--line-length=100]
+  - repo: https://github.com/charliermarsh/ruff-pre-commit
+    rev: 'v0.0.264'
     hooks:
-    -   id: flynt
+      - id: ruff
+        args: [--line-length=100]
