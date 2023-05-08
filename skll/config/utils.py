@@ -10,15 +10,14 @@ Utility classes and functions to parse SKLL configuration files.
 import csv
 import errno
 import logging
-from os.path import exists, isabs, join, normpath
+from pathlib import Path
 
 import ruamel.yaml as yaml
 
 
 def fix_json(json_string):
     """
-    Fixes incorrectly formatted quotes and capitalized booleans in the given
-    JSON string.
+    Fix incorrectly formatted quotes and capitalized booleans in given JSON string.
 
     Parameters
     ----------
@@ -38,12 +37,13 @@ def fix_json(json_string):
 
 def load_cv_folds(folds_file, ids_to_floats=False):
     """
-    Loads cross-validation folds from a CSV file with two columns for example
-    ID and fold ID (and a header).
+    Load cross-validation folds from a CSV file.
+
+    The CSV file must contain two columns: example ID and fold ID (and a header).
 
     Parameters
     ----------
-    folds_file : str
+    folds_file : Union[str, Path]
         The path to a folds file to read.
 
     ids_to_floats : bool, default=False
@@ -84,10 +84,10 @@ def locate_file(file_path, config_dir):
 
     Parameters
     ----------
-    file_path : str
+    file_path : Union[str, Path]
         The file to locate. Path may be absolute or relative.
 
-    config_dir : str
+    config_dir : Union[str, Path]
         The path to the configuration file directory.
 
     Returns
@@ -97,22 +97,31 @@ def locate_file(file_path, config_dir):
 
     Raises
     ------
-    IOError
+    FileNotFoundError
         If the file does not exist.
     """
     if not file_path:
         return ""
-    path_to_check = file_path if isabs(file_path) else normpath(join(config_dir, file_path))
-    ans = exists(path_to_check)
-    if not ans:
-        raise IOError(errno.ENOENT, "File does not exist", path_to_check)
+
+    # convert to Path objects
+    file_path = Path(file_path)
+    config_dir = Path(config_dir)
+
+    config_relative_path = config_dir / file_path
+    path_to_check = file_path if file_path.is_absolute() else config_relative_path.resolve()
+    if not path_to_check.exists():
+        raise FileNotFoundError(
+            errno.ENOENT, f"File {path_to_check} does not exist", str(path_to_check)
+        )
     else:
-        return path_to_check
+        return str(path_to_check)
 
 
 def _munge_featureset_name(featureset):
     """
-    Joins features in ``featureset`` with a '+' if ``featureset`` is not a string.
+    Create a munged name for the featureset.
+
+    Join features in ``featureset`` with a '+' if ``featureset`` is not a string.
     Otherwise, returns ``featureset``.
 
     Parameters
@@ -134,6 +143,8 @@ def _munge_featureset_name(featureset):
 
 def _parse_and_validate_metrics(metrics, option_name, logger=None):
     """
+    Parse and validate string containing list of metrics.
+
     Given a string containing a list of metrics, this function
     parses that string into a list and validates some specific
     metric names.
@@ -162,7 +173,6 @@ def _parse_and_validate_metrics(metrics, option_name, logger=None):
     ValueError
         If "mean_squared_error" is specified as a metric.
     """
-
     # create a logger if one was not passed in
     if not logger:
         logger = logging.getLogger(__name__)

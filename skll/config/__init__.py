@@ -9,11 +9,11 @@ The main class and functions used to parse SKLL configuration files.
 """
 
 import configparser
-import errno
 import itertools
 import logging
 import os
-from os.path import basename, dirname, exists, join, realpath
+from os.path import basename, join
+from pathlib import Path
 
 import numpy as np
 import ruamel.yaml as yaml
@@ -39,12 +39,10 @@ __all__ = ["SKLLConfigParser", "fix_json", "load_cv_folds", "locate_file"]
 
 
 class SKLLConfigParser(configparser.ConfigParser):
-
-    """
-    A custom configuration file parser for SKLL.
-    """
+    """A custom configuration file parser for SKLL."""
 
     def __init__(self):
+        """Initialize configuration parser."""
         # these are the three options that must be set in a config
         # file and no defaults are provided
         required = ["experiment_name", "task", "learners"]
@@ -162,7 +160,6 @@ class SKLLConfigParser(configparser.ConfigParser):
         invalid_options : set of str
             The set of invalid options specified by the user.
         """
-
         # compute a list of all the valid options
         valid_options = list(self._defaults.keys()) + self._required_options
 
@@ -177,6 +174,8 @@ class SKLLConfigParser(configparser.ConfigParser):
 
     def _find_ill_specified_options(self):
         """
+        Find any ill-specified options in the configuration file.
+
         Make sure that all the options are specified in the appropriate sections
         and are not specified in multiple spaces. One way to do this is to
         basically get the values for all the optional config options from each
@@ -222,7 +221,9 @@ class SKLLConfigParser(configparser.ConfigParser):
 
     def validate(self):
         """
-        Validate specified options to check ::
+        Validate specified options.
+
+        The following checks are used for validation::
 
             (a) no invalid options are specified
             (b) options are not specified in multiple sections
@@ -239,7 +240,6 @@ class SKLLConfigParser(configparser.ConfigParser):
         KeyError
             If any options are not defined in the appropriate sections.
         """
-
         invalid_options = self._find_invalid_options()
         if invalid_options:
             raise KeyError(
@@ -265,12 +265,13 @@ class SKLLConfigParser(configparser.ConfigParser):
 
 def parse_config_file(config_path, log_level=logging.INFO):  # noqa: C901
     """
-    Parses a SKLL experiment configuration file with the given path.
+    Parse a SKLL experiment configuration file with the given path.
+
     Log messages with the given log level (default: INFO).
 
     Parameters
     ----------
-    config_path : str
+    config_path : Union[str, Path]
         The path to the configuration file.
 
     log_level : int, default=logging.INFO
@@ -444,14 +445,19 @@ def parse_config_file(config_path, log_level=logging.INFO):  # noqa: C901
         If various configuration parameters are incorrectly specified,
         or cause conflicts.
     """
+    # ensure that a path is specified
+    if not config_path:
+        raise FileNotFoundError("The name of the configuration file is empty.")
 
-    # check that config_path is not empty
-    if config_path == "":
-        raise IOError("The name of the configuration file is empty")
+    # convert config_path to a Path object and get the full path
+    config_path = Path(config_path).resolve()
 
-    # compute the absolute path for the config file
-    config_path = realpath(config_path)
-    config_dir = dirname(config_path)
+    # ensure that the specified path actually exists
+    if not config_path.exists():
+        raise FileNotFoundError(f"The configuration file {config_path} does not exist.")
+
+    # get the containing directory for the configuration file
+    config_dir = config_path.parent
 
     # set up a config parser with the above default values
     config = _setup_config_parser(config_path)
@@ -475,10 +481,9 @@ def parse_config_file(config_path, log_level=logging.INFO):  # noqa: C901
 
     try:
         log_path = locate_file(log_value, config_dir)
-    except IOError as e:
-        if e.errno == errno.ENOENT:
-            log_path = e.filename
-            os.makedirs(log_path)
+    except FileNotFoundError as e:
+        log_path = e.filename
+        os.makedirs(log_path)
 
     # Create a top-level log file under the log path
     main_log_file = join(log_path, f"{experiment_name}.log")
@@ -752,26 +757,23 @@ def parse_config_file(config_path, log_level=logging.INFO):  # noqa: C901
     # make sure the predictions path exists and if not create it
     try:
         prediction_dir = locate_file(config.get("Output", "predictions"), config_dir)
-    except IOError as e:
-        if e.errno == errno.ENOENT:
-            prediction_dir = e.filename
-            os.makedirs(prediction_dir)
+    except FileNotFoundError as e:
+        prediction_dir = e.filename
+        os.makedirs(prediction_dir)
 
     # make sure model path exists and if not, create it
     try:
         model_path = locate_file(config.get("Output", "models"), config_dir)
-    except IOError as e:
-        if e.errno == errno.ENOENT:
-            model_path = e.filename
-            os.makedirs(model_path)
+    except FileNotFoundError as e:
+        model_path = e.filename
+        os.makedirs(model_path)
 
     # make sure results path exists
     try:
         results_path = locate_file(config.get("Output", "results"), config_dir)
-    except IOError as e:
-        if e.errno == errno.ENOENT:
-            results_path = e.filename
-            os.makedirs(results_path)
+    except FileNotFoundError as e:
+        results_path = e.filename
+        os.makedirs(results_path)
 
     # what are the output metrics?
     output_metrics = config.get("Output", "metrics")
@@ -992,12 +994,13 @@ def parse_config_file(config_path, log_level=logging.INFO):  # noqa: C901
 
 def _setup_config_parser(config_path, validate=True):
     """
-    Returns a config parser at a given path. Only implemented as a separate
-    function to simplify testing.
+    Return a config parser at a given path.
+
+    Only implemented as a separate function to simplify testing.
 
     Parameters
     ----------
-    config_path : str
+    config_path : Union[str, Path]
         The path to the configuration file.
 
     validate : bool, default=True
@@ -1016,9 +1019,13 @@ def _setup_config_parser(config_path, validate=True):
     # initialize config parser with the given defaults
     config = SKLLConfigParser()
 
+    # convert config_path to a Path object
+    config_path = Path(config_path)
+
     # Read file if it exists
-    if not exists(config_path):
-        raise IOError(errno.ENOENT, "Configuration file does not exist", config_path)
+    if not config_path.exists():
+        raise FileNotFoundError("The configuration file {config_path} does not exist.")
+
     config.read(config_path)
 
     if validate:
