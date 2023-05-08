@@ -26,4 +26,4 @@ repos:
     rev: 'v0.0.264'
     hooks:
       - id: ruff
-        args: [--line-length=100]
+        args: [--line-length=100, --select, "D,E,F,I", --ignore, "D212", --per-file-ignores, "tests/test*.py:D103"]
