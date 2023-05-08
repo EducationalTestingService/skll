@@ -1,17 +1,19 @@
 #!/usr/bin/env python
 
 """
-This is a simple script to download and transform some example data from
+Create data for California regression example.
+
+A script to download and transform some example data from
 sklearn.datasets.
 
+:author: Nitin Madnani (nmadnani@ets.org)
 :author: Michael Heilman (mheilman@ets.org)
 :author: Aoife Cahill (acahill@ets.org)
-:author: Nitin Madnani (nmadnani@ets.org)
 :organization: ETS
 """
 
 import json
-import os
+from pathlib import Path
 
 import numpy as np
 import sklearn.datasets
@@ -20,7 +22,8 @@ from sklearn.model_selection import train_test_split
 
 def main():
     """
-    Download some example data and split it into training and test data.
+    Download example data and split it into training and test data.
+
     The california data set is meant for regression modeling.
     """
     print("Retrieving california data from servers...", end="")
@@ -44,10 +47,10 @@ def main():
 
     print("Writing training and testing files...", end="")
     for examples, suffix in [(examples_train, "train"), (examples_test, "test")]:
-        california_dir = os.path.join("california", suffix)
-        if not os.path.exists(california_dir):
-            os.makedirs(california_dir)
-        jsonlines_path = os.path.join(california_dir, "example_california_features.jsonlines")
+        california_dir = Path("california") / suffix
+        if not california_dir.exists():
+            california_dir.mkdir(parents=True)
+        jsonlines_path = california_dir / "example_california_features.jsonlines"
         with open(jsonlines_path, "w") as f:
             for ex in examples:
                 f.write(f"{json.dumps(ex)}\n")
