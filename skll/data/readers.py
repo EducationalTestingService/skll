@@ -1,6 +1,8 @@
 # License: BSD 3 clause
 """
-This module handles loading data from various types of data files. A
+Load features and labels from various file types.
+
+Handle loading data from various types of data files. A
 base ``Reader`` class is provided that is sub-classed for each data
 file type that is supported, e.g. ``CSVReader``.
 
@@ -48,6 +50,7 @@ import sys
 from csv import DictReader
 from io import StringIO
 from itertools import chain
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -60,12 +63,11 @@ from skll.data.dict_vectorizer import DictVectorizer
 
 class Reader(object):
     """
-    A helper class to make picklable iterators out of example
-    dictionary generators.
+    Make picklable iterators out of example dictionary generators.
 
     Parameters
     ----------
-    path_or_list : str or list of dict
+    path_or_list : Union[str, Path, List[Dict[str, Any]]
         Path or a list of example dictionaries.
 
     quiet : bool, default=True
@@ -124,6 +126,7 @@ class Reader(object):
         num_features=None,
         logger=None,
     ):
+        """Initialize the base class."""
         super(Reader, self).__init__()
         self.path_or_list = path_or_list
         self.quiet = quiet
@@ -143,13 +146,14 @@ class Reader(object):
     @classmethod
     def for_path(cls, path_or_list, **kwargs):
         """
-        Instantiate the appropriate Reader sub-class based on the
-        file extension of the given path. Or use a dictionary reader
-        if the input is a list of dictionaries.
+        Instantiate Reader sub-class based on the file extension.
+
+        If the input is a list of dictionaries instead of a path, use a
+        dictionary reader instead.
 
         Parameters
         ----------
-        path_or_list : str or list of dicts
+        path_or_list : Union[str, Path, List[Dict[str, Any]]
             A path or list of example dictionaries.
 
         kwargs : dict, optional
@@ -166,11 +170,12 @@ class Reader(object):
         ValueError
             If file does not have a valid extension.
         """
-        if not isinstance(path_or_list, str):
+        if not isinstance(path_or_list, (str, Path)):
             return DictListReader(path_or_list)
         else:
             # Get lowercase extension for file extension checking
-            ext = "." + path_or_list.rsplit(".", 1)[-1].lower()
+            path_or_list = Path(path_or_list)
+            ext = path_or_list.suffix.lower()
             if ext not in EXT_TO_READER:
                 raise ValueError(
                     "Example files must be in either .arff, "
@@ -181,7 +186,8 @@ class Reader(object):
 
     def _sub_read(self, file):
         """
-        Does the actual reading of the given file or list.
+        Perform the actual reading of the given file or list.
+
         For ``Reader`` objects that do not rely on ``pandas``
         (and therefore read row-by-row), this function will
         be called by  ``_sub_read_rows()`` and will take a file
@@ -203,8 +209,9 @@ class Reader(object):
         raise NotImplementedError
 
     def _print_progress(self, progress_num, end="\r"):
-        """
-        Helper method to print out progress numbers in proper format.
+        r"""
+        Print out progress numbers in proper format.
+
         Nothing gets printed if ``self.quiet`` is ``True``.
 
         Parameters
@@ -214,7 +221,7 @@ class Reader(object):
             number or a percentage. Must be able to convert to string.
 
         end : str, default='\r'
-            The string to put at the end of the line.  "\\r" should be
+            The string to put at the end of the line.  "\r" should be
             used for every update except for the final one.
         """
         # Print out status
@@ -224,16 +231,16 @@ class Reader(object):
 
     def _sub_read_rows(self, file):
         """
-        Read the file in row-by-row. This method is used for
-        ``Reader`` objects that do not rely on ``pandas``, and are
-        instead read line-by-line into a FeatureSet object, unlike
-        pandas-based reader object, which will read everything
-        into memory in a data frame object before converting to
-        a ``FeatureSet``.
+        Read the file in row-by-row.
+
+        This method is used for ``Reader`` objects that do not rely on ``pandas``,
+        and are instead read line-by-line into a FeatureSet object, unlike
+        pandas-based reader object, which will read everything into memory in
+        a data frame object before converting to a ``FeatureSet``.
 
         Parameters
         ----------
-        file : str
+        file : Union[str, Path]
             The path to a file.
 
         Returns
@@ -305,6 +312,7 @@ class Reader(object):
     def _parse_dataframe(self, df, id_col, label_col, replace_blanks_with=None, drop_blanks=False):
         """
         Parse the data frame into ids, labels, and features.
+
         For ``Reader`` objects that rely on ``pandas``, this function
         will be called in the ``_sub_read()`` method to parse the
         data frame into the expected format. It will not be used
@@ -418,8 +426,10 @@ class Reader(object):
 
     def read(self):
         """
-        Loads examples in the ``.arff``, ``.csv``, ``.jsonlines``, ``.libsvm``,
-        ``.ndj``, or ``.tsv`` formats.
+        Load examples from various file formats.
+
+        The following formats are supported: ``.arff``, ``.csv``, ``.jsonlines``,
+        ``.libsvm``, ``.ndj``, or ``.tsv`` formats.
 
         Returns
         -------
@@ -461,18 +471,20 @@ class Reader(object):
         if ids.shape[0] != len(set(ids)):
             raise ValueError("The example IDs are not unique in " f"{self.path_or_list}.")
 
+        featureset_name = str(self.path_or_list)
         return FeatureSet(
-            self.path_or_list, ids, labels=labels, features=features, vectorizer=self.vectorizer
+            featureset_name, ids, labels=labels, features=features, vectorizer=self.vectorizer
         )
 
 
 class DictListReader(Reader):
     """
-    This class is to facilitate programmatic use of
-    ``Learner.predict()`` and other methods that take
-    ``FeatureSet`` objects as input. It iterates
-    over examples in the same way as other ``Reader`` classes, but uses a
-    list of example dictionaries instead of a path to a file.
+    Facilitate programmatic use of methods that take ``FeatureSet`` as input.
+
+    Support ``Learner.predict()`` and other methods that take ``FeatureSet``
+    objects as input. It iterates over examples in the same way as other
+    ``Reader`` classes, but uses a list of example dictionaries instead of
+    a path to a file.
     """
 
     def read(self):
@@ -532,17 +544,16 @@ class DictListReader(Reader):
 
 
 class NDJReader(Reader):
-
     """
-    Reader to create a ``FeatureSet`` instance from a JSONlines/NDJ file.
+    Create a ``FeatureSet`` instance from a JSONlines/NDJ file.
+
     If example/instance IDs are included in the files, they
     must be specified as the  "id" key in each JSON dictionary.
     """
 
     def _sub_read(self, file):
         """
-        The function called on the file buffer in the ``read()`` method
-        to iterate through rows.
+        Iterate through the rows of the file buffer.
 
         Parameters
         ----------
@@ -599,9 +610,9 @@ class NDJReader(Reader):
 
 
 class LibSVMReader(Reader):
-
     """
-    Reader to create a ``FeatureSet`` instance from a LibSVM/LibLinear/SVMLight file.
+    Create a ``FeatureSet`` instance from a LibSVM/LibLinear/SVMLight file.
+
     We use a specially formatted comment for storing example IDs, class names,
     and feature names, which are normally not supported by the format.  The
     comment is not mandatory, but without it, your labels and features will
@@ -629,13 +640,16 @@ class LibSVMReader(Reader):
     @staticmethod
     def _pair_to_tuple(pair, feat_map):
         """
-        Split a feature-value pair separated by a colon into a tuple.  Also
-        do safe_float conversion on the value.
+        Split feature-value pair separated by a colon into tuple.
+
+        Also perform `safe_float` conversion on the value.
 
         Parameters
         ----------
-        feat_map : str
+        pair: str
             A feature-value pair to split.
+        feat_map : Dict[str, str]
+            Feature name mapping.
 
         Returns
         -------
@@ -653,6 +667,8 @@ class LibSVMReader(Reader):
 
     def _sub_read(self, file):
         """
+        Parse rows of LibSVM file.
+
         Parameters
         ----------
         file : file buffer
@@ -724,9 +740,9 @@ class LibSVMReader(Reader):
 
 
 class CSVReader(Reader):
-
     """
-    Reader for creating a ``FeatureSet`` instance from a CSV file.
+    Create a ``FeatureSet`` instance from a CSV file.
+
     If example/instance IDs are included in the files, they
     must be specified in the ``id`` column.
     Also, there must be a column with the name specified by ``label_col`` if the
@@ -768,6 +784,7 @@ class CSVReader(Reader):
         pandas_kwargs=None,
         **kwargs,
     ):
+        """Initialize CSVReader class."""
         super(CSVReader, self).__init__(path_or_list, **kwargs)
         self._replace_blanks_with = replace_blanks_with
         self._drop_blanks = drop_blanks
@@ -778,9 +795,11 @@ class CSVReader(Reader):
 
     def _sub_read(self, file):
         """
+        Parse rows of CSV file.
+
         Parameters
         ----------
-        file : str
+        file : Union[str, Path]
             The path to the CSV file.
 
         Returns
@@ -805,9 +824,9 @@ class CSVReader(Reader):
 
 
 class TSVReader(CSVReader):
-
     """
-    Reader for creating a ``FeatureSet`` instance from a TSV file.
+    Create a ``FeatureSet`` instance from a TSV file.
+
     If example/instance IDs are included in the files, they
     must be specified in the ``id`` column.
     Also there must be a column with the name specified by ``label_col``
@@ -849,6 +868,7 @@ class TSVReader(CSVReader):
         pandas_kwargs=None,
         **kwargs,
     ):
+        """Initialize TSVReader class."""
         super(TSVReader, self).__init__(
             path_or_list,
             replace_blanks_with=replace_blanks_with,
@@ -860,9 +880,9 @@ class TSVReader(CSVReader):
 
 
 class DelimitedReader(Reader):
-
     """
-    Reader for creating a ``FeatureSet`` instance from a delimited (CSV/TSV) file.
+    Create a ``FeatureSet`` instance from a delimited (CSV/TSV) file.
+
     If example/instance IDs are included in the files, they
     must be specified in the ``id`` column.
     For ARFF, CSV, and TSV files, there must be a column with the
@@ -882,11 +902,14 @@ class DelimitedReader(Reader):
     """
 
     def __init__(self, path_or_list, **kwargs):
+        """Initialize DelimitedReader class."""
         self.dialect = kwargs.pop("dialect", "excel-tab")
         super(DelimitedReader, self).__init__(path_or_list, **kwargs)
 
     def _sub_read(self, file):
         """
+        Parse rows in delimited file.
+
         Parameters
         ----------
         file : file buffer
@@ -939,9 +962,9 @@ class DelimitedReader(Reader):
 
 
 class ARFFReader(DelimitedReader):
-
     """
-    Reader for creating a ``FeatureSet`` instance from an ARFF file.
+    Create a ``FeatureSet`` instance from an ARFF file.
+
     If example/instance IDs are included in the files, they
     must be specified in the ``id`` column.
     Also, there must be a column with the name specified by ``label_col`` if the
@@ -957,6 +980,7 @@ class ARFFReader(DelimitedReader):
     """
 
     def __init__(self, path_or_list, **kwargs):
+        """Initialize ARFFReader class."""
         kwargs["dialect"] = "arff"
         super(ARFFReader, self).__init__(path_or_list, **kwargs)
         self.relation = ""
@@ -964,9 +988,8 @@ class ARFFReader(DelimitedReader):
 
     @staticmethod
     def split_with_quotes(string, delimiter=" ", quote_char="'", escape_char="\\"):
-        """
-        A replacement for ``string.split()`` that won't split delimiters
-        enclosed in quotes.
+        r"""
+        Split strings but not on split delimiters enclosed in quotes.
 
         Parameters
         ----------
@@ -979,7 +1002,7 @@ class ARFFReader(DelimitedReader):
         quote_char : str, default="'"
             The quote character to ignore.
 
-        escape_char : str, default='\\\\'
+        escape_char : str, default='\\'
             The escape character.
         """
         return next(
@@ -988,6 +1011,8 @@ class ARFFReader(DelimitedReader):
 
     def _sub_read(self, file):
         """
+        Parse rows of ARFF file.
+
         Parameters
         ----------
         file : file buffer
@@ -1052,8 +1077,9 @@ class ARFFReader(DelimitedReader):
 
 def safe_float(text, replace_dict=None, logger=None):
     """
-    Attempts to convert a string to an int, and then a float, but if neither is
-    possible, returns the original string value.
+    Convert string to int and then float.
+
+    If neither is possible, return the original string value.
 
     Parameters
     ----------
@@ -1076,7 +1102,6 @@ def safe_float(text, replace_dict=None, logger=None):
     text : int or float or str
         The text value converted to int or float, if possible
     """
-
     # convert to str to be "Safe"!
     text = str(text)
 
