@@ -1,25 +1,26 @@
 #!/usr/bin/env python
 
 """
-This is a simple script to download and transform some example data from
+Create data for IRIS classification example.
+
+A script to download and transform some example data from
 sklearn.datasets.
 
 :author: Michael Heilman (mheilman@ets.org)
+:author: Nitin Madnani (nmadnani@ets.org)
 :organization: ETS
 """
 
 import json
-import os
 import sys
+from pathlib import Path
 
 import sklearn.datasets
 from sklearn.model_selection import train_test_split
 
 
 def main():
-    """
-    Download some example data and split it into training and test data.
-    """
+    """Download some example data and split it into training and test data."""
     print("Retrieving iris data from servers...", end="")
     iris_data = sklearn.datasets.load_iris()
     print("done")
@@ -37,10 +38,10 @@ def main():
 
     print("Writing training and testing files...", end="")
     for examples, suffix in [(examples_train, "train"), (examples_test, "test")]:
-        iris_dir = os.path.join("iris", suffix)
-        if not os.path.exists(iris_dir):
-            os.makedirs(iris_dir)
-        jsonlines_path = os.path.join(iris_dir, "example_iris_features.jsonlines")
+        iris_dir = Path("iris") / suffix
+        if not iris_dir.exists():
+            iris_dir.mkdir(parents=True)
+        jsonlines_path = iris_dir / "example_iris_features.jsonlines"
         with open(jsonlines_path, "w") as f:
             for ex in examples:
                 f.write(f"{json.dumps(ex)}\n")

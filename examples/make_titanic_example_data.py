@@ -1,24 +1,24 @@
 #!/usr/bin/env python
 """
-This is a simple script to split the train.csv and test.csv files from the
-Kaggle "Titanic: Machine Learning from Disaster" competition into the format
-titanic.cfg expects.
+Create data for Titanic classification example.
+
+A script to split the train.csv and test.csv files from the
+Kaggle "Titanic: Machine Learning from Disaster" competition
+into the format `titanic.cfg` expects.
 
 :author: Dan Blanchard (dblanchard@ets.org)
 :organization: ETS
 """
 
 import logging
-import os
 from itertools import chain
+from pathlib import Path
 
 from skll.data import Reader, Writer
 
 
 def main():
-    """
-    Create directories and split CSV files into subsets.
-    """
+    """Create directories and split CSV files into subsets."""
     logging.basicConfig(
         format="%(asctime)s - %(name)s - %(levelname)s - " "%(message)s", level=logging.INFO
     )
@@ -34,18 +34,16 @@ def main():
     features_to_keep = list(chain(*subset_dict.values()))
 
     # Create directories to store files
-    if not os.path.exists("titanic/train"):
-        logger.info("Creating titanic/train directory")
-        os.makedirs("titanic/train")
-    if not os.path.exists("titanic/dev"):
-        logger.info("Creating titanic/dev directory")
-        os.makedirs("titanic/dev")
-    if not os.path.exists("titanic/train+dev"):
-        logger.info("Creating titanic/train+dev directory")
-        os.makedirs("titanic/train+dev")
-    if not os.path.exists("titanic/test"):
-        logger.info("Creating titanic/test directory")
-        os.makedirs("titanic/test")
+    root_path = Path("titanic")
+    train_path = root_path / "train"
+    dev_path = root_path / "dev"
+    train_dev_path = root_path / "train+dev"
+    test_path = root_path / "test"
+
+    for path in [train_path, dev_path, train_dev_path, test_path]:
+        if not path.exists():
+            logger.info(f"Creating {path} directory")
+            path.mkdir(parents=True)
 
     usecols_train = features_to_keep + ["PassengerId", "Survived"]
     usecols_test = features_to_keep + ["PassengerId"]
