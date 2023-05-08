@@ -11,11 +11,10 @@ Handles loading data from various types of data files.
 
 import json
 import logging
-import os
-import re
 import sys
 from csv import DictWriter
 from decimal import Decimal
+from pathlib import Path
 
 import pandas as pd
 from scipy.sparse import issparse
@@ -28,7 +27,7 @@ class Writer(object):
 
     Parameters
     ----------
-    path : str
+    path : Union[str, Path]
         A path to the feature file we would like to create. The suffix
         to this filename must be ``.arff``, ``.csv``, ``.jsonlines``,
         ``.libsvm``, ``.ndj``, or ``.tsv``. If ``subsets``
@@ -62,18 +61,27 @@ class Writer(object):
     """
 
     def __init__(self, path, feature_set, **kwargs):
+        """Initialize base Writer class."""
         super(Writer, self).__init__()
 
         self.quiet = kwargs.pop("quiet", True)
-        self.path = path
+        self.path = Path(path)
         self.feat_set = feature_set
         self.subsets = kwargs.pop("subsets", None)
         logger = kwargs.pop("logger", None)
         self.logger = logger if logger else logging.getLogger(__name__)
 
-        # Get prefix & extension for checking file types & writing subset files
-        # TODO: Determine if we purposefully used this instead of os.path.split
-        self.root, self.ext = re.search(r"^(.*)(\.[^.]*)$", path).groups()
+        # Get prefix & extension for checking file types & writing subset files;
+        # since we also need to handle paths like "foo/.csv" for subset-writing
+        # we have to do a bit of introspection before figuring out the various
+        # parts of the path
+        parent, stem, suffix = self.path.parent, self.path.stem, self.path.suffix
+        if stem.startswith(".") and not suffix:
+            self.root = parent
+            self.ext = stem.lower()
+        else:
+            self.root = parent / stem
+            self.ext = suffix.lower()
         self._progress_msg = ""
         self._use_pandas = False
         if kwargs:
@@ -82,12 +90,11 @@ class Writer(object):
     @classmethod
     def for_path(cls, path, feature_set, **kwargs):
         """
-        Retrieve object of ``Writer`` sub-class that is
-        appropriate for given path.
+        Retrieve object of ``Writer`` sub-class appropriate for given path.
 
         Parameters
         ----------
-        path : str
+        path : Union[str, Path]
             A path to the feature file we would like to create. The
             suffix to this filename must be ``.arff``, ``.csv``,
             ``.jsonlines``, ``.libsvm``, ``.ndj``, or
@@ -111,14 +118,20 @@ class Writer(object):
             appropriate for the given path.
         """
         # Get lowercase extension for file extension checking
-        ext = f'.{path.rsplit(".", 1)[-1].lower()}'
+        # NOTE: the reason we are doing this complicated gymnastics
+        # instead of just using `path.suffix` is because sometimes
+        # `path` may look like `foo/.jsonlines` when we are writing
+        # subsets so we need to handle that edge case
+        path = Path(path)
+        stem, suffix = path.stem, path.suffix
+        if stem.startswith(".") and not suffix:
+            ext = stem.lower()
+        else:
+            ext = suffix.lower()
         return EXT_TO_WRITER[ext](path, feature_set, **kwargs)
 
     def write(self):
-        """
-        Writes out this Writer's ``FeatureSet`` to a file in its
-        format.
-        """
+        """Write out this Writer's ``FeatureSet`` to a file in its format."""
         if isinstance(self.feat_set.vectorizer, FeatureHasher):
             raise ValueError(
                 "Writer cannot write sets that use a " "FeatureHasher for vectorization."
@@ -132,16 +145,16 @@ class Writer(object):
         else:
             for subset_name, filter_features in self.subsets.items():
                 self.logger.debug(f"Subset ({subset_name}) features: " f"{filter_features}")
-                sub_path = os.path.join(self.root, f"{subset_name}{self.ext}")
+                sub_path = self.root / f"{subset_name}{self.ext}"
                 self._write_subset(sub_path, set(filter_features))
 
     def _write_subset(self, sub_path, filter_features):
         """
-        Writes out the given ``FeatureSet`` instance to a file in this class's format.
+        Write out given ``FeatureSet`` instance to a file in this class's format.
 
         Parameters
         ----------
-        sub_path : str
+        sub_path : Union[str, Path]
             The path to the file we want to create for this subset
             of our data.
 
@@ -184,6 +197,8 @@ class Writer(object):
 
     def _write_header(self, feature_set, output_file, filter_features):
         """
+        Write header to file.
+
         Called before lines are written to file, so that headers can be written
         for files that need them.
 
@@ -228,8 +243,7 @@ class Writer(object):
 
     def _write_data(self, feature_set, output_file, filter_features):
         """
-        Write the the full data set in the Writer's format using `pandas`,
-        rather than writing row-by-row.
+        Write full data set in Writer's format using `pandas`, rather than row-by-row.
 
         Parameters
         ----------
@@ -252,8 +266,7 @@ class Writer(object):
 
     def _get_column_names_and_indexes(self, feature_set, filter_features=None):
         """
-        Get the names of the columns and the associated
-        index numbers for the (possibly filtered) features.
+        Get names of columns and associated indices for (possibly filtered) features.
 
         Parameters
         ----------
@@ -298,8 +311,7 @@ class Writer(object):
 
     def _build_dataframe_with_features(self, feature_set, filter_features=None):
         """
-        Create a data frame with the (possibly filtered) features from the current
-        feature set.
+        Create and filter data frame from features in given feature set.
 
         Parameters
         ----------
@@ -341,8 +353,9 @@ class Writer(object):
 
     def _build_dataframe(self, feature_set, filter_features=None, df_features=None):
         """
-        Create the data frame with the (possibly filtered) features from the current
-        feature set. Then, add the IDs and labels, if applicable. If the data frame
+        Create and filter data frame with features in given feature set.
+
+        Add the IDs and labels, if applicable. If the data frame
         with features already exists, pass `df_features`. Then the IDs and labels will
         simply be added to the existing data frame containing the features.
 
@@ -397,7 +410,6 @@ class Writer(object):
 
 
 class CSVWriter(Writer):
-
     """
     Writer for writing out ``FeatureSet`` instances as CSV files.
 
@@ -422,6 +434,7 @@ class CSVWriter(Writer):
     """
 
     def __init__(self, path, feature_set, pandas_kwargs=None, **kwargs):
+        """Initialize the CSVWriter class."""
         self.label_col = kwargs.pop("label_col", "y")
         self.id_col = kwargs.pop("id_col", "id")
         super(CSVWriter, self).__init__(path, feature_set, **kwargs)
@@ -439,8 +452,8 @@ class CSVWriter(Writer):
         feature_set : skll.data.FeatureSet
             The ``FeatureSet`` instance being written to a file.
 
-        output_file : file buffer
-            The file being written to.
+        output_file : Union[str, Path]
+            The path of the file being written to
 
         filter_features : set of str
             If only writing a subset of the features in the
@@ -452,7 +465,6 @@ class CSVWriter(Writer):
 
 
 class TSVWriter(CSVWriter):
-
     """
     Writer for writing out FeatureSets as TSV files.
 
@@ -477,12 +489,12 @@ class TSVWriter(CSVWriter):
     """
 
     def __init__(self, path, feature_set, pandas_kwargs=None, **kwargs):
+        """Initialize the TSVWriter class."""
         super(TSVWriter, self).__init__(path, feature_set, pandas_kwargs, **kwargs)
         self._sep = str("\t")
 
 
 class ARFFWriter(Writer):
-
     """
     Writer for writing out FeatureSets as ARFF files.
 
@@ -509,6 +521,7 @@ class ARFFWriter(Writer):
     """
 
     def __init__(self, path, feature_set, **kwargs):
+        """Initialize the ARFFWRiter class."""
         self.relation = kwargs.pop("relation", "skll_relation")
         self.regression = kwargs.pop("regression", False)
         self.dialect = kwargs.pop("dialect", "excel-tab")
@@ -519,6 +532,8 @@ class ARFFWriter(Writer):
 
     def _write_header(self, feature_set, output_file, filter_features):
         """
+        Write headers to ARFF file.
+
         Called before lines are written to file, so that headers can be written
         for files that need them.
 
@@ -610,13 +625,12 @@ class ARFFWriter(Writer):
 
 
 class NDJWriter(Writer):
-
     """
     Writer for writing out FeatureSets as .jsonlines/.ndj files.
 
     Parameters
     ----------
-    path : str
+    path : Union[str, Path]
         A path to the feature file we would like to create.
         If ``subsets`` is not ``None``, this is assumed to be a string
         containing the path to the directory to write the feature
@@ -631,6 +645,7 @@ class NDJWriter(Writer):
     """
 
     def __init__(self, path, feature_set, **kwargs):
+        """Initialize the NDJWriter class."""
         super(NDJWriter, self).__init__(path, feature_set, **kwargs)
 
     def _write_line(self, id_, label_, feat_dict, output_file):
@@ -673,7 +688,6 @@ class NDJWriter(Writer):
 
 
 class LibSVMWriter(Writer):
-
     """
     Writer for writing out FeatureSets as LibSVM/SVMLight files.
 
@@ -702,6 +716,7 @@ class LibSVMWriter(Writer):
     }
 
     def __init__(self, path, feature_set, **kwargs):
+        """Initialize the LibSVMWriter class."""
         self.label_map = kwargs.pop("label_map", None)
         super(LibSVMWriter, self).__init__(path, feature_set, **kwargs)
         if self.label_map is None:
@@ -725,6 +740,8 @@ class LibSVMWriter(Writer):
     @staticmethod
     def _sanitize(name):
         """
+        Sanitize feature names for older feature formats.
+
         Replace illegal characters in class names with close unicode
         equivalents to make things loadable in by LibSVM, LibLinear, or
         SVMLight.
@@ -739,7 +756,6 @@ class LibSVMWriter(Writer):
         name : str
             The class names with unicode equivalent replacements.
         """
-
         if isinstance(name, str):
             for orig, replacement in LibSVMWriter.LIBSVM_REPLACE_DICT.items():
                 name = name.replace(orig, replacement)
@@ -763,7 +779,6 @@ class LibSVMWriter(Writer):
         output_file : file buffer
             The file being written to.
         """
-
         field_values = sorted(
             [
                 (self.feat_set.vectorizer.vocabulary_[field] + 1, value)
