@@ -11,8 +11,8 @@ Loads a trained model and outputs predictions based on input feature files.
 
 import argparse
 import logging
-import os
 import sys
+from pathlib import Path
 
 import numpy as np
 
@@ -23,7 +23,7 @@ from skll.version import __version__
 
 def main(argv=None):
     """
-    Handles command line arguments and gets things started.
+    Handle command line arguments and gets things started.
 
     Parameters
     ----------
@@ -31,7 +31,6 @@ def main(argv=None):
         List of arguments, as if specified on the command-line.
         If None, ``sys.argv[1:]`` is used instead.
     """
-
     # Get command line arguments
     parser = argparse.ArgumentParser(
         description="Loads a trained model and outputs predictions based "
@@ -158,7 +157,7 @@ def main(argv=None):
     # iterate over all the specified input files
     for i, input_file in enumerate(args.input_files):
         # make sure each file extension is one we can process
-        input_extension = os.path.splitext(input_file)[1].lower()
+        input_extension = Path(input_file).suffix.lower()
         if input_extension not in EXT_TO_READER:
             logger.error(
                 f"Input file must be in either .arff, .csv, "

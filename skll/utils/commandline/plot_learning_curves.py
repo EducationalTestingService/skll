@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 # License: BSD 3 clause
 """
-A Helper script to generate learning plots from the learning curve output TSV
-file.
+Generate learning plots from the learning curve output TSV file.
 
 This is necessary in scenarios where the plots were not generated as part of
 the original learning curve experiment, e.g. the experiment was run on a remote
@@ -19,8 +18,7 @@ then be used to generate the plots later.
 import argparse
 import logging
 import sys
-from os import makedirs
-from os.path import basename, exists
+from pathlib import Path
 
 from skll.experiments import generate_learning_curve_plots
 from skll.version import __version__
@@ -28,7 +26,7 @@ from skll.version import __version__
 
 def main(argv=None):
     """
-    Handles command line arguments and gets things started.
+    Handle command line arguments and gets things started.
 
     Parameters
     ----------
@@ -36,7 +34,6 @@ def main(argv=None):
         List of arguments, as if specified on the command-line.
         If None, ``sys.argv[1:]`` is used instead.
     """
-
     # Get command line arguments
     parser = argparse.ArgumentParser(
         description="Generates learning curve plots from the learning curve " "TSV file.",
@@ -52,18 +49,22 @@ def main(argv=None):
     logging.captureWarnings(True)
     logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - " "%(message)s")
 
+    # conver to Path objects
+    tsv_file = Path(args.tsv_file)
+    output_dir = Path(args.output_dir)
+
     # make sure that the input TSV file that's being passed exists
-    if not exists(args.tsv_file):
+    if not tsv_file.exists():
         logging.error(f"Error: the given file {args.tsv_file} does not " "exist.")
         sys.exit(1)
 
     # create the output directory if it doesn't already exist
-    if not exists(args.output_dir):
-        makedirs(args.output_dir)
+    if not output_dir.exists():
+        output_dir.mkdir(parents=True)
 
     # get the experiment name from the learning curve TSV file
     # output_file_name = experiment_name + '_summary.tsv'
-    experiment_name = basename(args.tsv_file).rstrip("_summary.tsv")
+    experiment_name = tsv_file.name.rstrip("_summary.tsv")
     logging.info("Generating learning curve(s)")
     generate_learning_curve_plots(experiment_name, args.output_dir, args.tsv_file)
 

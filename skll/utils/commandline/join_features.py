@@ -9,8 +9,8 @@ Script that joins a bunch of feature files together to create one file.
 
 import argparse
 import logging
-import os
 import sys
+from pathlib import Path
 
 from skll.data.readers import EXT_TO_READER
 from skll.data.writers import EXT_TO_WRITER, ARFFWriter, CSVWriter, TSVWriter
@@ -19,7 +19,7 @@ from skll.version import __version__
 
 def main(argv=None):
     """
-    Handles command line arguments and gets things started.
+    Handle command line arguments and gets things started.
 
     Parameters
     ----------
@@ -27,7 +27,6 @@ def main(argv=None):
         List of arguments, as if specified on the command-line.
         If None, ``sys.argv[1:]`` is used instead.
     """
-
     # Get command line arguments
     parser = argparse.ArgumentParser(
         description="Joins multiple input feature files together into one " " file.",
@@ -69,8 +68,8 @@ def main(argv=None):
     valid_extensions = {ext for ext in EXT_TO_READER if ext != ".libsvm"}
 
     # make sure the input file extensions are those we can process
-    input_extension_set = {os.path.splitext(inf)[1].lower() for inf in args.infile}
-    output_extension = os.path.splitext(args.outfile)[1].lower()
+    input_extension_set = {Path(inf).suffix.lower() for inf in args.infile}
+    output_extension = Path(args.outfile).suffix.lower()
 
     # make sure all the files are in the same format except libsvm files
     if len(input_extension_set) > 1:

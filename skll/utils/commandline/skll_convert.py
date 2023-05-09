@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # License: BSD 3 clause
 """
-Script that converts feature files from one format to another
+Script that converts feature files from one format to another.
 
 :author: Nitin Madnani (nmadnani@ets.org)
 :organization: ETS
@@ -9,8 +9,8 @@ Script that converts feature files from one format to another
 
 import argparse
 import logging
-import os
 import sys
+from pathlib import Path
 
 from bs4 import UnicodeDammit
 
@@ -27,10 +27,7 @@ from skll.version import __version__
 
 
 def _pair_to_dict_tuple(pair):
-    """
-    A helper function for constructing mappings from feature/class names to
-    numbers.
-    """
+    """Consturct mappings from feature/class names to numbers."""
     number, name = pair.split("=")
     number = int(number)
     return (name, number)
@@ -38,7 +35,7 @@ def _pair_to_dict_tuple(pair):
 
 def main(argv=None):
     """
-    Handles command line arguments and gets things started.
+    Handle command line arguments and gets things started.
 
     Parameters
     ----------
@@ -46,7 +43,6 @@ def main(argv=None):
         List of arguments, as if specified on the command-line.
         If None, ``sys.argv[1:]`` is used instead.
     """
-
     # Get command line arguments
     parser = argparse.ArgumentParser(
         description="Takes an input feature file and converts it to another "
@@ -113,8 +109,8 @@ def main(argv=None):
     logger = logging.getLogger(__name__)
 
     # make sure the input file extension is one we can process
-    input_extension = os.path.splitext(args.infile)[1].lower()
-    output_extension = os.path.splitext(args.outfile)[1].lower()
+    input_extension = Path(args.infile).suffix.lower()
+    output_extension = Path(args.outfile).suffix.lower()
 
     if input_extension not in EXT_TO_READER:
         logger.error(

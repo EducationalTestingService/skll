@@ -10,8 +10,8 @@ Filter a given feature file to remove unwanted features, labels, or IDs.
 
 import argparse
 import logging
-import os
 import sys
+from pathlib import Path
 
 from skll.data.readers import EXT_TO_READER, safe_float
 from skll.data.writers import EXT_TO_WRITER, ARFFWriter, CSVWriter, TSVWriter
@@ -20,7 +20,7 @@ from skll.version import __version__
 
 def main(argv=None):
     """
-    Handles command line arguments and gets things started.
+    Handle command line arguments and gets things started.
 
     Parameters
     ----------
@@ -28,7 +28,6 @@ def main(argv=None):
         List of arguments, as if specified on the command-line.
         If None, ``sys.argv[1:]`` is used instead.
     """
-
     # Get command line arguments
     parser = argparse.ArgumentParser(
         description="Takes an input feature file and removes any instances or"
@@ -124,8 +123,8 @@ def main(argv=None):
     valid_extensions = {ext for ext in EXT_TO_READER if ext != ".libsvm"}
 
     # make sure the input file extension is one we can process
-    input_extension = os.path.splitext(args.infile)[1].lower()
-    output_extension = os.path.splitext(args.outfile)[1].lower()
+    input_extension = Path(args.infile).suffix.lower()
+    output_extension = Path(args.outfile).suffix.lower()
 
     if input_extension == ".libsvm":
         logger.error(
