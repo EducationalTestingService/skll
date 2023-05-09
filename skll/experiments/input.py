@@ -7,7 +7,7 @@ Functions for reading inputs for SKLL experiments.
 :author: Michael Heilman (mheilman@ets.org)
 """
 
-from os.path import isfile, join
+from pathlib import Path
 
 from skll.data.readers import Reader
 
@@ -30,7 +30,7 @@ def load_featureset(
 
     Parameters
     ----------
-    dir_path : str
+    dir_path : Union[str, Path]
         Path to the directory that contains the feature files.
     feat_files : list of str
         A list of feature file prefixes.
@@ -78,9 +78,12 @@ def load_featureset(
         A ``FeatureSet`` instance containing the specified labels, IDs, features,
         and feature vectorizer.
     """
+    # convert to Path object
+    dir_path = Path(dir_path)
+
     # if the training file is specified via train_file, then dir_path
     # actually contains the entire file name
-    if isfile(dir_path):
+    if dir_path.is_file():
         return Reader.for_path(
             dir_path,
             label_col=label_col,
@@ -100,7 +103,7 @@ def load_featureset(
                 "feature file separately."
             )
         merged_set = None
-        for file_name in sorted(join(dir_path, featfile + suffix) for featfile in feat_files):
+        for file_name in sorted(dir_path / f"{featfile}{suffix}" for featfile in feat_files):
             fs = Reader.for_path(
                 file_name,
                 label_col=label_col,

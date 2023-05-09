@@ -12,7 +12,7 @@ import datetime
 import json
 import logging
 from itertools import combinations
-from os.path import exists, getsize, join
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -73,7 +73,6 @@ def _classify_featureset(args):  # noqa: C901
     ValueError
         If extra unknown arguments are passed to the function.
     """
-
     # Extract all the arguments.
     # (There doesn't seem to be a better way to do this since one can't specify
     # required keyword arguments.)
@@ -220,8 +219,8 @@ def _classify_featureset(args):  # noqa: C901
 
         # check whether a trained model on the same data with the same
         # featureset already exists if so, load it and then use it on test data
-        modelfile = join(model_path, f"{job_name}.model")
-        if task in ["cross_validate", "learning_curve"] or not exists(modelfile) or overwrite:
+        modelfile = Path(model_path) / f"{job_name}.model"
+        if task in ["cross_validate", "learning_curve"] or not modelfile.exists() or overwrite:
             train_examples = load_featureset(
                 train_path,
                 featureset,
@@ -298,7 +297,7 @@ def _classify_featureset(args):  # noqa: C901
             train_set_size = "unknown"
 
             # load the non-custom learner from disk
-            if exists(modelfile) and not overwrite:
+            if modelfile.exists() and not overwrite:
                 logger.info(f"Loading pre-existing {learner_name} model: " f"{modelfile}")
             if learner_name in ["VotingClassifier", "VotingRegressor"]:
                 learner = VotingLearner.from_file(modelfile, logger=logger)
@@ -418,7 +417,7 @@ def _classify_featureset(args):  # noqa: C901
 
             if models:
                 for index, m in enumerate(models, start=1):
-                    modelfile = join(model_path, f"{job_name}_fold{index}.model")
+                    modelfile = Path(model_path) / f"{job_name}_fold{index}.model"
                     m.save(modelfile)
 
         elif task == "learning_curve":
@@ -437,7 +436,7 @@ def _classify_featureset(args):  # noqa: C901
             # if we do not have a saved model, we need to train one
             grid_scores = [None]
             grid_search_cv_results_dicts = [None]
-            if not exists(modelfile) or overwrite:
+            if not modelfile.exists() or overwrite:
                 logger.info(f"Featurizing and training new {learner_name} " "model")
 
                 # set up the keyword arguments for learner training;
@@ -523,7 +522,7 @@ def _classify_featureset(args):  # noqa: C901
         learner_result_dict_base["total_time"] = str(total_time)
 
         if task == "cross_validate" or task == "evaluate":
-            results_json_path = join(results_path, f"{job_name}.results.json")
+            results_json_path = Path(results_path) / f"{job_name}.results.json"
 
             res = _create_learner_result_dicts(
                 task_results, grid_scores, grid_search_cv_results_dicts, learner_result_dict_base
@@ -533,11 +532,11 @@ def _classify_featureset(args):  # noqa: C901
             with open(results_json_path, "w") as json_file:
                 json.dump(res, json_file, cls=NumpyTypeEncoder)
 
-            with open(join(results_path, f"{job_name}.results"), "w") as output_file:
+            with open(Path(results_path) / f"{job_name}.results", "w") as output_file:
                 _print_fancy_output(res, output_file)
 
         elif task == "learning_curve":
-            results_json_path = join(results_path, f"{job_name}.results.json")
+            results_json_path = Path(results_path) / f"{job_name}.results.json"
 
             res = {}
             res.update(learner_result_dict_base)
@@ -563,7 +562,7 @@ def _classify_featureset(args):  # noqa: C901
         # For all other tasks, i.e. train or predict
         else:
             if results_path:
-                results_json_path = join(results_path, f"{job_name}.results.json")
+                results_json_path = Path(results_path) / f"{job_name}.results.json"
 
                 assert len(grid_scores) == 1
                 assert len(grid_search_cv_results_dicts) == 1
@@ -580,7 +579,7 @@ def _classify_featureset(args):  # noqa: C901
         # write out the cv folds if required
         if task == "cross_validate" and save_cv_folds:
             skll_fold_ids_file = f"{experiment_name}_skll_fold_ids.csv"
-            with open(join(results_path, skll_fold_ids_file), "w") as output_file:
+            with open(Path(results_path) / skll_fold_ids_file, "w") as output_file:
                 _write_skll_folds(skll_fold_ids, output_file)
 
     finally:
@@ -602,11 +601,11 @@ def run_configuration(
     log_level=logging.INFO,
 ):
     """
-    Takes a configuration file and runs the specified jobs on the grid.
+    Run jobs specified in the configuration file locally or on the grid.
 
     Parameters
     ----------
-    config_file : str
+    config_file : Union[str, Path]
         Path to the configuration file we would like to use.
     local : bool, optional
         Should this be run locally instead of on the cluster?
@@ -658,7 +657,6 @@ def run_configuration(
     OSError
         If the lenth of the ``FeatureSet`` name > 210.
     """
-
     try:
         # Read configuration
         (
@@ -833,20 +831,20 @@ def run_configuration(
                     job_name = "_".join(job_name_components)
 
                     # change the prediction prefix to include the feature set
-                    prediction_prefix = join(prediction_dir, job_name)
+                    prediction_prefix = str(Path(prediction_dir) / job_name)
 
                     # the log file that stores the actual output of this script (e.g.,
                     # the tuned parameters, what kind of experiment was run, etc.)
-                    logfile = join(log_path, f"{job_name}.log")
+                    logfile = Path(log_path) / f"{job_name}.log"
 
                     # Figure out result json file path
-                    result_json_path = join(results_path, f"{job_name}.results.json")
+                    result_json_path = Path(results_path) / f"{job_name}.results.json"
 
                     # save the path to the results json file that will be written
-                    result_json_paths.append(result_json_path)
+                    result_json_paths.append(str(result_json_path))
 
                     # If result file already exists and we're resuming, move on
-                    if resume and (exists(result_json_path) and getsize(result_json_path)):
+                    if resume and (result_json_path.exists() and result_json_path.stat().st_size):
                         logger.info(
                             "Running in resume mode and "
                             f"{result_json_path} exists, so skipping "
@@ -948,11 +946,11 @@ def run_configuration(
         # write out the summary results file
         if (task == "cross_validate" or task == "evaluate") and write_summary:
             summary_file_name = f"{experiment_name}_summary.tsv"
-            with open(join(results_path, summary_file_name), "w", newline="") as output_file:
+            with open(Path(results_path) / summary_file_name, "w", newline="") as output_file:
                 _write_summary_file(result_json_paths, output_file, ablation=ablation)
         elif task == "learning_curve":
             output_file_name = f"{experiment_name}_summary.tsv"
-            output_file_path = join(results_path, output_file_name)
+            output_file_path = Path(results_path) / output_file_name
             with open(output_file_path, "w", newline="") as output_file:
                 _write_learning_curve_file(result_json_paths, output_file)
 

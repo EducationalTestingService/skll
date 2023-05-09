@@ -13,7 +13,7 @@ import json
 import math
 import sys
 from collections import defaultdict
-from os.path import exists, join
+from pathlib import Path
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -46,7 +46,6 @@ def _compute_ylimits_for_featureset(df, metrics):
         A dictionary, with metric names as keys
         and a tuple of (lower_limit, upper_limit) as values.
     """
-
     # set the y-limits of the curves depending on what kind
     # of values the metric produces
     ylimits = {}
@@ -80,18 +79,19 @@ def _compute_ylimits_for_featureset(df, metrics):
 
 def generate_learning_curve_plots(experiment_name, output_dir, learning_curve_tsv_file):
     """
-    Generate the learning curve plots given the TSV output
-    file from a learning curve experiment.
+    Generate learning curves using the TSV output file from a learning curve experiment.
 
     Parameters
     ----------
     experiment_name : str
         The name of the experiment.
-    output_dir : str
+    output_dir : Union[str, Path]
         Path to the output directory for the plots.
     learning_curve_tsv_file : str
         The path to the learning curve TSV file.
     """
+    # convert output_dir to Path object
+    output_dir = Path(output_dir)
 
     # use pandas to read in the TSV file into a data frame
     # and massage it from wide to long format for plotting
@@ -198,15 +198,14 @@ def generate_learning_curve_plots(experiment_name, output_dir, learning_curve_ts
                                 frameon=True,
                             )
             g.fig.tight_layout(w_pad=1)
-            plt.savefig(join(output_dir, f"{experiment_name}_{fs_name}.png"), dpi=300)
+            plt.savefig(output_dir / f"{experiment_name}_{fs_name}.png", dpi=300)
             # explicitly close figure to save memory
             plt.close(fig)
 
 
 def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
     """
-    Function to take all of the results from all of the folds and print
-    nice tables with the results.
+    Print nice tables with all of the results from cross-validation folds.
 
     Parameters
     ----------
@@ -293,9 +292,10 @@ def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
 
 def _write_learning_curve_file(result_json_paths, output_file):
     """
-    Function to take a list of paths to individual learning curve
-    results json files and writes out a single TSV file with the
-    learning curve data.
+    Combine individual learning curve results JSON files into single TSV.
+
+    Take a list of paths to individual learning curve results json files and
+    write out a single TSV file with the learning curve data.
 
     Parameters
     ----------
@@ -304,13 +304,13 @@ def _write_learning_curve_file(result_json_paths, output_file):
     output_file : str
         The path to the output file (TSV format).
     """
-
     learner_result_dicts = []
 
     # Map from feature set names to all features in them
     logger = get_skll_logger("experiment")
     for json_path in result_json_paths:
-        if not exists(json_path):
+        json_path = Path(json_path)
+        if not json_path.exists():
             logger.error(
                 f"JSON results file {json_path} not found. Skipping "
                 "summary creation. You can manually create the "
@@ -373,8 +373,7 @@ def _write_learning_curve_file(result_json_paths, output_file):
 
 def _write_skll_folds(skll_fold_ids, skll_fold_ids_file):
     """
-    Function to take a dictionary of id->test-fold-number and
-    write it to a file.
+    Take a dictionary of id->test-fold-number and write it to a file.
 
     Parameters
     ----------
@@ -383,7 +382,6 @@ def _write_skll_folds(skll_fold_ids, skll_fold_ids_file):
     skll_fold_ids_file : file buffer
         An open file handler to write to.
     """
-
     f = csv.writer(skll_fold_ids_file)
     f.writerow(["id", "cv_test_fold"])
     for example_id in skll_fold_ids:
@@ -394,9 +392,10 @@ def _write_skll_folds(skll_fold_ids, skll_fold_ids_file):
 
 def _write_summary_file(result_json_paths, output_file, ablation=0):
     """
-    Function to take a list of paths to individual result
-    json files and returns a single file that summarizes
-    all of them.
+    Summarize individual result JSON files.
+
+    Take a list of paths to individual result json files and return a single
+    file that summarizes all of them.
 
     Parameters
     ----------
@@ -413,7 +412,8 @@ def _write_summary_file(result_json_paths, output_file, ablation=0):
     all_features = defaultdict(set)
     logger = get_skll_logger("experiment")
     for json_path in result_json_paths:
-        if not exists(json_path):
+        json_path = Path(json_path)
+        if not json_path.exists():
             logger.error(
                 f"JSON results file {json_path} not found. Skipping "
                 "summary creation. You can manually create the "
