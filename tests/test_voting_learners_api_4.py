@@ -7,7 +7,6 @@ Cross-validation tests without grid search for voting learners.
 """
 
 from itertools import product
-from os.path import exists
 from pathlib import Path
 
 import numpy as np
@@ -33,23 +32,23 @@ FS_DIGITS, _ = make_digits_data(test_size=0, use_digit_names=True)
 TRAIN_FS_HOUSING, TEST_FS_HOUSING = make_california_housing_data(num_examples=2000)
 FS_HOUSING, _ = make_california_housing_data(num_examples=2000, test_size=0)
 FS_HOUSING.ids = np.arange(2000)
-CUSTOM_LEARNER_PATH = Path(other_dir) / "custom_logistic_wrapper.py"
+CUSTOM_LEARNER_PATH = other_dir / "custom_logistic_wrapper.py"
 
 
 def setup():
-    """Set up the tests"""
+    """Set up the tests."""
     for dir_path in [other_dir, output_dir]:
-        Path(dir_path).mkdir(exist_ok=True)
+        dir_path.mkdir(exist_ok=True)
 
 
 def tearDown():
-    """Clean up after tests"""
-    for output_file_path in Path(output_dir).glob("test_xval_voting_no_gs*"):
+    """Clean up after tests."""
+    for output_file_path in output_dir.glob("test_xval_voting_no_gs*"):
         output_file_path.unlink()
 
 
 def test_cross_validate_with_continuous_labels():
-    """Test that voting learner cross validation fails with continuous labels"""
+    """Test that voting learner cross validation fails with continuous labels."""
     fs, _ = make_classification_data(
         num_examples=500, train_test_ratio=0.8, num_labels=3, non_negative=True
     )
@@ -65,7 +64,7 @@ def test_cross_validate_with_continuous_labels():
 
 
 def test_cross_validate_grid_search_but_no_objective():
-    """Test that voting learner cross validation fails with continuous labels"""
+    """Test that voting learner cross validation fails with continuous labels."""
     fs, _ = make_classification_data(
         num_examples=500, train_test_ratio=0.8, num_labels=3, non_negative=True
     )
@@ -89,7 +88,7 @@ def check_cross_validate_without_grid_search(
 
     # set the prediction prefix in case we need to write out the predictions
     prediction_prefix = (
-        Path(output_dir) / f"test_xval_voting_no_gs_" f"{learner_type}_" f"{with_soft_voting}"
+        output_dir / f"test_xval_voting_no_gs_" f"{learner_type}_" f"{with_soft_voting}"
     )
     prediction_prefix = str(prediction_prefix)
 
@@ -236,7 +235,8 @@ def check_cross_validate_without_grid_search(
     # `predict()` anyway
     if with_individual_predictions:
         for learner_name in learner_names:
-            ok_(exists(f"{prediction_prefix}_{learner_name}_predictions.tsv"))
+            prediction_path = Path(f"{prediction_prefix}_{learner_name}_predictions.tsv")
+            ok_(prediction_path.exists())
 
 
 def test_cross_validate_without_grid_search():

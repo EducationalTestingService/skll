@@ -12,7 +12,6 @@ tested comprehensively in ``test_voting_learners_api_3.py``.
 """
 
 from itertools import product
-from os.path import join
 from pathlib import Path
 from unittest.mock import DEFAULT, patch
 
@@ -31,9 +30,9 @@ from tests.utils import (
 
 
 def setup():
-    """Set up the tests"""
+    """Set up the tests."""
     for dir_path in [train_dir, test_dir, output_dir]:
-        Path(dir_path).mkdir(exist_ok=True)
+        dir_path.mkdir(exist_ok=True)
 
     # create the training and test data files that we will use
     create_jsonlines_feature_files(train_dir)
@@ -41,14 +40,14 @@ def setup():
 
 
 def tearDown():
-    """Clean up after tests"""
-    for output_file_path in Path(output_dir).glob("test_voting_learner_predict*"):
+    """Clean up after tests."""
+    for output_file_path in output_dir.glob("test_voting_learner_predict*"):
         output_file_path.unlink()
 
     for output_file_path in Path(".").glob("test_voting_learner_predict*"):
         output_file_path.unlink()
 
-    config_file_path = Path(config_dir) / "test_voting_learner_predict.cfg"
+    config_file_path = config_dir / "test_voting_learner_predict.cfg"
     config_file_path.unlink()
 
     remove_jsonlines_feature_files(train_dir)
@@ -56,8 +55,7 @@ def tearDown():
 
 
 def check_predict_task(learner_type, options_dict):
-    """Check given combination of prediction configuration options"""
-
+    """Check given combination of prediction configuration options."""
     # create a configuration file with the given options
     (
         config_path,
@@ -177,17 +175,17 @@ def check_predict_task(learner_type, options_dict):
             eq_(
                 mocks["save"].call_count, len(objectives) if options_dict["with_grid_search"] else 1
             )
-            eq_(mocks["save"].call_args[0][0], join(output_dir, f"{job_name}.model"))
+            eq_(mocks["save"].call_args[0][0], output_dir / f"{job_name}.model")
         else:
             eq_(mock_vl_from_file.call_count, 1)
-            eq_(mock_vl_from_file.call_args[0][0], join(other_dir, f"{job_name}.model"))
+            eq_(mock_vl_from_file.call_args[0][0], other_dir / f"{job_name}.model")
 
         # check that predict was called the expected number of times
         eq_(mocks["predict"].call_count, len(objectives) if options_dict["with_grid_search"] else 1)
 
         # check that each predict call had the expected arguments
         expected_predict_kwargs = {
-            "prediction_prefix": join(output_dir, job_name)
+            "prediction_prefix": str(output_dir / job_name)
             if options_dict["with_prediction_prefix"]
             else job_name,
             "individual_predictions": options_dict["with_individual_predictions"],

@@ -1,7 +1,6 @@
 # License: BSD 3 clause
 """
-Module for running a bunch of simple unit tests. Should be expanded more in
-the future.
+Run tests with regression learners.
 
 :author: Michael Heilman (mheilman@ets.org)
 :author: Nitin Madnani (nmadnani@ets.org)
@@ -12,10 +11,7 @@ the future.
 import math
 import re
 import warnings
-from glob import glob
-from itertools import product
-from os.path import join
-from pathlib import Path
+from itertools import chain, product
 
 import numpy as np
 from nose.tools import (
@@ -38,7 +34,7 @@ from skll.data import FeatureSet, NDJReader, NDJWriter
 from skll.experiments import run_configuration
 from skll.learner import Learner
 from skll.learner.utils import rescaled
-from skll.utils.constants import CLASSIFICATION_ONLY_METRICS, KNOWN_DEFAULT_PARAM_GRIDS
+from skll.utils.constants import CLASSIFICATION_ONLY_METRICS
 from tests import config_dir, other_dir, output_dir, test_dir, train_dir
 from tests.utils import (
     fill_in_config_paths_for_fancy_output,
@@ -46,34 +42,27 @@ from tests.utils import (
     unlink,
 )
 
-_ALL_MODELS = list(KNOWN_DEFAULT_PARAM_GRIDS.keys())
-
 
 def setup():
-    """
-    Create necessary directories for testing.
-    """
+    """Create necessary directories for testing."""
     for dir_path in [train_dir, test_dir, output_dir]:
-        Path(dir_path).mkdir(exist_ok=True)
+        dir_path.mkdir(exist_ok=True)
 
 
 def tearDown():
-    """
-    Clean up after tests.
-    """
-
+    """Clean up after tests."""
     for dir_path in [train_dir, test_dir]:
-        unlink(Path(dir_path) / "fancy_train.jsonlines")
+        unlink(dir_path / "fancy_train.jsonlines")
 
-    for output_file in (
-        glob(join(output_dir, "regression_fancy_output*"))
-        + glob(join(output_dir, "test_int_labels_cv*"))
-        + [join(test_dir, "fancy_test.jsonlines")]
+    for output_file in chain(
+        output_dir.glob("regression_fancy_output*"),
+        output_dir.glob("test_int_labels_cv*"),
+        [test_dir / "fancy_test.jsonlines"],
     ):
         unlink(output_file)
 
     for file_name in ["test_regression_fancy_output.cfg", "test_int_labels_cv.cfg"]:
-        unlink(Path(config_dir) / file_name)
+        unlink(config_dir / file_name)
 
 
 # a utility function to check rescaling for linear models
@@ -222,11 +211,11 @@ def test_linear_models():
 def check_non_linear_models(name, use_feature_hashing=False, use_rescaling=False):
     # create a FeatureSet object with the data we want to use
     if use_feature_hashing:
-        train_fs, test_fs, weightdict = make_regression_data(
+        train_fs, test_fs, _ = make_regression_data(
             num_examples=5000, num_features=10, use_feature_hashing=True, feature_bins=5
         )
     else:
-        train_fs, test_fs, weightdict = make_regression_data(num_examples=2000, num_features=3)
+        train_fs, test_fs, _ = make_regression_data(num_examples=2000, num_features=3)
 
     # create the learner
     if use_rescaling:
@@ -373,19 +362,20 @@ def test_ensemble_models():
 
 def test_int_labels():
     """
-    Testing that SKLL can take integer input.
+    Test that SKLL can take integer input.
+
     This is just to test that SKLL can take int labels in the input
     (rather than floats or strings).  For v1.0.0, it could not because the
     json package doesn't know how to serialize numpy.int64 objects.
     """
-    config_template_path = join(config_dir, "test_int_labels_cv.template.cfg")
-    config_path = join(config_dir, "test_int_labels_cv.cfg")
+    config_template_path = config_dir / "test_int_labels_cv.template.cfg"
+    config_path = config_dir / "test_int_labels_cv.cfg"
 
     config = _setup_config_parser(config_template_path, validate=False)
-    config.set("Input", "train_file", join(other_dir, "test_int_labels_cv.jsonlines"))
-    config.set("Output", "results", output_dir)
-    config.set("Output", "logs", output_dir)
-    config.set("Output", "predictions", output_dir)
+    config.set("Input", "train_file", str(other_dir / "test_int_labels_cv.jsonlines"))
+    config.set("Output", "results", str(output_dir))
+    config.set("Output", "logs", str(output_dir))
+    config.set("Output", "predictions", str(output_dir))
 
     with open(config_path, "w") as new_config_file:
         config.write(new_config_file)
@@ -394,9 +384,7 @@ def test_int_labels():
 
 
 def test_additional_metrics():
-    """
-    Test additional metrics in the results file for a regressor
-    """
+    """Test additional metrics in the results file for a regressor."""
     train_fs, test_fs, _ = make_regression_data(num_examples=2000, num_features=3)
 
     # train a regression model using the train feature set
@@ -413,9 +401,7 @@ def test_additional_metrics():
 
 
 def test_fancy_output():
-    """
-    Test the descriptive statistics output in the results file for a regressor
-    """
+    """Test the descriptive statistics output in the results file for a regressor."""
     train_fs, test_fs, _ = make_regression_data(num_examples=2000, num_features=3)
 
     # train a regression model using the train feature set
@@ -428,14 +414,16 @@ def test_fancy_output():
     pred_stats_from_api = dict(resultdict[2]["descriptive"]["predicted"])
 
     # write out the training and test feature set
-    train_writer = NDJWriter(join(train_dir, "fancy_train.jsonlines"), train_fs)
+    train_file = train_dir / "fancy_train.jsonlines"
+    train_writer = NDJWriter(train_file, train_fs)
     train_writer.write()
-    test_writer = NDJWriter(join(test_dir, "fancy_test.jsonlines"), test_fs)
+    test_file = test_dir / "fancy_test.jsonlines"
+    test_writer = NDJWriter(test_file, test_fs)
     test_writer.write()
 
     # now get the config file template, fill it in and run it
     # so that we can get a results file
-    config_template_path = join(config_dir, "test_regression_fancy_output.template.cfg")
+    config_template_path = config_dir / "test_regression_fancy_output.template.cfg"
     config_path = fill_in_config_paths_for_fancy_output(config_template_path)
 
     run_configuration(config_path, quiet=True, local=True)
@@ -444,11 +432,8 @@ def test_fancy_output():
     actual_stats_from_file = {}
     pred_stats_from_file = {}
     with open(
-        join(
-            output_dir,
-            "regression_fancy_output_train_fancy_train.jsonlines_"
-            "test_fancy_test.jsonlines_LinearRegression.results",
-        )
+        output_dir / "regression_fancy_output_train_fancy_train.jsonlines_test_"
+        "fancy_test.jsonlines_LinearRegression.results"
     ) as resultf:
         result_output = resultf.read().strip().split("\n")
         for desc_stat_line in result_output[26:30]:
@@ -605,18 +590,13 @@ def test_dummy_regressor_predict():
 
 @raises(ValueError)
 def test_learner_api_rescaling_classifier():
-    """
-    Check that rescaling fails for classifiers
-    """
-
+    """Check that rescaling fails for classifiers."""
     _ = rescaled(LogisticRegression)
 
 
 @raises(ValueError)
 def check_invalid_regression_grid_objective(learner, grid_objective):
-    """
-    Checks whether the grid objective function is valid for this regressor
-    """
+    """Check whether the grid objective function is valid for this regressor."""
     (train_fs, _, _) = make_regression_data()
     clf = Learner(learner)
     clf.train(train_fs, grid_objective=grid_objective)
@@ -649,9 +629,7 @@ def test_invalid_regression_grid_objective():
 
 @raises(ValueError)
 def check_invalid_regression_metric(learner, metric, by_itself=False):
-    """
-    Checks that invalid metrics raise exceptions
-    """
+    """Check that invalid metrics raise exceptions."""
     (train_fs, test_fs, _) = make_regression_data()
     clf = Learner(learner)
     clf.train(train_fs, grid_search=False)
@@ -686,8 +664,8 @@ def test_invalid_regression_metric():
 
 
 def test_train_non_sparse_featureset():
-    """Test that we can train a regressor on a non-sparse featureset"""
-    train_file = join(other_dir, "test_int_labels_cv.jsonlines")
+    """Test that we can train a regressor on a non-sparse featureset."""
+    train_file = other_dir / "test_int_labels_cv.jsonlines"
     train_fs = NDJReader.for_path(train_file, sparse=False).read()
     learner = Learner("LinearRegression")
     learner.train(train_fs, grid_search=False)
@@ -696,8 +674,8 @@ def test_train_non_sparse_featureset():
 
 @raises(TypeError)
 def test_train_string_labels():
-    """Test that regression on string labels raises TypeError"""
-    train_file = join(other_dir, "test_int_labels_cv.jsonlines")
+    """Test that regression on string labels raises TypeError."""
+    train_file = other_dir / "test_int_labels_cv.jsonlines"
     train_fs = NDJReader.for_path(train_file).read()
     train_fs.labels = train_fs.labels.astype("str")
     learner = Learner("LinearRegression")
@@ -705,10 +683,9 @@ def test_train_string_labels():
 
 
 def test_non_negative_regression():
-    """Test that non-negative regression works as expected"""
-
+    """Test that non-negative regression works as expected."""
     # read in the example training data into a featureset
-    train_path = join(train_dir, "test_non_negative.jsonlines")
+    train_path = train_dir / "test_non_negative.jsonlines"
     train_fs = NDJReader.for_path(train_path).read()
 
     # train a regular SKLL linear regerssion learner first

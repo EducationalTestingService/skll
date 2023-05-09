@@ -1,11 +1,8 @@
-"""
-Utility functions to make SKLL testing simpler.
-"""
+"""Utility functions to make SKLL testing simpler."""
 
 import re
 from collections import OrderedDict
 from math import floor, log10
-from os.path import exists, join
 from pathlib import Path
 from typing import Union
 
@@ -31,6 +28,7 @@ class BoolDict(dict):
     """Dictionary that returns ``False`` instead of ``None`` as default."""
 
     def __getitem__(self, key):
+        """Get item for given key."""
         return super().get(key, False)
 
 
@@ -40,9 +38,9 @@ def unlink(file_path: Union[str, Path]):
 
     Parameters
     ----------
-    file_path : str/Path
+    file_path : Union[str, Path]
+        File path to remove.
     """
-
     file_path = Path(file_path)
     if file_path.exists():
         file_path.unlink()
@@ -56,20 +54,22 @@ def fill_in_config_paths(config_template_path):
 
     Parameters
     ----------
-    config_template_path : str
+    config_template_path : Union[str, Path]
         The path to the template configuration file.
 
     Returns
     -------
-    str
+    Path
         The path to the filled configuration file.
     """
+    # convert path to Path object
+    config_template_path = Path(config_template_path)
 
     config = _setup_config_parser(config_template_path, validate=False)
 
     task = config.get("General", "task")
 
-    config.set("Input", "train_directory", train_dir)
+    config.set("Input", "train_directory", str(train_dir))
 
     to_fill_in = ["logs"]
 
@@ -83,23 +83,23 @@ def fill_in_config_paths(config_template_path):
         to_fill_in.append("results")
 
     for d in to_fill_in:
-        config.set("Output", d, join(output_dir))
+        config.set("Output", d, str(output_dir))
 
     if task == "cross_validate":
         folds_file = config.get("Input", "folds_file")
         if folds_file:
-            config.set("Input", "folds_file", join(train_dir, folds_file))
+            config.set("Input", "folds_file", str(train_dir / folds_file))
 
     if task == "predict" or task == "evaluate":
-        config.set("Input", "test_directory", test_dir)
+        config.set("Input", "test_directory", str(test_dir))
 
     # set up custom learner path, if relevant
     custom_learner_path = config.get("Input", "custom_learner_path")
-    custom_learner_abs_path = join(_my_dir, custom_learner_path)
-    config.set("Input", "custom_learner_path", custom_learner_abs_path)
+    custom_learner_abs_path = _my_dir / custom_learner_path
+    config.set("Input", "custom_learner_path", str(custom_learner_abs_path))
 
-    config_prefix = re.search(r"^(.*)\.template\.cfg", config_template_path).groups()[0]
-    new_config_path = f"{config_prefix}.cfg"
+    config_prefix = re.search(r"^(.*)\.template\.cfg", str(config_template_path)).groups()[0]
+    new_config_path = Path(f"{config_prefix}.cfg")
 
     with open(new_config_path, "w") as new_config_file:
         config.write(new_config_file)
@@ -118,7 +118,7 @@ def fill_in_config_paths_for_single_file(
 
     Parameters
     ----------
-    config_template_path : str
+    config_template_path : Union[str, Path]
         Path to the template configuration file.
     train_file : str
         Name of the training data file.
@@ -133,23 +133,25 @@ def fill_in_config_paths_for_single_file(
 
     Returns
     -------
-    str
+    Path
         The path to the filled configuration file.
     """
+    # convert path to Path object if it's a string
+    config_template_path = Path(config_template_path)
 
     config = _setup_config_parser(config_template_path, validate=False)
 
     task = config.get("General", "task")
 
-    config.set("Input", "train_file", join(train_dir, train_file))
+    config.set("Input", "train_file", str(train_dir / train_file))
     if task == "predict" or task == "evaluate":
-        config.set("Input", "test_file", join(test_dir, test_file))
+        config.set("Input", "test_file", str(test_dir / test_file))
 
     if train_directory:
-        config.set("Input", "train_directory", join(train_dir, train_directory))
+        config.set("Input", "train_directory", str(train_dir / train_directory))
 
     if test_directory:
-        config.set("Input", "test_directory", join(test_dir, test_directory))
+        config.set("Input", "test_directory", str(test_dir / test_directory))
 
     to_fill_in = ["logs"]
     if task != "train":
@@ -165,15 +167,15 @@ def fill_in_config_paths_for_single_file(
         to_fill_in.append("results")
 
     for d in to_fill_in:
-        config.set("Output", d, join(output_dir))
+        config.set("Output", d, str(output_dir))
 
     if task == "cross_validate":
         folds_file = config.get("Input", "folds_file")
         if folds_file:
-            config.set("Input", "folds_file", join(train_dir, folds_file))
+            config.set("Input", "folds_file", str(train_dir / folds_file))
 
-    config_prefix = re.search(r"^(.*)\.template\.cfg", config_template_path).groups()[0]
-    new_config_path = f"{config_prefix}.cfg"
+    config_prefix = re.search(r"^(.*)\.template\.cfg", str(config_template_path)).groups()[0]
+    new_config_path = Path(f"{config_prefix}.cfg")
 
     with open(new_config_path, "w") as new_config_file:
         config.write(new_config_file)
@@ -189,7 +191,7 @@ def fill_in_config_options(
 
     Parameters
     ----------
-    config_template_path : str
+    config_template_path : Union[str, Path]
         Path to the template configuration file.
     values_to_fill_dict : Dict[str, Any]
         Dictionary containing the options to fille the keys and the
@@ -204,9 +206,11 @@ def fill_in_config_options(
 
     Returns
     -------
-    str
+    Path
         The path to the filled configuration file.
     """
+    # convert path to Path object if it's a string
+    config_template_path = Path(config_template_path)
 
     config = _setup_config_parser(config_template_path, validate=False)
 
@@ -275,10 +279,11 @@ def fill_in_config_options(
     for section in to_fill_in:
         for param_name in to_fill_in[section]:
             if param_name in values_to_fill_dict:
-                config.set(section, param_name, values_to_fill_dict[param_name])
+                value = str(values_to_fill_dict[param_name])
+                config.set(section, param_name, value)
 
-    config_prefix = re.search(r"^(.*)\.template\.cfg", config_template_path).groups()[0]
-    new_config_path = f"{config_prefix}_{sub_prefix}.cfg"
+    config_prefix = re.search(r"^(.*)\.template\.cfg", str(config_template_path)).groups()[0]
+    new_config_path = Path(f"{config_prefix}_{sub_prefix}.cfg")
 
     with open(new_config_path, "w") as new_config_file:
         config.write(new_config_file)
@@ -295,25 +300,27 @@ def fill_in_config_paths_for_fancy_output(config_template_path):
 
     Parameters
     ----------
-    config_template_path : str
+    config_template_path : Union[str, Path]
         Path to the template configuration file.
 
     Returns
     -------
-    str
+    Path
         The path to the filled configuration file.
     """
+    # convert template path to a Path object if string
+    config_template_path = Path(config_template_path)
 
     config = _setup_config_parser(config_template_path, validate=False)
 
-    config.set("Input", "train_file", join(train_dir, "fancy_train.jsonlines"))
-    config.set("Input", "test_file", join(test_dir, "fancy_test.jsonlines"))
-    config.set("Output", "results", output_dir)
-    config.set("Output", "logs", output_dir)
-    config.set("Output", "predictions", output_dir)
+    config.set("Input", "train_file", str(train_dir / "fancy_train.jsonlines"))
+    config.set("Input", "test_file", str(test_dir / "fancy_test.jsonlines"))
+    config.set("Output", "results", str(output_dir))
+    config.set("Output", "logs", str(output_dir))
+    config.set("Output", "predictions", str(output_dir))
 
-    config_prefix = re.search(r"^(.*)\.template\.cfg", config_template_path).groups()[0]
-    new_config_path = f"{config_prefix}.cfg"
+    config_prefix = re.search(r"^(.*)\.template\.cfg", str(config_template_path)).groups()[0]
+    new_config_path = Path(f"{config_prefix}.cfg")
 
     with open(new_config_path, "w") as new_config_file:
         config.write(new_config_file)
@@ -356,7 +363,6 @@ def fill_in_config_options_for_voting_learners(learner_type, task, options_dict)
         - the number of learning curve cross-validation folds (10 or 20)
         - the list of learning curve training sizes
     """
-
     # setup learner-type specific values based on configuration options
     custom_learner = ""
     objectives = None
@@ -428,11 +434,11 @@ def fill_in_config_options_for_voting_learners(learner_type, task, options_dict)
     experiment_name = "test_voting_learner"
     sub_prefix = task
     featureset_name = "f0"
-    train_path = join(train_dir, f"{featureset_name}.jsonlines")
+    train_path = train_dir / f"{featureset_name}.jsonlines"
     job_name = f"{experiment_name}_{sub_prefix}_{featureset_name}_{learner_name}"
     values_to_fill_dict = {
         "experiment_name": f"{experiment_name}_{sub_prefix}",
-        "train_file": train_path,
+        "train_file": str(train_path),
         "task": task,
         "learners": str([learner_name]),
         "grid_search": fix_json(str(options_dict["with_grid_search"])),
@@ -442,8 +448,8 @@ def fill_in_config_options_for_voting_learners(learner_type, task, options_dict)
 
     # insert additional values in this dictionary
     if task in ["evaluate", "predict"]:
-        test_path = join(test_dir, f"{featureset_name}.jsonlines")
-        values_to_fill_dict["test_file"] = test_path
+        test_path = str(test_dir / f"{featureset_name}.jsonlines")
+        values_to_fill_dict["test_file"] = str(test_path)
 
     if options_dict["with_grid_search"]:
         values_to_fill_dict["objectives"] = str(objectives)
@@ -461,7 +467,7 @@ def fill_in_config_options_for_voting_learners(learner_type, task, options_dict)
         values_to_fill_dict["min_feature_count"] = "2"
 
     if options_dict["with_custom_learner_path"]:
-        custom_learner = join(other_dir, "custom_logistic_wrapper.py")
+        custom_learner = str(other_dir / "custom_logistic_wrapper.py")
         values_to_fill_dict["custom_learner_path"] = custom_learner
 
     if options_dict["with_pos_label"]:
@@ -474,7 +480,7 @@ def fill_in_config_options_for_voting_learners(learner_type, task, options_dict)
         values_to_fill_dict["metrics"] = str(output_metrics)
 
     if options_dict["with_prediction_prefix"]:
-        values_to_fill_dict["predictions"] = output_dir
+        values_to_fill_dict["predictions"] = str(output_dir)
 
     if options_dict["with_cv_folds"]:
         num_cv_folds = 6
@@ -500,11 +506,11 @@ def fill_in_config_options_for_voting_learners(learner_type, task, options_dict)
 
     if task != "learning_curve":
         values_to_fill_dict["models"] = (
-            other_dir if options_dict["with_existing_model"] else output_dir
+            str(other_dir) if options_dict["with_existing_model"] else str(output_dir)
         )
 
     # locate the voting learner config template and instantiate it
-    config_template_path = join(config_dir, f"{experiment_name}.template.cfg")
+    config_template_path = config_dir / f"{experiment_name}.template.cfg"
     config_path = fill_in_config_options(config_template_path, values_to_fill_dict, sub_prefix)
 
     return (
@@ -530,14 +536,16 @@ def create_jsonlines_feature_files(path):
 
     Parameters
     ----------
-    path : str
+    path : Union[str, Path]
         Full path under which to save the created feature files.
     """
+    # convert to Path object
+    path = Path(path)
 
     # we only need to create the feature files if they
     # don't already exist under the given path
-    feature_files_to_create = [join(path, f"f{i}.jsonlines") for i in range(6)]
-    if all([exists(ff) for ff in feature_files_to_create]):
+    feature_files_to_create = [path / f"f{i}.jsonlines" for i in range(6)]
+    if all([ff.exists() for ff in feature_files_to_create]):
         return
     else:
         num_examples = 1000
@@ -557,7 +565,7 @@ def create_jsonlines_feature_files(path):
             features.append(x)
 
         for i in range(5):
-            file_path = join(path, f"f{i}.jsonlines")
+            file_path = path / f"f{i}.jsonlines"
             sub_features = []
             for example_num in range(num_examples):
                 feat_num = i
@@ -577,7 +585,7 @@ def create_jsonlines_feature_files(path):
             features=sub_features + [{}, {}],
             labels=labels + ["cat", "dog"],
         )
-        file_path = join(path, "f5.jsonlines")
+        file_path = path / "f5.jsonlines"
         writer = NDJWriter(file_path, fs)
         writer.write()
 
@@ -588,10 +596,9 @@ def remove_jsonlines_feature_files(path: Union[str, Path]):
 
     Parameters
     ----------
-    path : str
+    path : Union[str, Path]
         Path to directory in which jsonlines files reside.
     """
-
     for i in range(6):
         unlink(Path(path) / f"f{i}.jsonlines")
 
@@ -675,7 +682,6 @@ def make_classification_data(
         the generated test featureset.
 
     """
-
     # use sklearn's make_classification to generate the data for us
     num_numeric_features = num_features - 1 if one_string_feature else num_features
     X, y = make_classification(
@@ -769,7 +775,7 @@ def make_regression_data(
     random_state=1234567890,
 ):
     """
-    Create dummy regression data for use with tests
+    Create dummy regression data for use with tests.
 
     Parameters
     ----------
@@ -806,7 +812,6 @@ def make_regression_data(
         test featureset, and a dictionary containing the oracle feature
         weights
     """
-
     # if we are doing feature hashing and we have asked for more
     # feature bins than number of total features, we need to
     # handle that because `make_regression()` doesn't know
@@ -909,7 +914,6 @@ def make_sparse_data(use_feature_hashing=False):
         Tuple containing the generated training featureset and
         the generated test featureset.
     """
-
     # Create training data
     X, y = make_classification(
         n_samples=500,
@@ -1116,9 +1120,8 @@ def make_california_housing_data(num_examples=None, test_size=0.2):
         If ``num_examples`` is greater than the number of available
         examples.
     """
-
     # load the housing data
-    other_dir = join(_my_dir, "other")
+    other_dir = str(_my_dir / "other")
     housing = fetch_california_housing(
         data_home=other_dir, download_if_missing=False, as_frame=True
     )

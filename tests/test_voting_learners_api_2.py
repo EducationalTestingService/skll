@@ -8,7 +8,6 @@ Evaluation and learning curve tests for voting learners.
 
 import re
 from itertools import product
-from pathlib import Path
 
 import numpy as np
 from nose.tools import assert_almost_equal, eq_, ok_, raises
@@ -31,18 +30,17 @@ FS_DIGITS, _ = make_digits_data(test_size=0, use_digit_names=True)
 TRAIN_FS_HOUSING, TEST_FS_HOUSING = make_california_housing_data(num_examples=2000)
 FS_HOUSING, _ = make_california_housing_data(num_examples=2000, test_size=0)
 FS_HOUSING.ids = np.arange(2000)
-CUSTOM_LEARNER_PATH = Path(other_dir) / "custom_logistic_wrapper.py"
+CUSTOM_LEARNER_PATH = other_dir / "custom_logistic_wrapper.py"
 
 
 def setup():
-    """Set up the tests"""
+    """Set up the tests."""
     for dir_path in [other_dir, output_dir]:
-        Path(dir_path).mkdir(exist_ok=True)
+        dir_path.mkdir(exist_ok=True)
 
 
 def check_evaluate(learner_type, with_grid_search, with_soft_voting):
     """Run checks when evaluating voting learners."""
-
     # to test the evaluate() method, we instantiate the SKLL voting learner,
     # train it on either the digits (classification) or housing (regression)
     # data set, and evaluate on the corresponding test set; then we do the
@@ -258,7 +256,7 @@ def test_learning_curve_min_examples_check():
 def test_learning_curve_min_examples_check_override():
     # creates a logger which writes to a temporary log file
     log_file_path = (
-        Path(output_dir) / "test_check_override_voting_learner_" "learning_curve_min_examples.log"
+        output_dir / "test_check_override_voting_learner_" "learning_curve_min_examples.log"
     )
 
     logger = get_skll_logger(

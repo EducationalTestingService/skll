@@ -10,14 +10,10 @@ Tests related to ablation experiments.
 
 import csv
 import json
-from glob import glob
-from os.path import join
-from pathlib import Path
 
 from nose.tools import eq_
 
 from skll.experiments import run_configuration
-from skll.utils.constants import KNOWN_DEFAULT_PARAM_GRIDS
 from tests import config_dir, output_dir, test_dir, train_dir
 from tests.utils import (
     create_jsonlines_feature_files,
@@ -26,26 +22,19 @@ from tests.utils import (
     unlink,
 )
 
-_ALL_MODELS = list(KNOWN_DEFAULT_PARAM_GRIDS.keys())
-
 
 def setup():
-    """
-    Create necessary directories for testing.
-    """
+    """Create necessary directories for testing."""
     for dir_path in [train_dir, test_dir, output_dir]:
-        Path(dir_path).mkdir(exist_ok=True)
+        dir_path.mkdir(exist_ok=True)
 
     # create jsonlines feature files
     create_jsonlines_feature_files(train_dir)
 
 
 def tearDown():
-    """
-    Clean up after tests.
-    """
-
-    for output_file in glob(join(output_dir, "ablation_cv_*")):
+    """Clean up after tests."""
+    for output_file in output_dir.glob("ablation_cv_*"):
         unlink(output_file)
 
     config_files = [
@@ -59,17 +48,24 @@ def tearDown():
         "test_ablation_feature_hasher_sampler_all_combos.cfg",
     ]
     for cf in config_files:
-        unlink(Path(config_dir) / cf)
+        unlink(config_dir / cf)
 
     remove_jsonlines_feature_files(train_dir)
 
 
 def check_ablation_rows(reader):
     """
-    Helper function to ensure that all ablated_features and featureset values
-    are correct for each row in results summary file.
+    Ensure that all ablated faetures and featureset values are correct.
 
-    :returns: Number of items in reader
+    Parameters
+    ----------
+    reader : object
+        Reader object that iterates over the output summary file.
+
+    Returns
+    -------
+    int
+        The total number of rows in the summary file.
     """
     row_num = 0
     for row_num, row in enumerate(reader, 1):
@@ -89,11 +85,8 @@ def check_ablation_rows(reader):
 
 
 def test_ablation_cv():
-    """
-    Test ablation + cross-validation
-    """
-
-    config_template_path = join(config_dir, "test_ablation.template.cfg")
+    """Test ablation + cross-validation."""
+    config_template_path = config_dir / "test_ablation.template.cfg"
     config_path = fill_in_config_paths(config_template_path)
 
     run_configuration(config_path, quiet=True, ablation=1, local=True)
@@ -101,22 +94,19 @@ def test_ablation_cv():
     # read in the summary file and make sure it has
     # 7 ablated featuresets * (10 folds + 1 average line) * 2 learners = 154
     # lines
-    with open(join(output_dir, "ablation_cv_plain_summary.tsv")) as f:
+    with open(output_dir / "ablation_cv_plain_summary.tsv") as f:
         reader = csv.DictReader(f, dialect=csv.excel_tab)
         num_rows = check_ablation_rows(reader)
         eq_(num_rows, 154)
 
     # make sure there are 7 ablated featuresets * 2 learners = 12 results files
-    num_result_files = len(glob(join(output_dir, "ablation_cv_plain*.results")))
+    num_result_files = len(list(output_dir.glob("ablation_cv_plain*.results")))
     eq_(num_result_files, 14)
 
 
 def test_ablation_cv_all_combos():
-    """
-    Test ablation all-combos + cross-validation
-    """
-
-    config_template_path = join(config_dir, "test_ablation_all_combos.template.cfg")
+    """Test ablation all-combos + cross-validation."""
+    config_template_path = config_dir / "test_ablation_all_combos.template.cfg"
     config_path = fill_in_config_paths(config_template_path)
 
     run_configuration(config_path, quiet=True, ablation=None, local=True)
@@ -124,23 +114,20 @@ def test_ablation_cv_all_combos():
     # read in the summary file and make sure it has
     # 10 ablated featuresets * (10 folds + 1 average line) * 2 learners = 220
     # lines
-    with open(join(output_dir, "ablation_cv_plain_all_combos_summary.tsv")) as f:
+    with open(output_dir / "ablation_cv_plain_all_combos_summary.tsv") as f:
         reader = csv.DictReader(f, dialect=csv.excel_tab)
         num_rows = check_ablation_rows(reader)
         eq_(num_rows, 220)
 
     # make sure there are 10 ablated featuresets * 2 learners = 20 results
     # files
-    num_result_files = len(glob(join(output_dir, "ablation_cv_plain_all_combos*results")))
+    num_result_files = len(list(output_dir.glob("ablation_cv_plain_all_combos*results")))
     eq_(num_result_files, 20)
 
 
 def test_ablation_cv_feature_hasher():
-    """
-    Test ablation + cross-validation + feature hashing
-    """
-
-    config_template_path = join(config_dir, "test_ablation_feature_hasher.template.cfg")
+    """Test ablation + cross-validation + feature hashing."""
+    config_template_path = config_dir / "test_ablation_feature_hasher.template.cfg"
     config_path = fill_in_config_paths(config_template_path)
 
     run_configuration(config_path, quiet=True, ablation=1, local=True)
@@ -148,22 +135,19 @@ def test_ablation_cv_feature_hasher():
     # read in the summary file and make sure it has
     # 7 ablated featuresets * (10 folds + 1 average line) * 2 learners = 154
     # lines
-    with open(join(output_dir, "ablation_cv_feature_hasher_summary.tsv")) as f:
+    with open(output_dir / "ablation_cv_feature_hasher_summary.tsv") as f:
         reader = csv.DictReader(f, dialect=csv.excel_tab)
         num_rows = check_ablation_rows(reader)
         eq_(num_rows, 154)
 
     # make sure there are 7 ablated featuresets * 2 learners = 14 results files
-    num_result_files = len(glob(join(output_dir, "ablation_cv_feature_hasher_*.results")))
+    num_result_files = len(list(output_dir.glob("ablation_cv_feature_hasher_*.results")))
     eq_(num_result_files, 14)
 
 
 def test_ablation_cv_feature_hasher_all_combos():
-    """
-    Test ablation all-combos + cross-validation + feature hashing
-    """
-
-    config_template_path = join(config_dir, "test_ablation_feature_hasher_all_combos.template.cfg")
+    """Test ablation all-combos + cross-validation + feature hashing."""
+    config_template_path = config_dir / "test_ablation_feature_hasher_all_combos.template.cfg"
     config_path = fill_in_config_paths(config_template_path)
 
     run_configuration(config_path, quiet=True, ablation=None, local=True)
@@ -173,23 +157,20 @@ def test_ablation_cv_feature_hasher_all_combos():
     #      * (10 folds + 1 average line)
     #      * 2 learners
     #    = 220 lines in total
-    with open(join(output_dir, "ablation_cv_feature_hasher_all_combos_summary.tsv")) as f:
+    with open(output_dir / "ablation_cv_feature_hasher_all_combos_summary.tsv") as f:
         reader = csv.DictReader(f, dialect=csv.excel_tab)
         num_rows = check_ablation_rows(reader)
         eq_(num_rows, 220)
 
     # make sure there are 10 ablated featuresets * 2 learners = 20 results
     # files
-    num_result_files = len(glob(join(output_dir, "ablation_cv_feature_hasher_all_combos*.results")))
+    num_result_files = len(list(output_dir.glob("ablation_cv_feature_hasher_all_combos*.results")))
     eq_(num_result_files, 20)
 
 
 def test_ablation_cv_sampler():
-    """
-    Test ablation + cross-validation + samplers
-    """
-
-    config_template_path = join(config_dir, "test_ablation_sampler.template.cfg")
+    """Test ablation + cross-validation + samplers."""
+    config_template_path = config_dir / "test_ablation_sampler.template.cfg"
     config_path = fill_in_config_paths(config_template_path)
 
     run_configuration(config_path, quiet=True, ablation=1, local=True)
@@ -197,22 +178,19 @@ def test_ablation_cv_sampler():
     # read in the summary file and make sure it has
     # 7 ablated featuresets * (10 folds + 1 average line) * 2 learners = 154
     # lines
-    with open(join(output_dir, "ablation_cv_sampler_summary.tsv")) as f:
+    with open(output_dir / "ablation_cv_sampler_summary.tsv") as f:
         reader = csv.DictReader(f, dialect=csv.excel_tab)
         num_rows = check_ablation_rows(reader)
         eq_(num_rows, 154)
 
     # make sure there are 6 ablated featuresets * 2 learners = 12 results files
-    num_result_files = len(glob(join(output_dir, "ablation_cv_sampler*.results")))
+    num_result_files = len(list(output_dir.glob("ablation_cv_sampler*.results")))
     eq_(num_result_files, 14)
 
 
 def test_ablation_cv_all_combos_sampler():
-    """
-    Test ablation all-combos + cross-validation + samplers
-    """
-
-    config_template_path = join(config_dir, "test_ablation_sampler_all_combos.template.cfg")
+    """Test ablation all-combos + cross-validation + samplers."""
+    config_template_path = config_dir / "test_ablation_sampler_all_combos.template.cfg"
     config_path = fill_in_config_paths(config_template_path)
 
     run_configuration(config_path, quiet=True, ablation=None, local=True)
@@ -220,23 +198,20 @@ def test_ablation_cv_all_combos_sampler():
     # read in the summary file and make sure it has
     # 10 ablated featuresets * (10 folds + 1 average line) * 2 learners = 220
     # lines
-    with open(join(output_dir, "ablation_cv_sampler_all_combos_summary.tsv")) as f:
+    with open(output_dir / "ablation_cv_sampler_all_combos_summary.tsv") as f:
         reader = csv.DictReader(f, dialect=csv.excel_tab)
         num_rows = check_ablation_rows(reader)
         eq_(num_rows, 220)
 
     # make sure there are 10 ablated featuresets * 2 learners = 20 results
     # files
-    num_result_files = len(glob(join(output_dir, "ablation_cv_sampler_all_combos*.results")))
+    num_result_files = len(list(output_dir.glob("ablation_cv_sampler_all_combos*.results")))
     eq_(num_result_files, 20)
 
 
 def test_ablation_cv_feature_hasher_sampler():
-    """
-    Test ablation + cross-validation + feature hashing + samplers
-    """
-
-    config_template_path = join(config_dir, "test_ablation_feature_hasher_sampler.template.cfg")
+    """Test ablation + cross-validation + feature hashing + samplers."""
+    config_template_path = config_dir / "test_ablation_feature_hasher_sampler.template.cfg"
     config_path = fill_in_config_paths(config_template_path)
 
     run_configuration(config_path, quiet=True, ablation=1, local=True)
@@ -244,23 +219,20 @@ def test_ablation_cv_feature_hasher_sampler():
     # read in the summary file and make sure it has
     # 7 ablated featuresets * (10 folds + 1 average line) * 2 learners = 154
     # lines
-    with open(join(output_dir, "ablation_cv_feature_hasher_sampler_summary.tsv")) as f:
+    with open(output_dir / "ablation_cv_feature_hasher_sampler_summary.tsv") as f:
         reader = csv.DictReader(f, dialect=csv.excel_tab)
         num_rows = check_ablation_rows(reader)
         eq_(num_rows, 154)
 
     # make sure there are 7 ablated featuresets * 2 learners = 14 results files
-    num_result_files = len(glob(join(output_dir, "ablation_cv_feature_hasher_sampler*.results")))
+    num_result_files = len(list(output_dir.glob("ablation_cv_feature_hasher_sampler*.results")))
     eq_(num_result_files, 14)
 
 
 def test_ablation_cv_feature_hasher_all_combos_sampler():
-    """
-    Test ablation all-combos + cross-validation + feature hashing + samplers
-    """
-
-    config_template_path = join(
-        config_dir, "test_ablation_feature_hasher_sampler_all_combos.template.cfg"
+    """Test ablation all-combos + cross-validation + feature hashing + samplers."""
+    config_template_path = (
+        config_dir / "test_ablation_feature_hasher_sampler_all_combos.template.cfg"
     )
     config_path = fill_in_config_paths(config_template_path)
 
@@ -269,7 +241,7 @@ def test_ablation_cv_feature_hasher_all_combos_sampler():
     # read in the summary file and make sure it has
     # 10 ablated featuresets * (10 folds + 1 average line) * 2 learners = 220
     # lines
-    with open(join(output_dir, "ablation_cv_feature_hasher_all_combos_summary.tsv")) as f:
+    with open(output_dir / "ablation_cv_feature_hasher_all_combos_summary.tsv") as f:
         reader = csv.DictReader(f, dialect=csv.excel_tab)
         num_rows = check_ablation_rows(reader)
         eq_(num_rows, 220)
@@ -277,6 +249,6 @@ def test_ablation_cv_feature_hasher_all_combos_sampler():
     # make sure there are 10 ablated featuresets * 2 learners = 20 results
     # files
     num_result_files = len(
-        glob(join(output_dir, "ablation_cv_feature_hasher_sampler_all_combos*.results"))
+        list(output_dir.glob("ablation_cv_feature_hasher_sampler_all_combos*.results"))
     )
     eq_(num_result_files, 20)

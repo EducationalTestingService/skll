@@ -12,7 +12,6 @@ tested comprehensively in ``test_voting_learners_api_1.py``.
 """
 
 from itertools import product
-from os.path import join
 from pathlib import Path
 from unittest.mock import DEFAULT, patch
 
@@ -31,31 +30,30 @@ from tests.utils import (
 
 
 def setup():
-    """Set up the tests"""
+    """Set up the tests."""
     for dir_path in [train_dir, output_dir]:
-        Path(dir_path).mkdir(exist_ok=True)
+        dir_path.mkdir(exist_ok=True)
 
     # create the training and test data files that we will use
     create_jsonlines_feature_files(train_dir)
 
 
 def tearDown():
-    """Clean up after tests"""
-    for output_file_path in Path(output_dir).glob("test_voting_learner_train*"):
+    """Clean up after tests."""
+    for output_file_path in output_dir.glob("test_voting_learner_train*"):
         output_file_path.unlink()
 
     for output_file_path in Path(".").glob("test_voting_learner_train*"):
         output_file_path.unlink()
 
-    config_file_path = Path(config_dir) / "test_voting_learner_train.cfg"
+    config_file_path = config_dir / "test_voting_learner_train.cfg"
     config_file_path.unlink()
 
     remove_jsonlines_feature_files(train_dir)
 
 
 def check_train_task(learner_type, options_dict):
-    """Check given combination of training configuration options"""
-
+    """Check given combination of training configuration options."""
     # create a configuration file with the given options
     (
         config_path,
@@ -150,9 +148,9 @@ def check_train_task(learner_type, options_dict):
             if not options_dict["with_grid_search"] or (
                 options_dict["with_grid_search"] and not options_dict["with_multiple_objectives"]
             ):
-                expected_save_args = (join(output_dir, f"{job_name}.model"),)
+                expected_save_args = (output_dir / f"{job_name}.model",)
             else:
-                expected_save_args = (join(output_dir, f"{job_name}_{objectives[idx]}.model"),)
+                expected_save_args = (output_dir / f"{job_name}_{objectives[idx]}.model",)
             eq_(actual_call[0], expected_save_args)
 
     # stop all the manual patchers
