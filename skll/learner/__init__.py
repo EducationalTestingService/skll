@@ -105,8 +105,7 @@ __all__ = ["Learner", "MAX_CONCURRENT_PROCESSES", "load_custom_learner"]
 
 class Learner(object):
     """
-    A simpler learner interface around many scikit-learn classification
-    and regression estimators.
+    A simpler interface around scikit-learn classification and regression estimators.
 
     Parameters
     ----------
@@ -184,9 +183,7 @@ class Learner(object):
         custom_learner_path=None,
         logger=None,
     ):
-        """
-        Initializes a learner object with the specified settings.
-        """
+        """Initialize a learner object with the specified settings."""
         super(Learner, self).__init__()
 
         self.feat_vectorizer = None
@@ -373,7 +370,7 @@ class Learner(object):
 
         Parameters
         ----------
-        learner_path : str
+        learner_path : Union[str, Path]
             The path to a saved ``Learner`` instance file.
         logger : logging object, optional
             A logging object. If ``None`` is passed, get logger from ``__name__``.
@@ -393,23 +390,17 @@ class Learner(object):
 
     @property
     def model_type(self):
-        """
-        The model type (i.e., the class)
-        """
+        """Return the model type (i.e., the class)."""
         return self._model_type
 
     @property
     def model_kwargs(self):
-        """
-        A dictionary of the underlying scikit-learn model's keyword arguments
-        """
+        """Return a dictionary of the underlying scikit-learn model's keyword arguments."""
         return self._model_kwargs
 
     @property
     def model(self):
-        """
-        The underlying scikit-learn model
-        """
+        """Return the underlying scikit-learn model."""
         return self._model
 
     def load(self, learner_path):
@@ -426,7 +417,9 @@ class Learner(object):
 
     def _convert_coef_array_to_feature_names(self, coef, feature_name_prefix=""):
         """
-        A helper method used by `model_params` to convert the model
+        Convert model coefficients array to dictionary.
+
+        Method used by `model_params` to convert the model
         coefficients array into a dictionary with feature names as
         keys and the coefficients as values.
 
@@ -474,8 +467,10 @@ class Learner(object):
     @property
     def model_params(self):
         """
-        Model parameters (i.e., weights) for a ``LinearModel`` (e.g., ``Ridge``)
-        regression and liblinear models. If the model was trained using feature
+        Return model parameters (i.e., weights).
+
+        Return the weights for a ``LinearModel`` (e.g., ``Ridge``),
+        regression, and liblinear models. If the model was trained using feature
         hashing, then names of the form `hashed_feature_XX` are used instead.
 
         Returns
@@ -587,16 +582,17 @@ class Learner(object):
     @property
     def probability(self):
         """
-        Should learner return probabilities of all labels (instead of just
-        label with highest probability)?
+        Return the value of the probability flag.
+
+        The flag indicages whether the learner return probabilities of all
+        labels (instead of just label with highest probability)?
         """
         return self._probability
 
     @probability.setter
     def probability(self, value):
         """
-        Set the probabilities flag (i.e. whether learner
-        should return probabilities of all labels).
+        Set the probability flag.
 
         Parameters
         ----------
@@ -615,8 +611,9 @@ class Learner(object):
 
     def __getstate__(self):
         """
-        Return the attributes that should be pickled. We need this
-        because we cannot pickle loggers.
+        Return attributes that should be pickled.
+
+        We need this because we cannot pickle loggers.
         """
         attribute_dict = dict(self.__dict__)
         if "logger" in attribute_dict:
@@ -629,7 +626,7 @@ class Learner(object):
 
         Parameters
         ----------
-        learner_path : str
+        learner_path : Union[str, Path]
             The path to save the ``Learner`` instance to.
         """
         _save_learner_to_disk(self, learner_path)
@@ -682,7 +679,7 @@ class Learner(object):
 
     def _check_input_formatting(self, examples):
         """
-        check that the examples are properly formatted.
+        Check that the examples are properly formatted.
 
         Parameters
         ----------
@@ -721,7 +718,7 @@ class Learner(object):
 
     def _check_max_feature_value(self, feat_array):
         """
-        Check if the the maximum absolute value of any feature is too large
+        Check if the the maximum absolute value of any feature is too large.
 
         Parameters
         ----------
@@ -739,14 +736,13 @@ class Learner(object):
 
     def _create_label_dict(self, examples):
         """
-        Creates a dictionary of labels for classification problems.
+        Create a dictionary of labels for classification problems.
 
         Parameters
         ----------
         examples : skll.FeatureSet
             The examples to use for training.
         """
-
         # we don't need to do this if we have already done it
         # or for regression models, so simply return.
         if self.label_dict is not None or self.model_type._estimator_type == "regressor":
@@ -818,8 +814,9 @@ class Learner(object):
         shuffle=False,
     ):
         """
-        Train the model underlying the learner and return the grid search
-        score and a dictionary of grid search results.
+        Train model underlying the learner.
+
+        Return the grid search score and a dictionary of grid search results.
 
         Parameters
         ----------
@@ -872,7 +869,6 @@ class Learner(object):
         ValueError
             If FeatureHasher is used with MultinomialNB.
         """
-
         # get the estimator type since we need it in multiple places below
         estimator_type = self.model_type._estimator_type
 
@@ -1158,7 +1154,7 @@ class Learner(object):
         self, examples, prediction_prefix=None, append=False, grid_objective=None, output_metrics=[]
     ):
         """
-        Evaluates a given model on a given dev or test ``FeatureSet``.
+        Evaluate the learner on a given dev or test ``FeatureSet``.
 
         Parameters
         ----------
@@ -1255,11 +1251,11 @@ class Learner(object):
         self, examples, prediction_prefix=None, append=False, class_labels=True  # noqa: C901
     ):
         """
-        Uses a given model to return, and optionally, write out predictions
-        on a given ``FeatureSet`` to a file.
+        Generate predictions for the given examples using the learner model.
 
-        For regressors, the returned and written-out predictions are identical.
-        However, for classifiers:
+        Return, and optionally, write out predictions on a given ``FeatureSet``
+        to a file. For regressors, the returned and written-out predictions are
+        identical. However, for classifiers:
 
         - if ``class_labels`` is ``True``, class labels are returned
           as well as written out.
@@ -1495,7 +1491,7 @@ class Learner(object):
         use_custom_folds_for_grid_search=True,
     ):
         """
-        Cross-validates a given model on the training examples.
+        Cross-validate the learner on the given training examples.
 
         Parameters
         ----------
@@ -1591,7 +1587,6 @@ class Learner(object):
         ValueError
             If ``grid_search`` is ``True`` but ``grid_objective`` is ``None``.
         """
-
         # Seed the random number generator so that randomized
         # algorithms are replicable
         random_state = np.random.RandomState(cv_seed)
@@ -1737,7 +1732,9 @@ class Learner(object):
         override_minimum=False,
     ):
         """
-        Generates learning curves for a given model on the training examples
+        Generate learning curves for the learner using the examples.
+
+        The learning curves arge generated on the training examples
         via cross-validation. Adapted from the scikit-learn code for learning
         curve generation (cf.``sklearn.model_selection.learning_curve``).
 
@@ -1788,7 +1785,6 @@ class Learner(object):
         ValueError
             If the number of examples is less than 500.
         """
-
         # check that the number of training examples is more than the minimum
         # needed for generating a reliable learning curve
         if len(examples) < 500:
@@ -1854,90 +1850,90 @@ class Learner(object):
 
 # Rescaled regressors
 @rescaled
-class RescaledBayesianRidge(BayesianRidge):
+class RescaledBayesianRidge(BayesianRidge):  # noqa: D101
     pass
 
 
 @rescaled
-class RescaledAdaBoostRegressor(AdaBoostRegressor):
+class RescaledAdaBoostRegressor(AdaBoostRegressor):  # noqa: D101
     pass
 
 
 @rescaled
-class RescaledDecisionTreeRegressor(DecisionTreeRegressor):
+class RescaledDecisionTreeRegressor(DecisionTreeRegressor):  # noqa: D101
     pass
 
 
 @rescaled
-class RescaledElasticNet(ElasticNet):
+class RescaledElasticNet(ElasticNet):  # noqa: D101
     pass
 
 
 @rescaled
-class RescaledGradientBoostingRegressor(GradientBoostingRegressor):
+class RescaledGradientBoostingRegressor(GradientBoostingRegressor):  # noqa: D101
     pass
 
 
 @rescaled
-class RescaledHuberRegressor(HuberRegressor):
+class RescaledHuberRegressor(HuberRegressor):  # noqa: D101
     pass
 
 
 @rescaled
-class RescaledKNeighborsRegressor(KNeighborsRegressor):
+class RescaledKNeighborsRegressor(KNeighborsRegressor):  # noqa: D101
     pass
 
 
 @rescaled
-class RescaledLars(Lars):
+class RescaledLars(Lars):  # noqa: D101
     pass
 
 
 @rescaled
-class RescaledLasso(Lasso):
+class RescaledLasso(Lasso):  # noqa: D101
     pass
 
 
 @rescaled
-class RescaledLinearRegression(LinearRegression):
+class RescaledLinearRegression(LinearRegression):  # noqa: D101
     pass
 
 
 @rescaled
-class RescaledLinearSVR(LinearSVR):
+class RescaledLinearSVR(LinearSVR):  # noqa: D101
     pass
 
 
 @rescaled
-class RescaledMLPRegressor(MLPRegressor):
+class RescaledMLPRegressor(MLPRegressor):  # noqa: D101
     pass
 
 
 @rescaled
-class RescaledRandomForestRegressor(RandomForestRegressor):
+class RescaledRandomForestRegressor(RandomForestRegressor):  # noqa: D101
     pass
 
 
 @rescaled
-class RescaledRANSACRegressor(RANSACRegressor):
+class RescaledRANSACRegressor(RANSACRegressor):  # noqa: D101
     pass
 
 
 @rescaled
-class RescaledRidge(Ridge):
+class RescaledRidge(Ridge):  # noqa: D101
     pass
 
 
 @rescaled
-class RescaledSGDRegressor(SGDRegressor):
+class RescaledSGDRegressor(SGDRegressor):  # noqa: D101
     pass
 
 
 @rescaled
-class RescaledSVR(SVR):
+class RescaledSVR(SVR):  # noqa: D101
     pass
 
 
 @rescaled
-class RescaledTheilSenRegressor(TheilSenRegressor):
+class RescaledTheilSenRegressor(TheilSenRegressor):  # noqa: D101
     pass

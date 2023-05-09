@@ -54,7 +54,7 @@ class VotingLearner(object):
         probabilities from each of the underlying learnrs. This parameter
         is only relevant for classification.
         Defaults to "hard".
-    custom_learner_path : str, optional
+    custom_learner_path : Union[str, Path], optional
         Path to a Python file containing the definitions of any custom
         learners. Any and all custom learners in ``estimator_names`` must
         be defined in this file. If the custom learner does not inherit
@@ -121,10 +121,7 @@ class VotingLearner(object):
         sampler_kwargs_list=None,
         logger=None,
     ):
-        """
-        Initializes a ``VotingLearner`` object with the specified settings.
-        """
-
+        """Initialize a ``VotingLearner`` object with the specified settings."""
         # initialize various attributes
         self._model = None
         self.voting = voting
@@ -199,37 +196,30 @@ class VotingLearner(object):
 
     @property
     def learners(self):
-        """
-        Return the underlying list of learners
-        """
+        """Return the underlying list of learners."""
         return self._learners
 
     @property
     def model(self):
-        """
-        The underlying scikit-learn meta-estimator model
-        """
+        """Return underlying scikit-learn meta-estimator model."""
         return self._model
 
     @property
     def model_type(self):
-        """
-        The meta-estimator model type (i.e., the class)
-        """
+        """Return meta-estimator model type (i.e., the class)."""
         return self._model_type
 
     def _setup_underlying_learners(self, examples):
-        """
-        Initial, pre-training set up for learners
-        """
+        """Complete pre-training set up for learners."""
         for learner in self.learners:
             learner._create_label_dict(examples)
             learner._train_setup(examples)
 
     def __getstate__(self):
         """
-        Return the attributes that should be dumped. We need this
-        because we do not want to dump loggers.
+        Return attributes that should be pickled.
+
+        We need this because we do not want to dump loggers.
         """
         attribute_dict = dict(self.__dict__)
         if "logger" in attribute_dict:
@@ -405,7 +395,9 @@ class VotingLearner(object):
         individual_predictions=False,
     ):
         """
-        Generate predictions from the meta-estimator and, optionally, the
+        Generate predictions with meta-estimator.
+
+        Compute the predictions from the meta-estimator and, optionally, the
         underlying estimators on given ``FeatureSet``. The predictions are
         also written to disk if ``prediction_prefix`` is not ``None``.
 
@@ -533,7 +525,7 @@ class VotingLearner(object):
         output_metrics=[],
     ):
         """
-        Evaluates the meta-estimator on a given ``FeatureSet``.
+        Evaluate the meta-estimator on a given ``FeatureSet``.
 
         Parameters
         ----------
@@ -567,7 +559,6 @@ class VotingLearner(object):
             PRFs, the model parameters, the grid search objective
             function score, and the additional evaluation metrics, if any.
         """
-
         # make the prediction on the test data; note that these
         # are either class indices or class probabilities
         yhat, _ = self.predict(
@@ -754,7 +745,6 @@ class VotingLearner(object):
         ValueError
             If ``grid_search`` is ``True`` but ``grid_objective`` is ``None``.
         """
-
         # Seed the random number generator so that randomized algorithms are
         # replicable.
         random_state = np.random.RandomState(cv_seed)
@@ -893,7 +883,9 @@ class VotingLearner(object):
         override_minimum=False,
     ):
         """
-        Generates learning curves for the voting meta-estimator on the training
+        Generate learning curves for the meta-estimator.
+
+        Generate learning curves for the voting meta-estimator on the training
         examples via cross-validation. Adapted from the scikit-learn code for
         learning curve generation (cf.``sklearn.model_selection.learning_curve``).
 
