@@ -10,9 +10,8 @@ Tests for SKLL inputs, mainly configuration files.
 
 import re
 import tempfile
-from glob import glob
-from itertools import product
-from os.path import exists, join, normcase, normpath
+from itertools import chain, product
+from os.path import normcase, normpath
 from pathlib import Path
 from shutil import rmtree
 
@@ -33,45 +32,38 @@ from tests.utils import (
 
 
 def setup():
-    """
-    Create necessary directories for testing.
-    """
+    """Create necessary directories for testing."""
     for dir_path in [train_dir, test_dir, output_dir]:
-        Path(dir_path).mkdir(exist_ok=True)
+        dir_path.mkdir(exist_ok=True)
 
     # create jsonlines feature files
     create_jsonlines_feature_files(train_dir)
 
 
 def tearDown():
-    """
-    Clean up after tests.
-    """
-
+    """Clean up after tests."""
     # We need to first ensure that all logger file handlers are closed
     # before trying to unlink any of the log files. Otherwise, the
     # tearDown fixture will not work on Windows.
     logger = get_skll_logger("experiment")
     close_and_remove_logger_handlers(logger)
 
-    for path in (
-        glob(join(config_dir, "test_config_parsing_*.cfg"))
-        + glob(join(config_dir, "test_relative_paths_auto_dir*.cfg"))
-        + glob(join(output_dir, "config_parsing*.log"))
-        + [join(config_dir, "test_relative_paths_relative_paths.cfg")]
+    for path in chain(
+        config_dir.glob("test_config_parsing_*.cfg"),
+        config_dir.glob("test_relative_paths_auto_dir*.cfg"),
+        output_dir.glob("config_parsing*.log"),
+        [config_dir / "test_relative_paths_relative_paths.cfg"],
     ):
         unlink(path)
 
-    for auto_dir in glob(join(output_dir, "auto*")):
+    for auto_dir in output_dir.glob("auto*"):
         rmtree(auto_dir)
 
     remove_jsonlines_feature_files(train_dir)
 
 
 def check_safe_float_conversion(converted_val, expected_val):
-    """
-    Check that value and type of converted_val and expected_val are equal.
-    """
+    """Check that value and type of converted_val and expected_val are equal."""
     eq_(converted_val, expected_val)
     eq_(type(converted_val), type(expected_val))
 
@@ -84,35 +76,26 @@ def test_safe_float_conversion():
 
 
 def test_locate_file_valid_paths1():
-    """
-    Test that `config.locate_file` works with absolute paths.
-    """
-
-    config_abs_path = join(config_dir, "test_config_parsing_relative_path1.cfg")
+    """Test that `config.locate_file` works with absolute paths."""
+    config_abs_path = config_dir / "test_config_parsing_relative_path1.cfg"
     open(config_abs_path, "w").close()
     eq_(
         locate_file(config_abs_path, _my_dir),
-        join(config_dir, "test_config_parsing_relative_path1.cfg"),
+        str(config_dir / "test_config_parsing_relative_path1.cfg"),
     )
 
 
 def test_locate_file_valid_paths2():
-    """
-    Test that `config.locate_file` works with relative paths.
-    """
-
-    config_abs_path = join(config_dir, "test_config_parsing_relative_path2.cfg")
+    """Test that `config.locate_file` works with relative paths."""
+    config_abs_path = config_dir / "test_config_parsing_relative_path2.cfg"
     config_rel_path = "configs/test_config_parsing_relative_path2.cfg"
     open(config_abs_path, "w").close()
-    eq_(locate_file(config_rel_path, _my_dir), config_abs_path)
+    eq_(locate_file(config_rel_path, _my_dir), str(config_abs_path))
 
 
 def test_locate_file_valid_paths3():
-    """
-    Test that `config.locate_file` works with relative/absolute paths.
-    """
-
-    config_abs_path = join(config_dir, "test_config_parsing_relative_path3.cfg")
+    """Test that `config.locate_file` works with relative/absolute paths."""
+    config_abs_path = config_dir / "test_config_parsing_relative_path3.cfg"
     config_rel_path = "configs/test_config_parsing_relative_path3.cfg"
     open(config_abs_path, "w").close()
     eq_(locate_file(config_abs_path, _my_dir), locate_file(config_rel_path, _my_dir))
@@ -120,18 +103,13 @@ def test_locate_file_valid_paths3():
 
 @raises(IOError)
 def test_locate_file_invalid_path():
-    """
-    Test that `config.locate_file` raises error for paths that do not exist
-    """
-
-    locate_file(join(test_dir, "does_not_exist.cfg"), _my_dir)
+    """Test that `config.locate_file` raises error for paths that do not exist."""
+    locate_file(test_dir / "does_not_exist.cfg", _my_dir)
 
 
 @raises(ValueError)
 def test_input_checking1():
-    """
-    Test merging featuresets with different number of examples
-    """
+    """Test merging featuresets with different number of examples."""
     suffix = ".jsonlines"
     featureset = ["test_input_2examples_1", "test_input_3examples_1"]
     load_featureset(train_dir, featureset, suffix, quiet=True)
@@ -139,18 +117,14 @@ def test_input_checking1():
 
 @raises(ValueError)
 def test_input_checking2():
-    """
-    Test joining featuresets that contain the same features for each instance
-    """
+    """Test joining featuresets that contain the same features for each instance."""
     suffix = ".jsonlines"
     featureset = ["test_input_3examples_1", "test_input_3examples_1"]
     load_featureset(train_dir, featureset, suffix, quiet=True)
 
 
 def test_input_checking3():
-    """
-    Test to ensure that we correctly merge featuresets
-    """
+    """Test to ensure that we correctly merge featuresets."""
     suffix = ".jsonlines"
     featureset = ["test_input_3examples_1", "test_input_3examples_2"]
     examples_tuple = load_featureset(train_dir, featureset, suffix, quiet=True)
@@ -158,13 +132,11 @@ def test_input_checking3():
 
 
 def test_one_file_load_featureset():
-    """
-    Test loading a single file with load_featureset
-    """
+    """Test loading a single file with load_featureset."""
     suffix = ".jsonlines"
     featureset = ["test_input_2examples_1"]
     single_file_fs = load_featureset(
-        join(train_dir, "test_input_2examples_1.jsonlines"), "", "", quiet=True
+        train_dir / "test_input_2examples_1.jsonlines", "", "", quiet=True
     )
     single_fs = load_featureset(train_dir, featureset, suffix, quiet=True)
     eq_(single_file_fs, single_fs)
@@ -172,49 +144,36 @@ def test_one_file_load_featureset():
 
 @raises(ValueError)
 def check_config_parsing_value_error(config_path):
-    """
-    Assert that calling `_parse_config_file` on `config_path` raises ValueError
-    """
+    """Assert that calling `_parse_config_file` on `config_path` raises ValueError."""
     parse_config_file(config_path)
 
 
 @raises(TypeError)
 def check_config_parsing_type_error(config_path):
-    """
-    Assert that calling `_parse_config_file` on `config_path` raises TypeError
-    """
+    """Assert that calling `_parse_config_file` on `config_path` raises TypeError."""
     parse_config_file(config_path)
 
 
 @raises(KeyError)
 def check_config_parsing_key_error(config_path):
-    """
-    Assert that calling `_parse_config_file` on `config_path` raises KeyError
-    """
+    """Assert that calling `_parse_config_file` on `config_path` raises KeyError."""
     parse_config_file(config_path)
 
 
 @raises(IOError)
 def check_config_parsing_file_not_found_error(config_path):
-    """
-    Assert that calling `_parse_config_file` on `config_path` raises FileNotFoundError
-    """
+    """Assert that calling `_parse_config_file` on `config_path` raises FileNotFoundError."""
     parse_config_file(config_path)
 
 
 @raises(IOError)
 def test_empty_config_name_raises_file_not_found_error():
-    """
-    Assert that calling _parse_config_file on an empty string raises IOError
-    """
+    """Assert that calling _parse_config_file on an empty string raises IOError."""
     parse_config_file("")
 
 
 def test_config_parsing_no_name():
-    """
-    Test that config parsing raises an error for missing experiment names
-    """
-
+    """Test that config parsing raises an error for missing experiment names."""
     # make a simple config file that has no experiment name
     values_to_fill_dict = {
         "train_directory": train_dir,
@@ -226,17 +185,14 @@ def test_config_parsing_no_name():
         "results": output_dir,
     }
 
-    config_template_path = join(config_dir, "test_config_parsing.template.cfg")
+    config_template_path = config_dir / "test_config_parsing.template.cfg"
     config_path = fill_in_config_options(config_template_path, values_to_fill_dict, "no_name")
 
     yield check_config_parsing_value_error, config_path
 
 
 def test_config_parsing_bad_task():
-    """
-    Test to ensure config parsing raises error with invalid/missing task
-    """
-
+    """Test to ensure config parsing raises error with invalid/missing task."""
     # make a simple config file that has a bad task
     # but everything else is correct
     values_to_fill_dict = {
@@ -254,17 +210,14 @@ def test_config_parsing_bad_task():
     ):
         if task_value is not None:
             values_to_fill_dict["task"] = task_value
-        config_template_path = join(config_dir, "test_config_parsing.template.cfg")
+        config_template_path = config_dir / "test_config_parsing.template.cfg"
         config_path = fill_in_config_options(config_template_path, values_to_fill_dict, sub_prefix)
 
         yield check_config_parsing_value_error, config_path
 
 
 def test_config_parsing_bad_learner():
-    """
-    Test that config parsing raises error with missing/bad/duplicate learners
-    """
-
+    """Test that config parsing raises error with missing/bad/duplicate learners."""
     # make a simple config file that has bad learner specifications
     values_to_fill_dict = {
         "experiment_name": "config_parsing",
@@ -283,16 +236,13 @@ def test_config_parsing_bad_learner():
         if learners_list is not None:
             values_to_fill_dict["learners"] = learners_list
 
-        config_template_path = join(config_dir, "test_config_parsing.template.cfg")
+        config_template_path = config_dir / "test_config_parsing.template.cfg"
         config_path = fill_in_config_options(config_template_path, values_to_fill_dict, sub_prefix)
         yield check_config_parsing_value_error, config_path
 
 
 def test_config_parsing_bad_sampler():
-    """
-    Test to ensure config file parsing raises an error with an invalid sampler
-    """
-
+    """Test to ensure config file parsing raises an error with an invalid sampler."""
     # make a simple config file that has bad sampling information
     values_to_fill_dict = {
         "experiment_name": "config_parsing",
@@ -306,17 +256,14 @@ def test_config_parsing_bad_sampler():
         "sampler": "RFBSampler",
     }
 
-    config_template_path = join(config_dir, "test_config_parsing.template.cfg")
+    config_template_path = config_dir / "test_config_parsing.template.cfg"
     config_path = fill_in_config_options(config_template_path, values_to_fill_dict, "bad_sampler")
 
     yield check_config_parsing_value_error, config_path
 
 
 def test_config_parsing_bad_hashing():
-    """
-    Test that config parsing raises error with `feature_hasher` but not `hasher_features`
-    """
-
+    """Test that config parsing raises error with `feature_hasher` but not `hasher_features`."""
     # make a simple config file that has bad feature hashing information
     values_to_fill_dict = {
         "experiment_name": "config_parsing",
@@ -330,17 +277,14 @@ def test_config_parsing_bad_hashing():
         "feature_hasher": "True",
     }
 
-    config_template_path = join(config_dir, "test_config_parsing.template.cfg")
+    config_template_path = config_dir / "test_config_parsing.template.cfg"
     config_path = fill_in_config_options(config_template_path, values_to_fill_dict, "bad_hashing")
 
     yield check_config_parsing_value_error, config_path
 
 
 def test_config_parsing_bad_featuresets():
-    """
-    Test that config file parsing raises error with badly specified featuresets
-    """
-
+    """Test that config file parsing raises error with badly specified featuresets."""
     # make a simple config file that has bad feature sets
     values_to_fill_dict = {
         "experiment_name": "config_parsing",
@@ -359,16 +303,13 @@ def test_config_parsing_bad_featuresets():
         if featuresets is not None:
             values_to_fill_dict["featuresets"] = featuresets
 
-        config_template_path = join(config_dir, "test_config_parsing.template.cfg")
+        config_template_path = config_dir / "test_config_parsing.template.cfg"
         config_path = fill_in_config_options(config_template_path, values_to_fill_dict, sub_prefix)
         yield check_config_parsing_value_error, config_path
 
 
 def test_config_parsing_bad_featurenames():
-    """
-    Test that config parsing raises error with badly specified featureset names
-    """
-
+    """Test that config parsing raises error with badly specified featureset names."""
     # make a simple config file that has bad feature names
     values_to_fill_dict = {
         "experiment_name": "config_parsing",
@@ -388,17 +329,14 @@ def test_config_parsing_bad_featurenames():
         if fname is not None:
             values_to_fill_dict["featureset_names"] = fname
 
-        config_template_path = join(config_dir, "test_config_parsing.template.cfg")
+        config_template_path = config_dir / "test_config_parsing.template.cfg"
         config_path = fill_in_config_options(config_template_path, values_to_fill_dict, sub_prefix)
 
         yield check_config_parsing_value_error, config_path
 
 
 def test_config_parsing_bad_scaling():
-    """
-    Test that config parsing raises error with invalid scaling type
-    """
-
+    """Test that config parsing raises error with invalid scaling type."""
     # make a simple config file that has bad scaling information
     values_to_fill_dict = {
         "experiment_name": "config_parsing",
@@ -416,17 +354,14 @@ def test_config_parsing_bad_scaling():
     ):
         values_to_fill_dict["feature_scaling"] = scaling_type
 
-        config_template_path = join(config_dir, "test_config_parsing.template.cfg")
+        config_template_path = config_dir / "test_config_parsing.template.cfg"
         config_path = fill_in_config_options(config_template_path, values_to_fill_dict, sub_prefix)
 
         yield check_config_parsing_value_error, config_path
 
 
 def test_config_parsing_bad_train():
-    """
-    Test that config parsing raises error with invalid train path specifications
-    """
-
+    """Test that config parsing raises error with invalid train path specifications."""
     # make a simple config file that has a bad train paths
     values_to_fill_dict = {
         "experiment_name": "config_parsing",
@@ -446,18 +381,18 @@ def test_config_parsing_bad_train():
     ]:
         if sub_prefix == "both_train_path_and_file":
             train_fh = tempfile.NamedTemporaryFile(
-                suffix="jsonlines", prefix=join(other_dir, "test_config_parsing_")
+                suffix="jsonlines", prefix=str(other_dir / "test_config_parsing_")
             )
             values_to_fill_dict["train_file"] = train_fh.name
             values_to_fill_dict["train_directory"] = train_dir
 
         elif sub_prefix == "nonexistent_train_path":
-            values_to_fill_dict["train_directory"] = join(train_dir, "foo")
+            values_to_fill_dict["train_directory"] = str(train_dir / "foo")
 
         elif sub_prefix == "nonexistent_test_file":
             values_to_fill_dict["train_file"] = "foo.jsonlines"
 
-        config_template_path = join(config_dir, "test_config_parsing.template.cfg")
+        config_template_path = config_dir / "test_config_parsing.template.cfg"
         config_path = fill_in_config_options(config_template_path, values_to_fill_dict, sub_prefix)
 
         yield check_config_parsing_value_error, config_path
@@ -467,10 +402,7 @@ def test_config_parsing_bad_train():
 
 
 def test_config_parsing_bad_test():
-    """
-    Test that config parsing raises error with invalid test path specifications
-    """
-
+    """Test that config parsing raises error with invalid test path specifications."""
     # make a simple config file that has bad test path
     values_to_fill_dict = {
         "experiment_name": "config_parsing",
@@ -485,18 +417,18 @@ def test_config_parsing_bad_test():
     for sub_prefix in ["both_test_path_and_file", "nonexistent_test_path", "nonexistent_test_file"]:
         if sub_prefix == "both_test_path_and_file":
             test_fh = tempfile.NamedTemporaryFile(
-                suffix="jsonlines", prefix=join(other_dir, "test_config_parsing_")
+                suffix="jsonlines", prefix=str(other_dir / "test_config_parsing_")
             )
             values_to_fill_dict["test_file"] = test_fh.name
             values_to_fill_dict["test_directory"] = test_dir
 
         elif sub_prefix == "nonexistent_test_path":
-            values_to_fill_dict["test_directory"] = join(test_dir, "foo")
+            values_to_fill_dict["test_directory"] = str(test_dir / "foo")
 
         elif sub_prefix == "nonexistent_test_file":
             values_to_fill_dict["test_file"] = "foo.jsonlines"
 
-        config_template_path = join(config_dir, "test_config_parsing.template.cfg")
+        config_template_path = config_dir / "test_config_parsing.template.cfg"
         config_path = fill_in_config_options(config_template_path, values_to_fill_dict, sub_prefix)
 
         yield check_config_parsing_value_error, config_path
@@ -506,10 +438,7 @@ def test_config_parsing_bad_test():
 
 
 def test_config_parsing_grid_search_but_no_objectives():
-    """
-    Test that config parsing raises error with grid search but no objectives
-    """
-
+    """Test that config parsing raises error with grid search but no objectives."""
     # make a simple config file that has grid search turned on but no objectives
     values_to_fill_dict = {
         "experiment_name": "config_parsing",
@@ -522,7 +451,7 @@ def test_config_parsing_grid_search_but_no_objectives():
         "results": output_dir,
     }
 
-    config_template_path = join(config_dir, "test_config_parsing.template.cfg")
+    config_template_path = config_dir / "test_config_parsing.template.cfg"
     config_path = fill_in_config_options(
         config_template_path, values_to_fill_dict, "missing_objective"
     )
@@ -531,12 +460,9 @@ def test_config_parsing_grid_search_but_no_objectives():
 
 
 def test_config_parsing_bad_objectives():
-    """
-    Test that config parsing raises error with grid objectives as strings
-    """
-
+    """Test that config parsing raises error with grid objectives as strings."""
     # make a simple config file that has a mistyped objective value
-    config_template_path = join(config_dir, "test_config_parsing.template.cfg")
+    config_template_path = config_dir / "test_config_parsing.template.cfg"
     values_to_fill_dict = {
         "experiment_name": "config_parsing",
         "task": "evaluate",
@@ -556,10 +482,7 @@ def test_config_parsing_bad_objectives():
 
 
 def test_config_parsing_bad_metric():
-    """
-    Test that config parsing raises error with metrics as strings
-    """
-
+    """Test that config parsing raises error with metrics as strings."""
     # make a simple config file that has bad metrics
     values_to_fill_dict = {
         "experiment_name": "config_parsing",
@@ -573,7 +496,7 @@ def test_config_parsing_bad_metric():
         "metrics": "accuracy",
     }
 
-    config_template_path = join(config_dir, "test_config_parsing.template.cfg")
+    config_template_path = config_dir / "test_config_parsing.template.cfg"
     config_path = fill_in_config_options(
         config_template_path, values_to_fill_dict, "bad_metric_as_string"
     )
@@ -582,10 +505,7 @@ def test_config_parsing_bad_metric():
 
 
 def test_config_parsing_log_loss_no_probability():
-    """
-    Test that config parsing raises error for `log_loss` without probability
-    """
-
+    """Test that config parsing raises error for `log_loss` without probability."""
     values_to_fill_dict = {
         "experiment_name": "config_parsing",
         "task": "evaluate",
@@ -599,7 +519,7 @@ def test_config_parsing_log_loss_no_probability():
         "objectives": "['neg_log_loss']",
     }
 
-    config_template_path = join(config_dir, "test_config_parsing.template.cfg")
+    config_template_path = config_dir / "test_config_parsing.template.cfg"
     config_path = fill_in_config_options(
         config_template_path, values_to_fill_dict, "log_loss_no_probability"
     )
@@ -608,10 +528,7 @@ def test_config_parsing_log_loss_no_probability():
 
 
 def test_config_parsing_roc_auc_no_probability():
-    """
-    Test that config parsing raises error for `roc_auc` without probability
-    """
-
+    """Test that config parsing raises error for `roc_auc` without probability."""
     values_to_fill_dict = {
         "experiment_name": "config_parsing",
         "task": "evaluate",
@@ -625,7 +542,7 @@ def test_config_parsing_roc_auc_no_probability():
         "metrics": "['roc_auc']",
     }
 
-    config_template_path = join(config_dir, "test_config_parsing.template.cfg")
+    config_template_path = config_dir / "test_config_parsing.template.cfg"
     config_path = fill_in_config_options(
         config_template_path, values_to_fill_dict, "roc_auc_no_probability"
     )
@@ -634,10 +551,7 @@ def test_config_parsing_roc_auc_no_probability():
 
 
 def test_config_parsing_bad_task_paths():
-    """
-    Test that config parsing raises error with various incorrectly set paths
-    """
-
+    """Test that config parsing raises error with various incorrectly set paths."""
     # make a simple config file that has a bad task
     # but everything else is correct
     values_to_fill_dict = {
@@ -683,7 +597,7 @@ def test_config_parsing_bad_task_paths():
             values_to_fill_dict["task"] = "cross_validate"
             values_to_fill_dict["results"] = output_dir
             test_fh1 = tempfile.NamedTemporaryFile(
-                suffix="jsonlines", prefix=join(other_dir, "test_config_parsing_")
+                suffix="jsonlines", prefix=str(other_dir / "test_config_parsing_")
             )
             values_to_fill_dict["test_file"] = test_fh1.name
 
@@ -691,7 +605,7 @@ def test_config_parsing_bad_task_paths():
             values_to_fill_dict["task"] = "train"
             values_to_fill_dict["models"] = output_dir
             test_fh2 = tempfile.NamedTemporaryFile(
-                suffix="jsonlines", prefix=join(other_dir, "test_config_parsing_")
+                suffix="jsonlines", prefix=str(other_dir / "test_config_parsing_")
             )
 
             values_to_fill_dict["test_file"] = test_fh2.name
@@ -720,7 +634,7 @@ def test_config_parsing_bad_task_paths():
             values_to_fill_dict["results"] = output_dir
             values_to_fill_dict["models"] = output_dir
 
-        config_template_path = join(config_dir, "test_config_parsing.template.cfg")
+        config_template_path = config_dir / "test_config_parsing.template.cfg"
         config_path = fill_in_config_options(config_template_path, values_to_fill_dict, sub_prefix)
 
         yield check_config_parsing_value_error, config_path
@@ -733,10 +647,7 @@ def test_config_parsing_bad_task_paths():
 
 
 def test_config_parsing_bad_cv_folds():
-    """
-    Test that config parsing raises error with invalid `cv_folds`
-    """
-
+    """Test that config parsing raises error with invalid `cv_folds`."""
     # make a simple config file that has a bad value for cv_folds
     # but everything else is correct
     values_to_fill_dict = {
@@ -751,17 +662,14 @@ def test_config_parsing_bad_cv_folds():
         "objectives": "['f1_score_macro']",
     }
 
-    config_template_path = join(config_dir, "test_config_parsing.template.cfg")
+    config_template_path = config_dir / "test_config_parsing.template.cfg"
     config_path = fill_in_config_options(config_template_path, values_to_fill_dict, "bad_cv_folds")
 
     yield check_config_parsing_value_error, config_path
 
 
 def test_config_parsing_save_cv_models_no_models_path():
-    """
-    Test that config parsing raises error with `save_cv_folds` but no output path
-    """
-
+    """Test that config parsing raises error with `save_cv_folds` but no output path."""
     # make a simple config file that has a bad value for cv_folds
     # but everything else is correct
     values_to_fill_dict = {
@@ -776,7 +684,7 @@ def test_config_parsing_save_cv_models_no_models_path():
         "objectives": "['f1_score_macro']",
     }
 
-    config_template_path = join(config_dir, "test_config_parsing.template.cfg")
+    config_template_path = config_dir / "test_config_parsing.template.cfg"
     config_path = fill_in_config_options(
         config_template_path, values_to_fill_dict, "save_cv_folds_true_no_models_path"
     )
@@ -785,10 +693,7 @@ def test_config_parsing_save_cv_models_no_models_path():
 
 
 def test_config_parsing_invalid_option():
-    """
-    Test that config parsing raises error with invalid config options
-    """
-
+    """Test that config parsing raises error with invalid config options."""
     # make a simple config file that has an invalid option
     values_to_fill_dict = {
         "experiment_name": "config_parsing",
@@ -802,7 +707,7 @@ def test_config_parsing_invalid_option():
         "objectives": "['f1_score_macro']",
     }
 
-    config_template_path = join(config_dir, "test_config_parsing.template.cfg")
+    config_template_path = config_dir / "test_config_parsing.template.cfg"
 
     config_path = fill_in_config_options(
         config_template_path, values_to_fill_dict, "invalid_option"
@@ -812,10 +717,7 @@ def test_config_parsing_invalid_option():
 
 
 def test_config_parsing_duplicate_option():
-    """
-    Test that config parsing raises error with duplicate config options
-    """
-
+    """Test that config parsing raises error with duplicate config options."""
     # make a simple config file that has a duplicate option
     values_to_fill_dict = {
         "experiment_name": "config_parsing",
@@ -829,7 +731,7 @@ def test_config_parsing_duplicate_option():
         "objectives": "['f1_score_macro']",
     }
 
-    config_template_path = join(config_dir, "test_config_parsing.template.cfg")
+    config_template_path = config_dir / "test_config_parsing.template.cfg"
 
     config_path = fill_in_config_options(
         config_template_path, values_to_fill_dict, "duplicate_option"
@@ -839,10 +741,7 @@ def test_config_parsing_duplicate_option():
 
 
 def test_config_parsing_option_in_wrong_section():
-    """
-    Test that config parsing raises error with option in wrong section
-    """
-
+    """Test that config parsing raises error with option in wrong section."""
     # make a simple config file that has an option in the wrong section
     values_to_fill_dict = {
         "experiment_name": "config_parsing",
@@ -856,7 +755,7 @@ def test_config_parsing_option_in_wrong_section():
         "objectives": "['f1_score_macro']",
     }
 
-    config_template_path = join(config_dir, "test_config_parsing.template.cfg")
+    config_template_path = config_dir / "test_config_parsing.template.cfg"
 
     config_path = fill_in_config_options(
         config_template_path, values_to_fill_dict, "option_in_wrong_section"
@@ -866,10 +765,7 @@ def test_config_parsing_option_in_wrong_section():
 
 
 def test_config_parsing_mislocated_input_path():
-    """
-    Test that config parsing raises error with mislocated input path
-    """
-
+    """Test that config parsing raises error with mislocated input path."""
     # make a simple config file that has a mislocated path
     values_to_fill_dict = {
         "experiment_name": "config_parsing",
@@ -882,7 +778,7 @@ def test_config_parsing_mislocated_input_path():
         "objectives": "['f1_score_macro']",
     }
 
-    config_template_path = join(config_dir, "test_config_parsing.template.cfg")
+    config_template_path = config_dir / "test_config_parsing.template.cfg"
 
     config_path = fill_in_config_options(
         config_template_path, values_to_fill_dict, "mislocated_input_file"
@@ -893,10 +789,7 @@ def test_config_parsing_mislocated_input_path():
 
 @raises(ValueError)
 def test_config_parsing_mse_throws_exception():
-    """
-    Test that config parsing raises error with `mean_squared_error`
-    """
-
+    """Test that config parsing raises error with `mean_squared_error`."""
     # make a simple config file that has an invalid option
     values_to_fill_dict = {
         "experiment_name": "config_parsing",
@@ -910,7 +803,7 @@ def test_config_parsing_mse_throws_exception():
         "objectives": "['mean_squared_error']",
     }
 
-    config_template_path = join(config_dir, "test_config_parsing.template.cfg")
+    config_template_path = config_dir / "test_config_parsing.template.cfg"
 
     config_path = fill_in_config_options(
         config_template_path, values_to_fill_dict, "mse_to_neg_mse"
@@ -920,10 +813,7 @@ def test_config_parsing_mse_throws_exception():
 
 
 def test_config_parsing_no_grid_objectives_needed_for_learning_curve():
-    """
-    Test that config parsing works as expected for learning curves without tuning objectives
-    """
-
+    """Test that config parsing works as expected for learning curves without tuning objectives."""
     values_to_fill_dict = {
         "experiment_name": "config_parsing",
         "task": "learning_curve",
@@ -935,7 +825,7 @@ def test_config_parsing_no_grid_objectives_needed_for_learning_curve():
         "results": output_dir,
     }
 
-    config_template_path = join(config_dir, "test_config_parsing.template.cfg")
+    config_template_path = config_dir / "test_config_parsing.template.cfg"
 
     config_path = fill_in_config_options(
         config_template_path, values_to_fill_dict, "no_objectives_learning_curve"
@@ -997,10 +887,7 @@ def test_config_parsing_no_grid_objectives_needed_for_learning_curve():
 
 
 def test_config_parsing_relative_input_path():
-    """
-    Test that config parsing works as expected with relative input directories
-    """
-
+    """Test that config parsing works as expected with relative input directories."""
     # make a simple config file that has relative paths
     values_to_fill_dict = {
         "experiment_name": "config_parsing",
@@ -1013,7 +900,7 @@ def test_config_parsing_relative_input_path():
         "objectives": "['f1_score_macro']",
     }
 
-    config_template_path = join(config_dir, "test_config_parsing.template.cfg")
+    config_template_path = config_dir / "test_config_parsing.template.cfg"
 
     config_path = fill_in_config_options(
         config_template_path, values_to_fill_dict, "mislocated_input_file"
@@ -1074,12 +961,9 @@ def test_config_parsing_relative_input_path():
 
 
 def test_config_parsing_relative_input_paths():
-    """
-    Test that config parsing works as expected with relative input file paths
-    """
-
-    train_file = join(train_dir, "f0.jsonlines")
-    test_file = join(train_dir, "f1.jsonlines")
+    """Test that config parsing works as expected with relative input file paths."""
+    train_file = train_dir / "f0.jsonlines"
+    test_file = train_dir / "f1.jsonlines"
 
     # make a simple config file that has relative paths
     values_to_fill_dict = {
@@ -1093,7 +977,7 @@ def test_config_parsing_relative_input_paths():
         "objectives": "['f1_score_micro']",
     }
 
-    config_template_path = join(config_dir, "test_relative_paths.template.cfg")
+    config_template_path = config_dir / "test_relative_paths.template.cfg"
     config_path = fill_in_config_options(
         config_template_path, values_to_fill_dict, "relative_paths"
     )
@@ -1102,24 +986,21 @@ def test_config_parsing_relative_input_paths():
 
 
 def test_config_parsing_automatic_output_directory_creation():
-    """
-    Test that output directories in config file are automatically created
-    """
-
-    train_file = join(train_dir, "f0.jsonlines")
-    test_file = join(train_dir, "f1.jsonlines")
+    """Test that output directories in config file are automatically created."""
+    train_file = train_dir / "f0.jsonlines"
+    test_file = train_dir / "f1.jsonlines"
 
     # make a simple config file that has new directories that should
     # be automatically created
-    new_log_path = join(output_dir, "autolog")
-    new_results_path = join(output_dir, "autoresults")
-    new_models_path = join(output_dir, "automodels")
-    new_predictions_path = join(output_dir, "autopredictions")
+    new_log_path = output_dir / "autolog"
+    new_results_path = output_dir / "autoresults"
+    new_models_path = output_dir / "automodels"
+    new_predictions_path = output_dir / "autopredictions"
 
-    ok_(not (exists(new_log_path)))
-    ok_(not (exists(new_results_path)))
-    ok_(not (exists(new_models_path)))
-    ok_(not (exists(new_predictions_path)))
+    ok_(not new_log_path.exists())
+    ok_(not new_results_path.exists())
+    ok_(not new_models_path.exists())
+    ok_(not new_predictions_path.exists())
 
     values_to_fill_dict = {
         "experiment_name": "auto_dir_creation",
@@ -1134,24 +1015,21 @@ def test_config_parsing_automatic_output_directory_creation():
         "objectives": "['f1_score_micro']",
     }
 
-    config_template_path = join(config_dir, "test_relative_paths.template.cfg")
+    config_template_path = config_dir / "test_relative_paths.template.cfg"
     config_path = fill_in_config_options(
         config_template_path, values_to_fill_dict, "auto_dir_creation"
     )
 
     parse_config_file(config_path)
 
-    ok_(exists(new_log_path))
-    ok_(exists(new_results_path))
-    ok_(exists(new_models_path))
-    ok_(exists(new_predictions_path))
+    ok_(new_log_path.exists())
+    ok_(new_results_path.exists())
+    ok_(new_models_path.exists())
+    ok_(new_predictions_path.exists())
 
 
 def test_cv_folds_and_grid_search_folds():
-    """
-    Test config parsing for various `cv_folds` and `grid_search_folds` combos
-    """
-
+    """Test config parsing for various `cv_folds` and `grid_search_folds` combos."""
     # we want to test all possible combinations of the following variables:
     #  task = train, evaluate, predict, cross_validate
     #  cv_folds/folds_file = not specified, number, csv file
@@ -1248,7 +1126,7 @@ def test_cv_folds_and_grid_search_folds():
     ) in zip(
         product(
             ["train", "evaluate", "predict", "cross_validate"],
-            [None, 5, join(train_dir, "folds_file_test.csv")],
+            [None, 5, train_dir / "folds_file_test.csv"],
             [None, 7],
             [None, True, False],
         ),
@@ -1348,7 +1226,7 @@ def check_cv_folds_and_grid_search_folds(
 ):
     # read in the folds file into a dictionary and replace the string
     # 'fold_mapping' with this dictionary.
-    fold_mapping = load_cv_folds(join(train_dir, "folds_file_test.csv"), ids_to_floats=False)
+    fold_mapping = load_cv_folds(train_dir / "folds_file_test.csv", ids_to_floats=False)
     if chosen_grid_search_folds == "fold_mapping":
         chosen_grid_search_folds = fold_mapping
     if chosen_cv_folds == "fold_mapping":
@@ -1359,10 +1237,10 @@ def check_cv_folds_and_grid_search_folds(
         "experiment_name": "config_parsing",
         "task": task,
         "grid_search": "true",
-        "train_directory": train_dir,
+        "train_directory": str(train_dir),
         "featuresets": "[['f1', 'f2', 'f3']]",
         "learners": "['LogisticRegression']",
-        "logs": output_dir,
+        "logs": str(output_dir),
         "objectives": "['f1_score_macro']",
     }
 
@@ -1378,7 +1256,7 @@ def check_cv_folds_and_grid_search_folds(
     # now add the various fields that are passed in
     if isinstance(cv_folds_or_file, int):
         values_to_fill_dict["num_cv_folds"] = str(cv_folds_or_file)
-    elif isinstance(cv_folds_or_file, str):
+    elif isinstance(cv_folds_or_file, (str, Path)):
         values_to_fill_dict["folds_file"] = cv_folds_or_file
 
     if isinstance(grid_search_folds, int):
@@ -1389,7 +1267,7 @@ def check_cv_folds_and_grid_search_folds(
             use_folds_file_for_grid_search
         ).lower()
 
-    config_template_path = join(config_dir, "test_config_parsing.template.cfg")
+    config_template_path = config_dir / "test_config_parsing.template.cfg"
     config_path = fill_in_config_options(
         config_template_path, values_to_fill_dict, "test_cv_and_grid_search_folds"
     )
@@ -1449,10 +1327,7 @@ def check_cv_folds_and_grid_search_folds(
 
 
 def test_default_number_of_cv_folds():
-    """
-    Test that config parsing works as expected without `cv_folds` being set
-    """
-
+    """Test that config parsing works as expected without `cv_folds` being set."""
     # make a simple config file that does not set `cv_folds`
 
     values_to_fill_dict = {
@@ -1467,7 +1342,7 @@ def test_default_number_of_cv_folds():
         "objectives": "['f1_score_macro']",
     }
 
-    config_template_path = join(config_dir, "test_config_parsing.template.cfg")
+    config_template_path = config_dir / "test_config_parsing.template.cfg"
     config_path = fill_in_config_options(
         config_template_path, values_to_fill_dict, "default_cv_folds"
     )
@@ -1526,10 +1401,7 @@ def test_default_number_of_cv_folds():
 
 
 def test_setting_number_of_cv_folds():
-    """
-    Test that config parsing works as expected with `cv_folds` explicitly set
-    """
-
+    """Test that config parsing works as expected with `cv_folds` explicitly set."""
     # make a simple config file that explicitly sets `cv_folds`
     values_to_fill_dict = {
         "experiment_name": "config_parsing",
@@ -1544,7 +1416,7 @@ def test_setting_number_of_cv_folds():
         "objectives": "['f1_score_macro']",
     }
 
-    config_template_path = join(config_dir, "test_config_parsing.template.cfg")
+    config_template_path = config_dir / "test_config_parsing.template.cfg"
     config_path = fill_in_config_options(
         config_template_path, values_to_fill_dict, "default_cv_folds"
     )
@@ -1603,10 +1475,7 @@ def test_setting_number_of_cv_folds():
 
 
 def test_default_cv_seed():
-    """
-    Test that config parsing works as expected with the default `cv_seed`
-    """
-
+    """Test that config parsing works as expected with the default `cv_seed`."""
     # make a simple config file that does not set `cv_seed`
 
     values_to_fill_dict = {
@@ -1621,7 +1490,7 @@ def test_default_cv_seed():
         "objectives": "['f1_score_macro']",
     }
 
-    config_template_path = join(config_dir, "test_config_parsing.template.cfg")
+    config_template_path = config_dir / "test_config_parsing.template.cfg"
     config_path = fill_in_config_options(
         config_template_path, values_to_fill_dict, "default_cv_folds"
     )
@@ -1680,10 +1549,7 @@ def test_default_cv_seed():
 
 
 def test_setting_cv_seed():
-    """
-    Test that config parsing works as expected with `cv_seed` explicitly set
-    """
-
+    """Test that config parsing works as expected with `cv_seed` explicitly set."""
     # make a simple config file that explicitly sets `cv_seed`
     values_to_fill_dict = {
         "experiment_name": "config_parsing",
@@ -1699,7 +1565,7 @@ def test_setting_cv_seed():
         "objectives": "['f1_score_macro']",
     }
 
-    config_template_path = join(config_dir, "test_config_parsing.template.cfg")
+    config_template_path = config_dir / "test_config_parsing.template.cfg"
     config_path = fill_in_config_options(
         config_template_path, values_to_fill_dict, "default_cv_folds"
     )
@@ -1758,10 +1624,7 @@ def test_setting_cv_seed():
 
 
 def test_setting_param_grids():
-    """
-    Test that config parsing works as expected with specified param grids
-    """
-
+    """Test that config parsing works as expected with specified param grids."""
     # make a simple config file that does not set cv_folds
 
     values_to_fill_dict = {
@@ -1778,7 +1641,7 @@ def test_setting_param_grids():
         "objectives": "['f1_score_macro']",
     }
 
-    config_template_path = join(config_dir, "test_config_parsing.template.cfg")
+    config_template_path = config_dir / "test_config_parsing.template.cfg"
     config_path = fill_in_config_options(config_template_path, values_to_fill_dict, "param_grids")
 
     (
@@ -1840,10 +1703,7 @@ def test_setting_param_grids():
 
 
 def test_setting_fixed_parameters():
-    """
-    Test that config parsing works as expected with specified fixed parameters
-    """
-
+    """Test that config parsing works as expected with specified fixed parameters."""
     # make a simple config file that does not set cv_folds
 
     values_to_fill_dict = {
@@ -1860,7 +1720,7 @@ def test_setting_fixed_parameters():
         "objectives": "['f1_score_macro']",
     }
 
-    config_template_path = join(config_dir, "test_config_parsing.template.cfg")
+    config_template_path = config_dir / "test_config_parsing.template.cfg"
     config_path = fill_in_config_options(
         config_template_path, values_to_fill_dict, "fixed_parameters"
     )
@@ -1925,10 +1785,7 @@ def test_setting_fixed_parameters():
 
 @raises(ValueError)
 def test_learning_curve_objectives_unsupported_error():
-    """
-    Test that config parsing raises error for `objectives` with learning curves
-    """
-
+    """Test that config parsing raises error for `objectives` with learning curves."""
     values_to_fill_dict = {
         "experiment_name": "config_parsing",
         "task": "learning_curve",
@@ -1941,7 +1798,7 @@ def test_learning_curve_objectives_unsupported_error():
         "objectives": "['f1_score_macro']",
     }
 
-    config_template_path = join(config_dir, "test_config_parsing.template.cfg")
+    config_template_path = config_dir / "test_config_parsing.template.cfg"
     config_path = fill_in_config_options(
         config_template_path, values_to_fill_dict, "default_learning_curve"
     )
@@ -1950,10 +1807,7 @@ def test_learning_curve_objectives_unsupported_error():
 
 
 def test_default_learning_curve_options():
-    """
-    Test that config parsing works as expected with default learning curve options
-    """
-
+    """Test that config parsing works as expected with default learning curve options."""
     values_to_fill_dict = {
         "experiment_name": "config_parsing",
         "task": "learning_curve",
@@ -1966,7 +1820,7 @@ def test_default_learning_curve_options():
         "metrics": "['f1_score_macro']",
     }
 
-    config_template_path = join(config_dir, "test_config_parsing.template.cfg")
+    config_template_path = config_dir / "test_config_parsing.template.cfg"
     config_path = fill_in_config_options(
         config_template_path, values_to_fill_dict, "default_learning_curve"
     )
@@ -2026,10 +1880,7 @@ def test_default_learning_curve_options():
 
 
 def test_setting_learning_curve_options():
-    """
-    Test that config parsing works as expected with specified learning curve options
-    """
-
+    """Test that config parsing works as expected with specified learning curve options."""
     values_to_fill_dict = {
         "experiment_name": "config_parsing",
         "task": "learning_curve",
@@ -2043,7 +1894,7 @@ def test_setting_learning_curve_options():
         "metrics": "['f1_score_macro']",
     }
 
-    config_template_path = join(config_dir, "test_config_parsing.template.cfg")
+    config_template_path = config_dir / "test_config_parsing.template.cfg"
     config_path = fill_in_config_options(
         config_template_path, values_to_fill_dict, "setting_learning_curve"
     )
@@ -2104,10 +1955,7 @@ def test_setting_learning_curve_options():
 
 @raises(ValueError)
 def test_learning_curve_metrics_and_objectives_throw_error():
-    """
-    Test that config parsing raises error for learning curve `metrics` and `objectives`
-    """
-
+    """Test that config parsing raises error for learning curve `metrics` and `objectives`."""
     values_to_fill_dict = {
         "experiment_name": "config_parsing",
         "task": "learning_curve",
@@ -2120,7 +1968,7 @@ def test_learning_curve_metrics_and_objectives_throw_error():
         "metrics": '["accuracy", "f1_score_micro"]',
     }
 
-    config_template_path = join(config_dir, "test_config_parsing.template.cfg")
+    config_template_path = config_dir / "test_config_parsing.template.cfg"
     config_path = fill_in_config_options(
         config_template_path, values_to_fill_dict, "learning_curve_metrics_and_objectives"
     )
@@ -2179,10 +2027,7 @@ def test_learning_curve_metrics_and_objectives_throw_error():
 
 
 def test_learning_curve_metrics_and_no_objectives():
-    """
-    Test that config parsing works for learning curves with `metrics` but no `objectives`
-    """
-
+    """Test that config parsing works for learning curves with `metrics` but no `objectives`."""
     values_to_fill_dict = {
         "experiment_name": "config_parsing",
         "task": "learning_curve",
@@ -2194,7 +2039,7 @@ def test_learning_curve_metrics_and_no_objectives():
         "metrics": '["accuracy", "unweighted_kappa"]',
     }
 
-    config_template_path = join(config_dir, "test_config_parsing.template.cfg")
+    config_template_path = config_dir / "test_config_parsing.template.cfg"
     config_path = fill_in_config_options(
         config_template_path, values_to_fill_dict, "learning_curve_metrics_and_no_objectives"
     )
@@ -2253,10 +2098,7 @@ def test_learning_curve_metrics_and_no_objectives():
 
 
 def test_learning_curve_metrics():
-    """
-    Test that config parsing works for learning curves with `metrics` only
-    """
-
+    """Test that config parsing works for learning curves with `metrics` only."""
     values_to_fill_dict = {
         "experiment_name": "config_parsing",
         "task": "learning_curve",
@@ -2268,7 +2110,7 @@ def test_learning_curve_metrics():
         "metrics": '["accuracy"]',
     }
 
-    config_template_path = join(config_dir, "test_config_parsing.template.cfg")
+    config_template_path = config_dir / "test_config_parsing.template.cfg"
     config_path = fill_in_config_options(
         config_template_path, values_to_fill_dict, "learning_curve_objectives_and_no_metrics"
     )
@@ -2328,10 +2170,7 @@ def test_learning_curve_metrics():
 
 
 def test_learning_curve_pipeline_option():
-    """
-    Test that config parsing works for learning curves with `pipeline` set
-    """
-
+    """Test that config parsing works for learning curves with `pipeline` set."""
     values_to_fill_dict = {
         "experiment_name": "config_parsing",
         "task": "learning_curve",
@@ -2344,7 +2183,7 @@ def test_learning_curve_pipeline_option():
         "metrics": '["accuracy", "unweighted_kappa"]',
     }
 
-    config_template_path = join(config_dir, "test_config_parsing.template.cfg")
+    config_template_path = config_dir / "test_config_parsing.template.cfg"
     config_path = fill_in_config_options(
         config_template_path, values_to_fill_dict, "learning_curve_metrics_and_no_objectives"
     )
@@ -2403,10 +2242,7 @@ def test_learning_curve_pipeline_option():
 
 
 def test_learning_curve_no_metrics():
-    """
-    Test that config parsing works for learning curves with no `metrics`
-    """
-
+    """Test that config parsing works for learning curves with no `metrics`."""
     values_to_fill_dict = {
         "experiment_name": "config_parsing",
         "task": "learning_curve",
@@ -2417,7 +2253,7 @@ def test_learning_curve_no_metrics():
         "results": output_dir,
     }
 
-    config_template_path = join(config_dir, "test_config_parsing.template.cfg")
+    config_template_path = config_dir / "test_config_parsing.template.cfg"
     config_path = fill_in_config_options(
         config_template_path,
         values_to_fill_dict,
@@ -2428,9 +2264,7 @@ def test_learning_curve_no_metrics():
 
 
 def test_learning_curve_no_metrics_and_no_objectives():
-    """
-    Test that config parsing works for learning curves with no `metrics` or `objectives`
-    """
+    """Test that config parsing works for learning curves with no `metrics` or `objectives`."""
     values_to_fill_dict = {
         "experiment_name": "config_parsing",
         "task": "learning_curve",
@@ -2442,7 +2276,7 @@ def test_learning_curve_no_metrics_and_no_objectives():
         "objectives": "[]",
     }
 
-    config_template_path = join(config_dir, "test_config_parsing.template.cfg")
+    config_template_path = config_dir / "test_config_parsing.template.cfg"
     config_path = fill_in_config_options(
         config_template_path, values_to_fill_dict, "learning_curve_no_metrics_and_no_objectives"
     )
@@ -2451,10 +2285,7 @@ def test_learning_curve_no_metrics_and_no_objectives():
 
 
 def test_learning_curve_bad_folds_specifications():
-    """
-    Test that config parsing raises error for bad learning curve folds
-    """
-
+    """Test that config parsing raises error for bad learning curve folds."""
     values_to_fill_dict = {
         "experiment_name": "config_parsing",
         "task": "learning_curve",
@@ -2467,7 +2298,7 @@ def test_learning_curve_bad_folds_specifications():
         "results": output_dir,
     }
 
-    config_template_path = join(config_dir, "test_config_parsing.template.cfg")
+    config_template_path = config_dir / "test_config_parsing.template.cfg"
     config_path = fill_in_config_options(
         config_template_path, values_to_fill_dict, "learning_curve_bad_folds_specifications"
     )
@@ -2475,10 +2306,7 @@ def test_learning_curve_bad_folds_specifications():
 
 
 def test_config_parsing_param_grids_no_grid_search():
-    """
-    Test that config parsing raises warning for no grid search with param grids
-    """
-
+    """Test that config parsing raises warning for no grid search with param grids."""
     # make a simple config file that turns off grid search but specifies param grids
     values_to_fill_dict = {
         "experiment_name": "config_parsing_param_grids_no_grid_search",
@@ -2492,13 +2320,13 @@ def test_config_parsing_param_grids_no_grid_search():
         "param_grids": "[{'C': [1e-6, 0.001, 1, 10, 100, 1e5]}]",
     }
 
-    config_template_path = join(config_dir, "test_config_parsing.template.cfg")
+    config_template_path = config_dir / "test_config_parsing.template.cfg"
     config_path = fill_in_config_options(
         config_template_path, values_to_fill_dict, "param_grids_no_grid_search"
     )
 
     parse_config_file(config_path)
-    log_path = join(output_dir, "config_parsing_param_grids_no_grid_search.log")
+    log_path = output_dir / "config_parsing_param_grids_no_grid_search.log"
     with open(log_path) as f:
         warning_pattern = re.compile(
             r'Since "grid_search" is set to False, the specified ' r'"param_grids" will be ignored.'
@@ -2508,10 +2336,7 @@ def test_config_parsing_param_grids_no_grid_search():
 
 
 def test_config_parsing_no_grid_search_but_objectives_specified():
-    """
-    Test that config parsing raises warning if no grid search with `objectives`
-    """
-
+    """Test that config parsing raises warning if no grid search with `objectives`."""
     # make a simple config file that has grid search off but still specifies objectives
     values_to_fill_dict = {
         "experiment_name": "config_parsing_objectives_no_grid_search",
@@ -2525,7 +2350,7 @@ def test_config_parsing_no_grid_search_but_objectives_specified():
         "objectives": "['f1_score_macro', 'accuracy']",
     }
 
-    config_template_path = join(config_dir, "test_config_parsing.template.cfg")
+    config_template_path = config_dir / "test_config_parsing.template.cfg"
     config_path = fill_in_config_options(
         config_template_path, values_to_fill_dict, "objectives_no_grid_search"
     )
@@ -2583,7 +2408,7 @@ def test_config_parsing_no_grid_search_but_objectives_specified():
     eq_(do_grid_search, False)
     eq_(grid_objectives, [])
 
-    log_path = join(output_dir, "config_parsing_objectives_no_grid_search.log")
+    log_path = output_dir / "config_parsing_objectives_no_grid_search.log"
     with open(log_path) as f:
         warning_pattern = re.compile(
             r'Since "grid_search" is set to False, any specified "objectives"' r" will be ignored."
@@ -2593,10 +2418,7 @@ def test_config_parsing_no_grid_search_but_objectives_specified():
 
 
 def test_config_parsing_param_grids_fixed_parameters_conflict():
-    """
-    Test that config parsing raises warning for both param grids and fixed params
-    """
-
+    """Test that config parsing raises warning for both param grids and fixed params."""
     # make a simple config file that has a bad task
     # but everything else is correct
     values_to_fill_dict = {
@@ -2613,13 +2435,13 @@ def test_config_parsing_param_grids_fixed_parameters_conflict():
         "param_grids": "[{'C': [1e-6, 0.001, 1, 10, 100, 1e5]}]",
     }
 
-    config_template_path = join(config_dir, "test_config_parsing.template.cfg")
+    config_template_path = config_dir / "test_config_parsing.template.cfg"
     config_path = fill_in_config_options(
         config_template_path, values_to_fill_dict, "param_grids_no_grid_search"
     )
 
     parse_config_file(config_path)
-    log_path = join(output_dir, "config_parsing_param_grids_fixed_parameters_conflict.log")
+    log_path = output_dir / "config_parsing_param_grids_fixed_parameters_conflict.log"
     with open(log_path) as f:
         warning_pattern = re.compile(
             r'Note that "grid_search" is set to True and "fixed_parameters" '
@@ -2632,10 +2454,7 @@ def test_config_parsing_param_grids_fixed_parameters_conflict():
 
 
 def test_config_parsing_default_pos_label_value():
-    """
-    Test that config parsing works with default `pos_label` value
-    """
-
+    """Test that config parsing works with default `pos_label` value."""
     values_to_fill_dict = {
         "experiment_name": "config_parsing",
         "task": "evaluate",
@@ -2648,7 +2467,7 @@ def test_config_parsing_default_pos_label_value():
         "results": output_dir,
     }
 
-    config_template_path = join(config_dir, "test_config_parsing.template.cfg")
+    config_template_path = config_dir / "test_config_parsing.template.cfg"
 
     config_path = fill_in_config_options(
         config_template_path, values_to_fill_dict, "default_value_pos_label"
@@ -2708,10 +2527,7 @@ def test_config_parsing_default_pos_label_value():
 
 
 def test_config_parsing_default_save_votes_value():
-    """
-    Test that config parsing works as expected for default `save_votes` value
-    """
-
+    """Test that config parsing works as expected for default `save_votes` value."""
     values_to_fill_dict = {
         "experiment_name": "config_parsing",
         "task": "evaluate",
@@ -2725,7 +2541,7 @@ def test_config_parsing_default_save_votes_value():
         "results": output_dir,
     }
 
-    config_template_path = join(config_dir, "test_config_parsing.template.cfg")
+    config_template_path = config_dir / "test_config_parsing.template.cfg"
 
     config_path = fill_in_config_options(
         config_template_path, values_to_fill_dict, "default_value_save_votes"
@@ -2785,10 +2601,7 @@ def test_config_parsing_default_save_votes_value():
 
 
 def test_config_parsing_set_save_votes_value():
-    """
-    Test that config parsing works as expected for specified `save_votes` value
-    """
-
+    """Test that config parsing works as expected for specified `save_votes` value."""
     values_to_fill_dict = {
         "experiment_name": "config_parsing",
         "task": "evaluate",
@@ -2803,7 +2616,7 @@ def test_config_parsing_set_save_votes_value():
         "save_votes": "true",
     }
 
-    config_template_path = join(config_dir, "test_config_parsing.template.cfg")
+    config_template_path = config_dir / "test_config_parsing.template.cfg"
 
     config_path = fill_in_config_options(
         config_template_path, values_to_fill_dict, "set_value_save_votes"
@@ -2864,10 +2677,7 @@ def test_config_parsing_set_save_votes_value():
 
 @raises(KeyError)
 def test_config_parsing_use_log_instead_of_logs():
-    """
-    Test that config parsing raises error for `log` option instead of `logs`
-    """
-
+    """Test that config parsing raises error for `log` option instead of `logs`."""
     values_to_fill_dict = {
         "experiment_name": "config_parsing_log_vs_logs",
         "task": "evaluate",
@@ -2880,7 +2690,7 @@ def test_config_parsing_use_log_instead_of_logs():
         "results": output_dir,
     }
 
-    config_template_path = join(config_dir, "test_config_parsing.template.cfg")
+    config_template_path = config_dir / "test_config_parsing.template.cfg"
 
     config_path = fill_in_config_options(
         config_template_path, values_to_fill_dict, "use_log_vs_logs"

@@ -7,7 +7,6 @@ Initialization, training, saving, and loading tests for voting learners.
 """
 
 from itertools import product
-from os.path import exists, join
 from pathlib import Path
 
 import numpy as np
@@ -29,20 +28,20 @@ FS_DIGITS, _ = make_digits_data(test_size=0, use_digit_names=True)
 TRAIN_FS_HOUSING, TEST_FS_HOUSING = make_california_housing_data(num_examples=2000)
 FS_HOUSING, _ = make_california_housing_data(num_examples=2000, test_size=0)
 FS_HOUSING.ids = np.arange(2000)
-CUSTOM_LEARNER_PATH = Path(other_dir) / "custom_logistic_wrapper.py"
+CUSTOM_LEARNER_PATH = other_dir / "custom_logistic_wrapper.py"
 
 
 def setup():
-    """Set up the tests"""
+    """Set up the tests.."""
     for dir_path in [other_dir, output_dir]:
-        Path(dir_path).mkdir(exist_ok=True)
+        dir_path.mkdir(exist_ok=True)
 
 
 def tearDown():
-    """Clean up after tests"""
+    """Clean up after tests."""
     for model_path in [
         Path("test_current_directory.model"),
-        Path(output_dir) / "test_other_directory.model",
+        output_dir / "test_other_directory.model",
     ]:
         if model_path.exists():
             model_path.unlink()
@@ -308,7 +307,6 @@ def test_train():
 
 def test_train_with_custom_path():
     """Test voting classifier with custom learner path."""
-
     # instantiate and train a voting classifier on the digits training set
     learner_names = ["CustomLogisticRegressionWrapper", "SVC"]
     vl = VotingLearner(learner_names, custom_learner_path=str(CUSTOM_LEARNER_PATH))
@@ -344,7 +342,7 @@ def test_train_bad_param_grid_list():
 
 
 def check_save_and_load(learner_type, use_current_directory):
-    """Check that saving models works as expected"""
+    """Check that saving models works as expected."""
     # if the voting learner is a classifier
     if learner_type == "classifier":
         # use 3 classifiers, the digits training set, and accuracy
@@ -363,14 +361,14 @@ def check_save_and_load(learner_type, use_current_directory):
 
     # save this trained model into the current directory
     if use_current_directory:
-        model_name = "test_current_directory.model"
+        model_name = Path("test_current_directory.model")
     else:
-        model_name = join(output_dir, "test_other_directory.model")
+        model_name = output_dir / "test_other_directory.model"
 
     vl.save(model_name)
 
     # make sure that the model saved and that it's the same model
-    ok_(exists(model_name))
+    ok_(model_name.exists())
     vl2 = VotingLearner.from_file(model_name)
     eq_(vl._learner_names, vl2._learner_names)
     eq_(vl.model_type, vl2.model_type)

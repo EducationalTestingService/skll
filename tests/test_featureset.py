@@ -1,7 +1,6 @@
 # License: BSD 3 clause
 """
-Module for running a bunch of simple unit tests. Should be expanded more in
-the future.
+Run tests related to FeatureSets.
 
 :author: Michael Heilman (mheilman@ets.org)
 :author: Nitin Madnani (nmadnani@ets.org)
@@ -10,11 +9,8 @@ the future.
 """
 
 import itertools
-import os
 from collections import OrderedDict
 from io import StringIO
-from os.path import exists, join
-from pathlib import Path
 from shutil import rmtree
 
 import numpy as np
@@ -37,50 +33,40 @@ from skll.data import (
 from skll.data.readers import DictListReader
 from skll.experiments import load_featureset
 from skll.utils.commandline import skll_convert
-from skll.utils.constants import KNOWN_DEFAULT_PARAM_GRIDS
 from tests import other_dir, output_dir, test_dir, train_dir
 from tests.utils import make_classification_data, make_regression_data, unlink
 
-_ALL_MODELS = list(KNOWN_DEFAULT_PARAM_GRIDS.keys())
-
 
 def setup():
-    """
-    Create necessary directories for testing.
-    """
+    """Create necessary directories for testing."""
     for dir_path in [train_dir, test_dir, output_dir]:
-        Path(dir_path).mkdir(exist_ok=True)
+        dir_path.mkdir(exist_ok=True)
 
 
 def tearDown():
-    """
-    Clean up files created during testing.
-    """
+    """Clean up files created during testing."""
     for filetype in ["csv", "jsonlines", "libsvm", "tsv"]:
-        unlink(Path(other_dir) / f"empty.{filetype}")
+        unlink(other_dir / f"empty.{filetype}")
 
     file_names = [
         f"{x}.jsonlines" for x in ["test_string_ids", "test_string_ids_df", "test_string_labels_df"]
     ]
     for file_name in file_names:
-        unlink(Path(other_dir) / file_name)
+        unlink(other_dir / file_name)
 
     for dir_name in ["test_conversion", "test_merging"]:
-        rmtree(Path(train_dir) / dir_name)
+        rmtree(train_dir / dir_name)
 
 
 def _create_empty_file(filetype):
-    filepath = join(other_dir, f"empty.{filetype}")
+    filepath = other_dir / f"empty.{filetype}"
     open(filepath, "w").close()
     return filepath
 
 
 @raises(ValueError)
 def test_empty_ids():
-    """
-    Test to ensure that an error is raised if ids is None
-    """
-
+    """Test to ensure that an error is raised if ids is None."""
     # get a 100 instances with 4 features each
     X, y = make_classification(
         n_samples=100,
@@ -117,10 +103,7 @@ def test_empty_file_read():
 
 
 def test_empty_labels():
-    """
-    Test to check behaviour when labels is None
-    """
-
+    """Test to check behaviour when labels is None."""
     # create a feature set with empty labels
     fs, _ = make_classification_data(
         num_examples=100, num_features=4, num_labels=3, empty_labels=True, train_test_ratio=1.0
@@ -129,10 +112,7 @@ def test_empty_labels():
 
 
 def test_length():
-    """
-    Test to whether len() returns the number of instances
-    """
-
+    """Test to whether len() returns the number of instances."""
     # create a featureset
     fs, _ = make_classification_data(
         num_examples=100, num_features=4, num_labels=3, train_test_ratio=1.0
@@ -142,9 +122,7 @@ def test_length():
 
 
 def test_string_feature():
-    """
-    Test that string-valued features are properly encoded as binary features
-    """
+    """Test that string-valued features are properly encoded as binary features."""
     # create a featureset that is derived from an original
     # set of features containing 3 numeric features and
     # one string-valued feature that can take six possible
@@ -173,10 +151,7 @@ def test_string_feature():
 
 
 def test_equality():
-    """
-    Test featureset equality
-    """
-
+    """Test featureset equality."""
     # create a featureset
     fs1, _ = make_classification_data(
         num_examples=100, num_features=4, num_labels=3, train_test_ratio=1.0
@@ -251,9 +226,7 @@ def test_equality():
 
 
 def test_vectorizer_inequality():
-    """
-    Test to make sure that vectorizer equality fails properly
-    """
+    """Test to make sure that vectorizer equality fails properly."""
     v = DictVectorizer()
     assert_not_equal(v, 1)
     assert_not_equal(v, "passthrough")
@@ -262,10 +235,7 @@ def test_vectorizer_inequality():
 
 @raises(ValueError)
 def test_merge_different_vectorizers():
-    """
-    Test to ensure rejection of merging featuresets with different vectorizers
-    """
-
+    """Test to ensure rejection of merging featuresets with different vectorizers."""
     # create a featureset each with a DictVectorizer
     fs1, _ = make_classification_data(
         num_examples=100, num_features=4, num_labels=3, train_test_ratio=1.0
@@ -286,10 +256,7 @@ def test_merge_different_vectorizers():
 
 @raises(ValueError)
 def test_merge_different_hashers():
-    """
-    Test to ensure rejection of merging featuresets with different FeatureHashers
-    """
-
+    """Test to ensure rejection of merging featuresets with different FeatureHashers."""
     # create a feature set with 4 feature hashing bins
     fs1, _ = make_classification_data(
         num_examples=100,
@@ -316,10 +283,7 @@ def test_merge_different_hashers():
 
 @raises(ValueError)
 def test_merge_different_labels_same_ids():
-    """
-    Test to ensure rejection of merging featuresets that have conflicting labels
-    """
-
+    """Test to ensure rejection of merging featuresets that have conflicting labels."""
     # create a feature set
     fs1, _ = make_classification_data(
         num_examples=100, num_features=4, num_labels=3, train_test_ratio=1.0
@@ -339,10 +303,7 @@ def test_merge_different_labels_same_ids():
 
 
 def test_merge_missing_labels():
-    """
-    Test to ensure that labels are sucessfully copied when merging
-    """
-
+    """Test to ensure that labels are sucessfully copied when merging."""
     # create a feature set
     fs1, _ = make_classification_data(
         num_examples=100, num_features=4, num_labels=3, train_test_ratio=1.0
@@ -369,9 +330,7 @@ def test_merge_missing_labels():
 
 @raises(ValueError)
 def test_write_hashed_featureset():
-    """
-    Test to check that hashed featuresets cannot be written out
-    """
+    """Test to check that hashed featuresets cannot be written out."""
     fs, _ = make_classification_data(
         num_examples=100,
         num_features=4,
@@ -379,15 +338,12 @@ def test_write_hashed_featureset():
         feature_bins=2,
         random_state=1234,
     )
-    writer = NDJWriter(join(output_dir, "foo.jsonlines"), fs)
+    writer = NDJWriter(output_dir / "foo.jsonlines", fs)
     writer.write()
 
 
 def test_subtract():
-    """
-    Test to ensure that subtraction works
-    """
-
+    """Test to ensure that subtraction works."""
     # create a feature set
     fs1, _ = make_classification_data(
         num_examples=100, num_features=4, num_labels=2, train_test_ratio=1.0, random_state=1234
@@ -415,10 +371,7 @@ def test_subtract():
 
 @raises(ValueError)
 def test_mismatch_ids_features():
-    """
-    Test to catch mistmatch between the shape of the ids vector and the feature matrix
-    """
-
+    """Test to catch mistmatch between the shape of the ids vector and the feature matrix."""
     # get a 100 instances with 4 features each
     X, y = make_classification(
         n_samples=100,
@@ -444,10 +397,7 @@ def test_mismatch_ids_features():
 
 @raises(ValueError)
 def test_mismatch_labels_features():
-    """
-    Test to catch mistmatch between the shape of the labels vector and the feature matrix
-    """
-
+    """Test to catch mistmatch between the shape of the labels vector and the feature matrix."""
     # get a 100 instances with 4 features but ignore the labels we
     # get from here
     X, y = make_classification(
@@ -477,10 +427,7 @@ def test_mismatch_labels_features():
 
 @raises(ValueError)
 def test_iteration_without_dictvectorizer():
-    """
-    Test to allow iteration only if the vectorizer is a DictVectorizer
-    """
-
+    """Test to allow iteration only if the vectorizer is a DictVectorizer."""
     # create a feature set
     fs, _ = make_classification_data(
         num_examples=100,
@@ -518,10 +465,7 @@ def check_filter_ids(inverse=False):
 
 
 def test_filter_ids():
-    """
-    Test filtering with specified IDs, with and without inverting
-    """
-
+    """Test filtering with specified IDs, with and without inverting."""
     yield check_filter_ids
     yield check_filter_ids, True
 
@@ -552,10 +496,7 @@ def check_filter_labels(inverse=False):
 
 
 def test_filter_labels():
-    """
-    Test filtering with specified labels, with and without inverting
-    """
-
+    """Test filtering with specified labels, with and without inverting."""
     yield check_filter_labels
     yield check_filter_labels, True
 
@@ -597,20 +538,14 @@ def check_filter_features(inverse=False):
 
 
 def test_filter_features():
-    """
-    Test filtering with specified features, with and without inverting
-    """
-
+    """Test filtering with specified features, with and without inverting."""
     yield check_filter_features
     yield check_filter_features, True
 
 
 @raises(ValueError)
 def test_filter_with_hashing():
-    """
-    Test to ensure rejection of filtering by features when using hashing
-    """
-
+    """Test to ensure rejection of filtering by features when using hashing."""
     # create a feature set
     fs, _ = make_classification_data(
         num_examples=100,
@@ -626,10 +561,7 @@ def test_filter_with_hashing():
 
 
 def test_feature_merging_order_invariance():
-    """
-    Test whether featuresets with different orders of IDs can be merged
-    """
-
+    """Test whether featuresets with different orders of IDs can be merged."""
     # First, randomly generate two feature sets and then make sure they have
     # the same labels.
     train_fs1, _, _ = make_regression_data()
@@ -685,9 +617,9 @@ def make_merging_data(num_feat_files, suffix, numeric_ids):
 
     np.random.seed(1234567890)
 
-    merge_dir = join(train_dir, "test_merging")
-    if not exists(merge_dir):
-        os.makedirs(merge_dir)
+    merge_dir = train_dir / "test_merging"
+    if not merge_dir.exists():
+        merge_dir.mkdir(parents=True)
 
     # Create lists we will write files from
     ids = []
@@ -710,12 +642,12 @@ def make_merging_data(num_feat_files, suffix, numeric_ids):
     for i in range(num_feat_files):
         feat_num = i * num_feats_per_file
         subset_dict[str(i)] = [f"f{feat_num + j:03d}" for j in range(num_feats_per_file)]
-    train_path = join(merge_dir, suffix)
+    train_path = merge_dir / suffix
     train_fs = FeatureSet("train", ids, labels=labels, features=features)
     Writer.for_path(train_path, train_fs, subsets=subset_dict).write()
 
     # Merged
-    train_path = join(merge_dir, f"all{suffix}")
+    train_path = merge_dir / f"all{suffix}"
     Writer.for_path(train_path, train_fs).write()
 
 
@@ -726,7 +658,7 @@ def check_load_featureset(suffix, numeric_ids):
     make_merging_data(num_feat_files, suffix, numeric_ids)
 
     # Load unmerged data and merge it
-    dirpath = join(train_dir, "test_merging")
+    dirpath = train_dir / "test_merging"
     featureset = [str(i) for i in range(num_feat_files)]
     merged_exs = load_featureset(dirpath, featureset, suffix, quiet=True)
 
@@ -754,7 +686,7 @@ def test_load_featureset():
 
 
 def test_ids_to_floats():
-    path = join(train_dir, "test_input_2examples_1.jsonlines")
+    path = train_dir / "test_input_2examples_1.jsonlines"
 
     examples = Reader.for_path(path, ids_to_floats=True, quiet=True).read()
     assert isinstance(examples.ids[0], float)
@@ -797,9 +729,9 @@ def make_conversion_data(num_feat_files, from_suffix, to_suffix, with_labels=Tru
 
     np.random.seed(1234567890)
 
-    convert_dir = join(train_dir, "test_conversion")
-    if not exists(convert_dir):
-        os.makedirs(convert_dir)
+    convert_dir = train_dir / "test_conversion"
+    if not convert_dir.exists():
+        convert_dir.mkdir(parents=True)
 
     # Create lists we will write files from
     ids = []
@@ -841,7 +773,7 @@ def make_conversion_data(num_feat_files, from_suffix, to_suffix, with_labels=Tru
 
     # Write out unmerged features in the `from_suffix` file format
     for i in range(num_feat_files):
-        train_path = join(convert_dir, f"{feature_name_prefix}_{i}{with_labels_part}{from_suffix}")
+        train_path = convert_dir / f"{feature_name_prefix}_{i}{with_labels_part}{from_suffix}"
         sub_features = []
         for example_num in range(num_examples):
             feat_num = i * num_feats_per_file
@@ -862,7 +794,7 @@ def make_conversion_data(num_feat_files, from_suffix, to_suffix, with_labels=Tru
             Writer.for_path(train_path, train_fs).write()
 
     # Write out the merged features in the `to_suffix` file format
-    train_path = join(convert_dir, f"{feature_name_prefix}{with_labels_part}_all{to_suffix}")
+    train_path = convert_dir / f"{feature_name_prefix}{with_labels_part}_all{to_suffix}"
     train_fs = FeatureSet(
         "train", ids, labels=labels, features=features, vectorizer=feat_vectorizer
     )
@@ -889,7 +821,7 @@ def check_convert_featureset(from_suffix, to_suffix, with_labels=True):
     make_conversion_data(num_feat_files, from_suffix, to_suffix, with_labels=with_labels)
 
     # the path to the unmerged feature files
-    dirpath = join(train_dir, "test_conversion")
+    dirpath = train_dir / "test_conversion"
 
     # get the feature name prefix
     feature_name_prefix = f"{from_suffix.lstrip('.')}_to_{to_suffix.lstrip('.')}"
@@ -900,13 +832,11 @@ def check_convert_featureset(from_suffix, to_suffix, with_labels=True):
     # Load each unmerged feature file in the `from_suffix` format and convert
     # it to the `to_suffix` format
     for feature in range(num_feat_files):
-        input_file_path = join(
-            dirpath, f"{feature_name_prefix}_{feature}{with_labels_part}{from_suffix}"
+        input_file_path = (
+            dirpath / f"{feature_name_prefix}_{feature}{with_labels_part}{from_suffix}"
         )
-        output_file_path = join(
-            dirpath, f"{feature_name_prefix}_{feature}{with_labels_part}{to_suffix}"
-        )
-        skll_convert_args = ["--quiet", input_file_path, output_file_path]
+        output_file_path = dirpath / f"{feature_name_prefix}_{feature}{with_labels_part}{to_suffix}"
+        skll_convert_args = ["--quiet", str(input_file_path), str(output_file_path)]
         if not with_labels:
             skll_convert_args.append("--no_labels")
         skll_convert.main(skll_convert_args)
@@ -947,10 +877,11 @@ def test_convert_featureset():
 
 def featureset_creation_from_dataframe_helper(with_labels, use_feature_hasher):
     """
+    Create featureset from dataframes for tests.
+
     Helper function for the two unit tests for FeatureSet.from_data_frame().
     Since labels are optional, run two tests, one with, one without.
     """
-
     # First, setup the test data.
     # get a 100 instances with 4 features each
     X, y = make_classification(
@@ -1048,7 +979,7 @@ def test_writing_ndj_featureset_with_string_ids():
     fs_test = FeatureSet(
         "test", ids=["1", "2"], labels=[1, 2], features=Xtest, vectorizer=test_dict_vectorizer
     )
-    output_path = join(other_dir, "test_string_ids.jsonlines")
+    output_path = other_dir / "test_string_ids.jsonlines"
     test_writer = NDJWriter(output_path, fs_test)
     test_writer.write()
 
@@ -1072,7 +1003,7 @@ def test_featureset_creation_from_dataframe_with_string_ids():
         features=Xtest,
         vectorizer=test_dict_vectorizer,
     )
-    output_path = join(other_dir, "test_string_ids_df.jsonlines")
+    output_path = other_dir / "test_string_ids_df.jsonlines"
     test_writer = NDJWriter(output_path, fs_test)
     test_writer.write()
 
@@ -1097,7 +1028,7 @@ def test_featureset_creation_from_dataframe_with_string_labels():
         vectorizer=test_dict_vectorizer,
     )
 
-    output_path = join(other_dir, "test_string_labels_df.jsonlines")
+    output_path = other_dir / "test_string_labels_df.jsonlines"
     test_writer = NDJWriter(output_path, fs_test)
     test_writer.write()
 

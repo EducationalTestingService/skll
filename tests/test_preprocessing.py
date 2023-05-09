@@ -1,17 +1,14 @@
 # License: BSD 3 clause
 """
-Tests related to data preprocessing options with run_experiment.
+Tests related to data preprocessing options with `run_experiment`.
 
 :author: Michael Heilman (mheilman@ets.org)
 :author: Nitin Madnani (nmadnani@ets.org)
 """
 
-import glob
 import json
 import os
 import re
-from os.path import join
-from pathlib import Path
 
 import numpy as np
 import scipy.sparse as sp
@@ -23,40 +20,33 @@ from skll.data import FeatureSet, NDJWriter
 from skll.experiments import run_configuration
 from skll.learner import Learner
 from skll.learner.utils import SelectByMinCount
-from skll.utils.constants import KNOWN_DEFAULT_PARAM_GRIDS
 from tests import config_dir, output_dir, test_dir, train_dir
 from tests.utils import fill_in_config_paths, unlink
 
-_ALL_MODELS = list(KNOWN_DEFAULT_PARAM_GRIDS.keys())
 SCORE_OUTPUT_RE = re.compile(r"Objective Function Score \(Test\) = ([\-\d\.]+)")
 
 
 def setup():
-    """
-    Create necessary directories for testing.
-    """
+    """Create necessary directories for testing."""
     for dir_path in [train_dir, test_dir, output_dir]:
-        Path(dir_path).mkdir(exist_ok=True)
+        dir_path.mkdir(exist_ok=True)
 
 
 def tearDown():
-    """
-    Clean up after tests.
-    """
-
-    for output_file in glob.glob(join(output_dir, "test_class_map*")):
+    """Clean up after tests."""
+    for output_file in output_dir.glob("test_class_map*"):
         os.unlink(output_file)
 
     for dir_path in [train_dir, test_dir]:
-        unlink(Path(dir_path) / "test_class_map.jsonlines")
+        unlink(dir_path / "test_class_map.jsonlines")
 
     config_files = ["test_class_map.cfg", "test_class_map_feature_hasher.cfg"]
     for cf in config_files:
-        unlink(Path(config_dir) / cf)
+        unlink(config_dir / cf)
 
 
 def test_SelectByMinCount():
-    """Test SelectByMinCount feature selector"""
+    """Test SelectByMinCount feature selector."""
     m2 = [
         [0.001, 0.0, 0.0, 0.0],
         [0.00001, -2.0, 0.0, 0.0],
@@ -87,7 +77,7 @@ def test_SelectByMinCount():
 
 def make_class_map_data():
     # Create training file
-    train_path = join(train_dir, "test_class_map.jsonlines")
+    train_path = train_dir / "test_class_map.jsonlines"
     ids = []
     labels = []
     features = []
@@ -105,7 +95,7 @@ def make_class_map_data():
     writer.write()
 
     # Create test file
-    test_path = join(test_dir, "test_class_map.jsonlines")
+    test_path = test_dir / "test_class_map.jsonlines"
     ids = []
     labels = []
     features = []
@@ -123,20 +113,15 @@ def make_class_map_data():
 
 
 def test_class_map():
-    """
-    Test class maps
-    """
-
+    """Test class maps."""
     make_class_map_data()
 
-    config_template_path = join(config_dir, "test_class_map.template.cfg")
+    config_template_path = config_dir / "test_class_map.template.cfg"
     config_path = fill_in_config_paths(config_template_path)
 
     run_configuration(config_path, quiet=True, local=True)
 
-    with open(
-        join(output_dir, "test_class_map_test_class_map_LogisticRegression.results" ".json")
-    ) as f:
+    with open(output_dir / "test_class_map_test_class_map_LogisticRegression.results" ".json") as f:
         outd = json.loads(f.read())
         logistic_result_score = outd[0]["accuracy"]
 
@@ -144,20 +129,15 @@ def test_class_map():
 
 
 def test_class_map_feature_hasher():
-    """
-    Test class maps with feature hashing
-    """
-
+    """Test class maps with feature hashing."""
     make_class_map_data()
 
-    config_template_path = join(config_dir, "test_class_map_feature_hasher.template.cfg")
+    config_template_path = config_dir / "test_class_map_feature_hasher.template.cfg"
     config_path = fill_in_config_paths(config_template_path)
 
     run_configuration(config_path, quiet=True, local=True)
 
-    with open(
-        join(output_dir, "test_class_map_test_class_map_LogisticRegression.results." "json")
-    ) as f:
+    with open(output_dir / "test_class_map_test_class_map_LogisticRegression.results." "json") as f:
         outd = json.loads(f.read())
         logistic_result_score = outd[0]["accuracy"]
 

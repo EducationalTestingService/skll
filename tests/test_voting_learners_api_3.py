@@ -24,18 +24,18 @@ FS_DIGITS, _ = make_digits_data(test_size=0, use_digit_names=True)
 TRAIN_FS_HOUSING, TEST_FS_HOUSING = make_california_housing_data(num_examples=2000)
 FS_HOUSING, _ = make_california_housing_data(num_examples=2000, test_size=0)
 FS_HOUSING.ids = np.arange(2000)
-CUSTOM_LEARNER_PATH = Path(other_dir) / "custom_logistic_wrapper.py"
+CUSTOM_LEARNER_PATH = other_dir / "custom_logistic_wrapper.py"
 
 
 def setup():
-    """Set up the tests"""
+    """Set up the tests."""
     for dir_path in [other_dir, output_dir]:
-        Path(dir_path).mkdir(exist_ok=True)
+        dir_path.mkdir(exist_ok=True)
 
 
 def tearDown():
-    """Clean up after tests"""
-    for output_file_path in Path(output_dir).glob("test_predict_voting*"):
+    """Clean up after tests."""
+    for output_file_path in output_dir.glob("test_predict_voting*"):
         output_file_path.unlink()
 
 
@@ -55,7 +55,7 @@ def check_predict(
 
     # set the prediction prefix in case we need to write out the predictions
     prediction_prefix = (
-        Path(output_dir) / f"test_predict_voting_"
+        output_dir / f"test_predict_voting_"
         f"{learner_type}_"
         f"{with_grid_search}_"
         f"{with_class_labels}"

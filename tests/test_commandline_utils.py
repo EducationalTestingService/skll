@@ -11,11 +11,8 @@ import copy
 import itertools
 import sys
 from collections import defaultdict
-from glob import glob
 from io import StringIO
-from itertools import combinations, product
-from os.path import exists, join
-from pathlib import Path
+from itertools import chain, combinations, product
 
 import numpy as np
 import pandas as pd
@@ -53,60 +50,53 @@ from skll.learner import Learner
 from skll.utils.commandline.compute_eval_from_predictions import (
     get_prediction_from_probabilities,
 )
-from skll.utils.constants import KNOWN_DEFAULT_PARAM_GRIDS
 from tests import other_dir, output_dir, test_dir, train_dir
 from tests.utils import make_classification_data, make_regression_data, unlink
 
-_ALL_MODELS = list(KNOWN_DEFAULT_PARAM_GRIDS.keys())
-
 
 def setup():
-    """
-    Create necessary directories for testing.
-    """
-    for dir_path in [train_dir, test_dir, output_dir, join(other_dir, "features")]:
-        Path(dir_path).mkdir(exist_ok=True)
+    """Create necessary directories for testing."""
+    for dir_path in [train_dir, test_dir, output_dir, other_dir / "features"]:
+        dir_path.mkdir(exist_ok=True)
 
 
 def tearDown():
-    """
-    Clean up after tests.
-    """
-
+    """Clean up after tests."""
     for path in [
-        join(test_dir, "test_generate_predictions.jsonlines"),
-        join(test_dir, "test_single_file_subset.jsonlines"),
-        join(other_dir, "summary_file"),
-        join(other_dir, "test_filter_features_input.arff"),
-        join(output_dir, "test_generate_predictions.tsv"),
-        join(output_dir, "train_test_single_file.log"),
+        test_dir / "test_generate_predictions.jsonlines",
+        test_dir / "test_single_file_subset.jsonlines",
+        other_dir / "summary_file",
+        other_dir / "test_filter_features_input.arff",
+        output_dir / "test_generate_predictions.tsv",
+        output_dir / "train_test_single_file.log",
     ]:
         unlink(path)
 
-    for glob_pattern in [
-        join(output_dir, "test_print_model_weights.model*"),
-        join(output_dir, "test_generate_predictions.model*"),
-        join(output_dir, "pos_label_predict*"),
-        join(output_dir, "test_generate_predictions_console.model*"),
-        join(other_dir, "test_skll_convert*"),
-        join(other_dir, "test_join_features*"),
-        join(other_dir, "test_filter_features_labels*"),
-        join(other_dir, "features", "features*"),
-    ]:
-        for f in glob(glob_pattern):
-            unlink(f)
+    for filepath in chain(
+        output_dir.glob("test_print_model_weights.model*"),
+        output_dir.glob("test_generate_predictions.model*"),
+        output_dir.glob("pos_label_predict*"),
+        output_dir.glob("test_generate_predictions_console.model*"),
+        other_dir.glob("test_skll_convert*"),
+        other_dir.glob("test_join_features*"),
+        other_dir.glob("test_filter_features_labels*"),
+        other_dir.glob("features/features*"),
+    ):
+        unlink(filepath)
 
 
 def test_compute_eval_from_predictions():
-    """
-    Test compute_eval_from_predictions function console script
-    """
-
-    pred_path = join(other_dir, "test_compute_eval_from_predictions_predictions.tsv")
-    input_path = join(other_dir, "test_compute_eval_from_predictions.jsonlines")
+    """Test compute_eval_from_predictions function console script."""
+    pred_path = other_dir / "test_compute_eval_from_predictions_predictions.tsv"
+    input_path = other_dir / "test_compute_eval_from_predictions.jsonlines"
 
     # we need to capture stdout since that's what main() writes to
-    compute_eval_from_predictions_cmd = [input_path, pred_path, "pearson", "unweighted_kappa"]
+    compute_eval_from_predictions_cmd = [
+        str(input_path),
+        str(pred_path),
+        "pearson",
+        "unweighted_kappa",
+    ]
     old_stdout = sys.stdout
     old_stderr = sys.stderr
     sys.stdout = mystdout = StringIO()
@@ -130,19 +120,21 @@ def test_compute_eval_from_predictions():
 
 def test_warning_when_prediction_method_and_no_probabilities():
     """
-    Test compute_eval_from_predictions logs a warning if a prediction method
+    Test for presence of warning.
+
+    Test compute_eval_from_predictions logs for a warning if a prediction method
     is provided but the predictions file doesn't contain probabilities.
     """
     lc = LogCapture()
     lc.begin()
 
-    pred_path = join(other_dir, "test_compute_eval_from_predictions_predictions.tsv")
-    input_path = join(other_dir, "test_compute_eval_from_predictions.jsonlines")
+    pred_path = other_dir / "test_compute_eval_from_predictions_predictions.tsv"
+    input_path = other_dir / "test_compute_eval_from_predictions.jsonlines"
 
     # we need to capture stdout since that's what main() writes to
     compute_eval_from_predictions_cmd = [
-        input_path,
-        pred_path,
+        str(input_path),
+        str(pred_path),
         "pearson",
         "unweighted_kappa",
         "--method",
@@ -172,15 +164,20 @@ def test_warning_when_prediction_method_and_no_probabilities():
 
 def test_compute_eval_from_predictions_with_probs():
     """
-    Test compute_eval_from_predictions function console script,
-    with probabilities in the predictions file.
-    """
+    Test `compute_eval_from_predictions` function console script.
 
-    pred_path = join(other_dir, "test_compute_eval_from_predictions_probs_predictions.tsv")
-    input_path = join(other_dir, "test_compute_eval_from_predictions_probs.jsonlines")
+    This test uses probabilities in the predictions file.
+    """
+    pred_path = other_dir / "test_compute_eval_from_predictions_probs_predictions.tsv"
+    input_path = other_dir / "test_compute_eval_from_predictions_probs.jsonlines"
 
     # we need to capture stdout since that's what main() writes to
-    compute_eval_from_predictions_cmd = [input_path, pred_path, "pearson", "unweighted_kappa"]
+    compute_eval_from_predictions_cmd = [
+        str(input_path),
+        str(pred_path),
+        "pearson",
+        "unweighted_kappa",
+    ]
     old_stdout = sys.stdout
     old_stderr = sys.stderr
     sys.stdout = mystdout = StringIO()
@@ -205,8 +202,8 @@ def test_compute_eval_from_predictions_with_probs():
     # Test expected value predictions method
     #
     compute_eval_from_predictions_cmd = [
-        input_path,
-        pred_path,
+        str(input_path),
+        str(pred_path),
         "explained_variance",
         "r2",
         "--method",
@@ -236,18 +233,17 @@ def test_compute_eval_from_predictions_with_probs():
 @raises(ValueError)
 def test_compute_eval_from_predictions_breaks_with_expval_and_nonnumeric_classes():
     """
-    Make sure compute_eval_from_predictions breaks with ValueError when predictions are
-    calculated via expected_value and the classes are non numeric.
-    """
+    Make sure `compute_eval_from_predictions` raises ValueError for non-numeric classes.
 
-    pred_path = join(
-        other_dir, "test_compute_eval_from_predictions_nonnumeric_classes_predictions.tsv"
-    )
-    input_path = join(other_dir, "test_compute_eval_from_predictions_nonnumeric_classes.jsonlines")
+    This is when predictions are calculated via expected_value and the classes
+    are non numeric.
+    """
+    pred_path = other_dir / "test_compute_eval_from_predictions_nonnumeric_classes_predictions.tsv"
+    input_path = other_dir / "test_compute_eval_from_predictions_nonnumeric_classes.jsonlines"
 
     compute_eval_from_predictions_cmd = [
-        input_path,
-        pred_path,
+        str(input_path),
+        str(pred_path),
         "explained_variance",
         "r2",
         "--method",
@@ -259,20 +255,20 @@ def test_compute_eval_from_predictions_breaks_with_expval_and_nonnumeric_classes
 @raises(ValueError)
 def test_conflicting_prediction_and_example_ids():
     """
-    Make sure compute_eval_from_predictions breaks with ValueError when predictions and
-    examples don't have the same id set in 'compute_eval_from_predictions'.
-    """
-    pred_path = join(other_dir, "test_compute_eval_from_predictions_probs_predictions.tsv")
-    input_path = join(other_dir, "test_compute_eval_from_predictions_different_ids.jsonlines")
+    Make sure `compute_eval_from_predictions` raises ValueError for mismatched IDs.
 
-    compute_eval_from_predictions_cmd = [input_path, pred_path, "pearson"]
+    This is when predictions and examples don't have the same id set in
+    `compute_eval_from_predictions`.
+    """
+    pred_path = other_dir / "test_compute_eval_from_predictions_probs_predictions.tsv"
+    input_path = other_dir / "test_compute_eval_from_predictions_different_ids.jsonlines"
+
+    compute_eval_from_predictions_cmd = [str(input_path), str(pred_path), "pearson"]
     cefp.main(compute_eval_from_predictions_cmd)
 
 
 def test_compute_eval_from_predictions_random_choice():
-    """
-    Test that the random selection of classes with the same probabilities works.
-    """
+    """Test that random selection of classes with the same probabilities works."""
     classes = ["A", "B", "C", "D"]
     probs = ["0.25", "0.25", "0.25", "0.25"]
     prediction_method = "highest"
@@ -301,7 +297,7 @@ def _run_generate_predictions_and_capture_output(generate_cmd, output_file):
 
 
 def check_generate_predictions(
-    use_regression=False,  # noqa: C901
+    use_regression=False,
     string_labels=False,
     num_labels=2,
     use_probability=False,
@@ -366,7 +362,7 @@ def check_generate_predictions(
             test_fs.filter(features=["f01", "f02", "f03", "f04"])
 
     # write out the test set to disk so we can use it as a file
-    test_file = join(test_dir, "test_generate_predictions.jsonlines")
+    test_file = test_dir / "test_generate_predictions.jsonlines"
     NDJWriter.for_path(test_file, test_fs).write()
 
     # we need probabilities if we are using thresholds or label inference
@@ -377,7 +373,7 @@ def check_generate_predictions(
     learner_name = "SGDRegressor" if use_regression else "SGDClassifier"
     learner = Learner(learner_name, probability=enable_probability, pos_label=pos_label)
     learner.train(train_fs, grid_search=False)
-    model_file = join(output_dir, "test_generate_predictions.model")
+    model_file = output_dir / "test_generate_predictions.model"
     learner.save(model_file)
 
     # now train equivalent sklearn estimators that we will use
@@ -436,21 +432,21 @@ def check_generate_predictions(
 
     # are we using an output file or the console?
     if not use_stdout:
-        output_file = join(output_dir, "test_generate_predictions.tsv")
-        generate_cmd.extend(["--output", output_file])
+        output_file = output_dir / "test_generate_predictions.tsv"
+        generate_cmd.extend(["--output", str(output_file)])
     else:
         output_file = "stdout"
 
     # append the model file to the command
-    generate_cmd.append(model_file)
+    generate_cmd.append(str(model_file))
 
     # if we are using multiple input files, repeat the input file
     # and, correspondingly, concatenate the expected predictions
     if multiple_input_files:
         predictions = concatenate([predictions, predictions])
-        generate_cmd.extend([test_file, test_file])
+        generate_cmd.extend([str(test_file), str(test_file)])
     else:
-        generate_cmd.append(test_file)
+        generate_cmd.append(str(test_file))
 
     # run the constructed command and capture its output
     gp_output_lines = _run_generate_predictions_and_capture_output(generate_cmd, output_file)
@@ -551,11 +547,11 @@ def test_generate_predictions_console_bad_input_ext():
     _ = learner.predict(test_fs)
 
     # save the learner to a file
-    model_file = join(output_dir, "test_generate_predictions_console.model")
+    model_file = output_dir / "test_generate_predictions_console.model"
     learner.save(model_file)
 
     # now call main() from generate_predictions.py
-    generate_cmd = [model_file, "fake_input_file.txt"]
+    generate_cmd = [str(model_file), "fake_input_file.txt"]
 
     _ = _run_generate_predictions_and_capture_output(generate_cmd, "stdout")
 
@@ -574,7 +570,7 @@ def test_generate_predictions_threshold_not_trained_with_probability():
     train_fs, test_fs = make_classification_data(num_examples=1000, num_features=5, num_labels=2)
 
     # save the test feature set to an NDJ file
-    input_file = join(test_dir, "test_generate_predictions.jsonlines")
+    input_file = test_dir / "test_generate_predictions.jsonlines"
     writer = NDJWriter(input_file, test_fs)
     writer.write()
 
@@ -585,11 +581,11 @@ def test_generate_predictions_threshold_not_trained_with_probability():
     learner.train(train_fs, grid_search=False)
 
     # save the learner to a file
-    model_file = join(output_dir, "test_generate_predictions_console.model")
+    model_file = output_dir / "test_generate_predictions_console.model"
     learner.save(model_file)
 
     # now call main() from generate_predictions.py
-    generate_cmd = [model_file, input_file]
+    generate_cmd = [str(model_file), str(input_file)]
     generate_cmd.append("-t 0.6")
     gp.main(generate_cmd)
 
@@ -600,7 +596,7 @@ def test_generate_predictions_threshold_multi_class():
     train_fs, test_fs = make_classification_data(num_examples=1000, num_features=5, num_labels=4)
 
     # save the test feature set to an NDJ file
-    input_file = join(test_dir, "test_generate_predictions.jsonlines")
+    input_file = test_dir / "test_generate_predictions.jsonlines"
     writer = NDJWriter(input_file, test_fs)
     writer.write()
 
@@ -611,11 +607,11 @@ def test_generate_predictions_threshold_multi_class():
     learner.train(train_fs, grid_search=False)
 
     # save the learner to a file
-    model_file = join(output_dir, "test_generate_predictions_console.model")
+    model_file = output_dir / "test_generate_predictions_console.model"
     learner.save(model_file)
 
     # now call main() from generate_predictions.py
-    generate_cmd = [model_file, input_file]
+    generate_cmd = [str(model_file), str(input_file)]
     generate_cmd.append("-t 0.6")
     gp.main(generate_cmd)
 
@@ -626,7 +622,7 @@ def test_generate_predictions_threshold_non_probabilistic():
     train_fs, test_fs = make_classification_data(num_examples=1000, num_features=5, num_labels=2)
 
     # save the test feature set to an NDJ file
-    input_file = join(test_dir, "test_generate_predictions.jsonlines")
+    input_file = test_dir / "test_generate_predictions.jsonlines"
     writer = NDJWriter(input_file, test_fs)
     writer.write()
 
@@ -637,12 +633,11 @@ def test_generate_predictions_threshold_non_probabilistic():
     learner.train(train_fs, grid_search=False)
 
     # save the learner to a file
-    model_file = join(output_dir, "test_generate_predictions_console.model")
+    model_file = output_dir / "test_generate_predictions_console.model"
     learner.save(model_file)
 
     # now call main() from generate_predictions.py
-
-    generate_cmd = [model_file, input_file]
+    generate_cmd = [str(model_file), str(input_file)]
     generate_cmd.append("-t 0.6")
     gp.main(generate_cmd)
 
@@ -653,7 +648,7 @@ def test_generate_predictions_predict_labels_not_trained_with_probability():
     train_fs, test_fs = make_classification_data(num_examples=1000, num_features=5, num_labels=2)
 
     # save the test feature set to an NDJ file
-    input_file = join(test_dir, "test_generate_predictions.jsonlines")
+    input_file = test_dir / "test_generate_predictions.jsonlines"
     writer = NDJWriter(input_file, test_fs)
     writer.write()
 
@@ -664,11 +659,11 @@ def test_generate_predictions_predict_labels_not_trained_with_probability():
     learner.train(train_fs, grid_search=False)
 
     # save the learner to a file
-    model_file = join(output_dir, "test_generate_predictions_console.model")
+    model_file = output_dir / "test_generate_predictions_console.model"
     learner.save(model_file)
 
     # now call main() from generate_predictions.py
-    generate_cmd = [model_file, input_file]
+    generate_cmd = [str(model_file), str(input_file)]
     generate_cmd.append("-p")
     gp.main(generate_cmd)
 
@@ -679,7 +674,7 @@ def test_generate_predictions_predict_labels_non_probabilistic():
     train_fs, test_fs = make_classification_data(num_examples=1000, num_features=5, num_labels=4)
 
     # save the test feature set to an NDJ file
-    input_file = join(test_dir, "test_generate_predictions.jsonlines")
+    input_file = test_dir / "test_generate_predictions.jsonlines"
     writer = NDJWriter(input_file, test_fs)
     writer.write()
 
@@ -690,11 +685,11 @@ def test_generate_predictions_predict_labels_non_probabilistic():
     learner.train(train_fs, grid_search=False)
 
     # save the learner to a file
-    model_file = join(output_dir, "test_generate_predictions_console.model")
+    model_file = output_dir / "test_generate_predictions_console.model"
     learner.save(model_file)
 
     # now call main() from generate_predictions.py
-    generate_cmd = [model_file, input_file]
+    generate_cmd = [str(model_file), str(input_file)]
     generate_cmd.append("-p")
     gp.main(generate_cmd)
 
@@ -706,7 +701,7 @@ def test_mutually_exclusive_generate_predictions_args():
     threshold = 0.6
 
     # save the test feature set to an NDJ file
-    input_file = join(test_dir, "test_generate_predictions.jsonlines")
+    input_file = test_dir / "test_generate_predictions.jsonlines"
     writer = NDJWriter(input_file, test_fs)
     writer.write()
 
@@ -717,12 +712,12 @@ def test_mutually_exclusive_generate_predictions_args():
     learner.train(train_fs, grid_search=False)
 
     # save the learner to a file
-    model_file = join(output_dir, "test_generate_predictions_console.model")
+    model_file = output_dir / "test_generate_predictions_console.model"
     learner.save(model_file)
 
     # now call main() from generate_predictions.py
     generate_cmd = [f"-t {threshold}", "-p"]
-    generate_cmd.extend([model_file, input_file])
+    generate_cmd.extend([str(model_file), str(input_file)])
     gp.main(generate_cmd)
 
 
@@ -733,14 +728,14 @@ def check_skll_convert(from_suffix, to_suffix, id_type):
     )
 
     # now write out this feature set in the given suffix
-    from_suffix_file = join(other_dir, f"test_skll_convert_{id_type}_ids_in{from_suffix}")
-    to_suffix_file = join(other_dir, f"test_skll_convert_{id_type}_ids_out{to_suffix}")
+    from_suffix_file = other_dir / f"test_skll_convert_{id_type}_ids_in{from_suffix}"
+    to_suffix_file = other_dir / f"test_skll_convert_{id_type}_ids_out{to_suffix}"
 
     writer = EXT_TO_WRITER[from_suffix](from_suffix_file, orig_fs, quiet=True)
     writer.write()
 
     # now run skll convert to convert the featureset into the other format
-    skll_convert_cmd = [from_suffix_file, to_suffix_file, "--quiet"]
+    skll_convert_cmd = [str(from_suffix_file), str(to_suffix_file), "--quiet"]
 
     # we need to capture stderr to make sure we don't miss any errors
     old_stderr = sys.stderr
@@ -779,15 +774,12 @@ def test_skll_convert():
 
 
 def test_skll_convert_libsvm_map():
-    """
-    Test to check whether the --reuse_libsvm_map option works for skll_convert
-    """
-
+    """Test to check whether the --reuse_libsvm_map option works for skll_convert."""
     # create some simple classification data
     orig_fs, _ = make_classification_data(train_test_ratio=1.0, one_string_feature=True)
 
     # now write out this feature set as a libsvm file
-    orig_libsvm_file = join(other_dir, "test_skll_convert_libsvm_map.libsvm")
+    orig_libsvm_file = other_dir / "test_skll_convert_libsvm_map.libsvm"
     writer = LibSVMWriter(orig_libsvm_file, orig_fs, quiet=True)
     writer.write()
 
@@ -805,15 +797,15 @@ def test_skll_convert_libsvm_map():
 
     # now run skll_convert to convert this into a libsvm file
     # but using the mapping specified in the first libsvm file
-    converted_libsvm_file = join(other_dir, "test_skll_convert_libsvm_map2.libsvm")
+    converted_libsvm_file = other_dir / "test_skll_convert_libsvm_map2.libsvm"
 
     # now call skll convert's main function
     skll_convert_cmd = [
         "--reuse_libsvm_map",
-        orig_libsvm_file,
+        str(orig_libsvm_file),
         "--quiet",
-        orig_libsvm_file,
-        converted_libsvm_file,
+        str(orig_libsvm_file),
+        str(converted_libsvm_file),
     ]
     old_stderr = sys.stderr
     sys.stderr = mystderr = StringIO()
@@ -834,9 +826,7 @@ def test_skll_convert_libsvm_map():
 
 @raises(SystemExit)
 def test_skll_convert_no_labels_with_label_col():
-    """
-    Check that --no_labels/--label_col cannot both be specified for skll_convert
-    """
+    """Check that --no_labels/--label_col cannot both be specified for skll_convert."""
     skll_convert_cmd = ["--no_labels", "--label_col", "t", "foo.tsv", "foo.libsvm"]
     sk.main(argv=skll_convert_cmd)
 
@@ -905,14 +895,14 @@ def check_print_model_weights(task="classification", sort_by_labels=False):  # n
         learner.train(train_fs, grid_search=True, grid_objective="pearson")
 
     # now save the model to disk
-    model_file = join(output_dir, "test_print_model_weights.model")
+    model_file = output_dir / "test_print_model_weights.model"
     learner.save(model_file)
 
     # now call print_model_weights main() and capture the output
     if sort_by_labels:
-        print_model_weights_cmd = [model_file, "--sort_by_labels"]
+        print_model_weights_cmd = [str(model_file), "--sort_by_labels"]
     else:
-        print_model_weights_cmd = [model_file]
+        print_model_weights_cmd = [str(model_file)]
     old_stderr = sys.stderr
     old_stdout = sys.stdout
     sys.stderr = mystderr = StringIO()
@@ -1114,20 +1104,20 @@ def test_print_model_weights():
 
 def check_summarize_results_argparse(use_ablation=False):
     """
-    A utility function to check that we are setting up argument parsing
-    correctly for summarize_results. We are not checking whether the summaries
-    produced are accurate because we have separate tests for that.
-    """
+    Check that we are setting up argument parsing correctly for `summarize_results`.
 
+    We are not checking whether the summaries produced are accurate because we
+    have separate tests for that.
+    """
     # replace the _write_summary_file function that's called
     # by the main() in summarize_results with a mocked up version
     write_summary_file_mock = create_autospec(_write_summary_file)
     sr._write_summary_file = write_summary_file_mock
 
     # now call main with some arguments
-    summary_file_name = join(other_dir, "summary_file")
+    summary_file_name = other_dir / "summary_file"
     list_of_input_files = ["infile1", "infile2", "infile3"]
-    sr_cmd_args = [summary_file_name]
+    sr_cmd_args = [str(summary_file_name)]
     sr_cmd_args.extend(list_of_input_files)
     if use_ablation:
         sr_cmd_args.append("--ablation")
@@ -1137,7 +1127,7 @@ def check_summarize_results_argparse(use_ablation=False):
     # of it) got the arguments that we passed
     positional_arguments, keyword_arguments = write_summary_file_mock.call_args
     eq_(positional_arguments[0], list_of_input_files)
-    eq_(positional_arguments[1].name, summary_file_name)
+    eq_(positional_arguments[1].name, str(summary_file_name))
     eq_(keyword_arguments["ablation"], int(use_ablation))
 
 
@@ -1157,32 +1147,32 @@ def test_plot_learning_curves_argparse():
     plc.generate_learning_curve_plots = generate_learning_curve_plots_mock
 
     # now call main with some arguments
-    summary_file_name = join(other_dir, "sample_learning_curve_summary.tsv")
+    summary_file_name = other_dir / "sample_learning_curve_summary.tsv"
     experiment_name = "sample_learning_curve"
-    plc_cmd_args = [summary_file_name, other_dir]
+    plc_cmd_args = [str(summary_file_name), str(other_dir)]
     plc.main(argv=plc_cmd_args)
 
     # now check to make sure that _generate_learning_curve_plots (or our mocked up version
     # of it) got the arguments that we passed
-    positional_arguments, keyword_arguments = generate_learning_curve_plots_mock.call_args
+    positional_arguments, _ = generate_learning_curve_plots_mock.call_args
     eq_(positional_arguments[0], experiment_name)
-    eq_(positional_arguments[1], other_dir)
-    eq_(positional_arguments[2], summary_file_name)
+    eq_(positional_arguments[1], str(other_dir))
+    eq_(positional_arguments[2], str(summary_file_name))
 
 
 @raises(SystemExit)
 def test_plot_learning_curves_missing_file():
-    summary_file_name = join(other_dir, "non_existent_summary.tsv")
-    plc_cmd_args = [summary_file_name, other_dir]
+    summary_file_name = other_dir / "non_existent_summary.tsv"
+    plc_cmd_args = [str(summary_file_name), str(other_dir)]
     plc.main(argv=plc_cmd_args)
 
 
 def test_plot_learning_curves_create_output_directory():
-    summary_file_name = join(other_dir, "sample_learning_curve_summary.tsv")
-    output_dir_name = join(other_dir, "foobar")
-    plc_cmd_args = [summary_file_name, output_dir_name]
+    summary_file_name = other_dir / "sample_learning_curve_summary.tsv"
+    output_dir_name = other_dir / "foobar"
+    plc_cmd_args = [str(summary_file_name), str(output_dir_name)]
     plc.main(argv=plc_cmd_args)
-    exists(output_dir_name)
+    output_dir_name.exists()
 
 
 def check_run_experiments_argparse(
@@ -1193,24 +1183,24 @@ def check_run_experiments_argparse(
     resume=False,
 ):
     """
-    A utility function to check that we are setting up argument parsing
-    correctly for run_experiment.  We are not checking whether the results are
-    correct because we have separate tests for that.
-    """
+    Check that we are setting up argument parsing correcly for `run_experiment`.
 
+    We are not checking whether the results are correct because we have
+    separate tests for that.
+    """
     # replace the run_configuration function that's called
     # by the main() in run_experiment with a mocked up version
     run_configuration_mock = create_autospec(run_configuration)
     rex.run_configuration = run_configuration_mock
 
     # now call main with some arguments
-    config_file1_name = join(other_dir, "config_file1")
-    config_files = [config_file1_name]
-    rex_cmd_args = [config_file1_name]
+    config_file1_name = other_dir / "config_file1"
+    config_files = [str(config_file1_name)]
+    rex_cmd_args = [str(config_file1_name)]
     if multiple_config_files:
-        config_file2_name = join(other_dir, "config_file2")
-        rex_cmd_args.extend([config_file2_name])
-        config_files.extend([config_file2_name])
+        config_file2_name = other_dir / "config_file2"
+        rex_cmd_args.extend([str(config_file2_name)])
+        config_files.extend([str(config_file2_name)])
 
     if n_ablated_features != "all":
         rex_cmd_args.extend(["-a", str(n_ablated_features)])
@@ -1240,7 +1230,7 @@ def check_run_experiments_argparse(
     if multiple_config_files:
         eq_(positional_arguments[0], config_files[1])
     else:
-        eq_(positional_arguments[0], config_file1_name)
+        eq_(positional_arguments[0], str(config_file1_name))
 
     if n_ablated_features != "all":
         eq_(keyword_arguments["ablation"], int(n_ablated_features))
@@ -1275,12 +1265,11 @@ def check_filter_features_no_arff_argparse(
     extension, filter_type, label_col="y", id_col="id", inverse=False, quiet=False
 ):
     """
-    A utility function to check that we are setting up argument parsing
-    correctly for filter_features for ALL file types except ARFF.
-    We are not checking whether the results are correct because we
-    have separate tests for that.
-    """
+    Check that we are setting up argument parsing correctly for `filter_features`.
 
+    We are checking for ALL file types except ARFF. We are not checking whether
+    the results are correct because we have separate tests for that.
+    """
     # replace the run_configuration function that's called
     # by the main() in filter_feature with a mocked up version
     reader_class = EXT_TO_READER[extension]
@@ -1416,17 +1405,17 @@ def check_filter_features_arff_argparse(
     filter_type, label_col="y", id_col="id", inverse=False, quiet=False
 ):
     """
-    A utility function to check that we are setting up argument parsing
-    correctly for filter_features for ARFF file types. We are not checking
-    whether the results are correct because we have separate tests for that.
-    """
+    Check that we are setting up argument parsing correctly for `filter_features`.
 
+    We are only checking ARFF file types. We are not checking whether the results
+    are correct because we have separate tests for that.
+    """
     # replace the run_configuration function that's called
     # by the main() in filter_feature with a mocked up version
     writer_class = skll.data.writers.ARFFWriter
 
     # create some dummy input and output filenames
-    infile = join(other_dir, "test_filter_features_input.arff")
+    infile = other_dir / "test_filter_features_input.arff"
     outfile = "bar.arff"
 
     # create a simple featureset with actual ids, labels and features
@@ -1435,7 +1424,7 @@ def check_filter_features_arff_argparse(
     writer = writer_class(infile, fs, label_col=label_col, id_col=id_col)
     writer.write()
 
-    ff_cmd_args = ["-i", infile, "-o", outfile]
+    ff_cmd_args = ["-i", str(infile), "-o", outfile]
 
     if filter_type == "feature":
         if inverse:
@@ -1523,14 +1512,13 @@ def test_filter_features_arff_argparse():
 
 
 def check_filter_features_labels(extension, label_type):
-    """Make sure that labels are correctly converted before filtering"""
-
+    """Make sure that labels are correctly converted before filtering."""
     reader_class = EXT_TO_READER[extension]
     writer_class = EXT_TO_WRITER[extension]
 
     # create some dummy input and output filenames
-    infile = join(other_dir, f"test_filter_features_labels_input_{label_type}{extension}")
-    outfile = join(other_dir, f"test_filter_features_labels_output_{label_type}{extension}")
+    infile = other_dir / f"test_filter_features_labels_input_{label_type}{extension}"
+    outfile = other_dir / f"test_filter_features_labels_output_{label_type}{extension}"
 
     # create a simple featureset with 4 labels, either string or integer
     if label_type == "integer":
@@ -1547,10 +1535,10 @@ def check_filter_features_labels(extension, label_type):
     # set up the arguments for the `filter_features` call and
     # compute the IDs that we expect to be in the filtered output
     if label_type == "integer":
-        ff_cmd_args = ["-i", infile, "-o", outfile, "-L", "1", "3", "-q"]
+        ff_cmd_args = ["-i", str(infile), "-o", str(outfile), "-L", "1", "3", "-q"]
         expected_ids = fs.ids[np.logical_or(fs.labels == 1, fs.labels == 3)]
     else:
-        ff_cmd_args = ["-i", infile, "-o", outfile, "-L", "c", "d", "-q"]
+        ff_cmd_args = ["-i", str(infile), "-o", str(outfile), "-L", "c", "d", "-q"]
         expected_ids = fs.ids[np.logical_or(fs.labels == "c", fs.labels == "d")]
 
     # call `filter_features`
@@ -1570,39 +1558,28 @@ def test_filter_features_labels():
 
 @raises(SystemExit)
 def test_filter_features_libsvm_input_argparse():
-    """
-    Make sure filter_features exits when passing in input libsvm files
-    """
-
+    """Make sure filter_features exits when passing in input libsvm files."""
     ff_cmd_args = ["-f", "a", "b", "c", "-i", "foo.libsvm", "-o", "bar.csv"]
     ff.main(argv=ff_cmd_args)
 
 
 @raises(SystemExit)
 def test_filter_features_libsvm_output_argparse():
-    """
-    Make sure filter_features exits when passing in output libsvm files
-    """
-
+    """Make sure filter_features exits when passing in output libsvm files."""
     ff_cmd_args = ["-f", "a", "b", "c", "i", "foo.csv", "-o", "bar.libsvm"]
     ff.main(argv=ff_cmd_args)
 
 
 @raises(SystemExit)
 def test_filter_features_unknown_input_format():
-    """
-    Make sure that filter_features exits when passing in an unknown input file format
-    """
-
+    """Make sure that filter_features exits when passing in an unknown input file format."""
     ff_cmd_args = ["-f", "a", "b", "c", "-i", "foo.xxx", "-o", "bar.csv"]
     ff.main(argv=ff_cmd_args)
 
 
 @raises(SystemExit)
 def test_filter_features_unknown_output_format():
-    """
-    Make sure that filter_features exits when passing in an unknown input file format
-    """
+    """Make sure that filter_features exits when passing in an unknown input file format."""
     ff_cmd_args = ["-f", "a", "b", "c", "-i", "foo.csv", "-o", "bar.xxx"]
     ff.main(argv=ff_cmd_args)
 
@@ -1610,8 +1587,10 @@ def test_filter_features_unknown_output_format():
 @raises(SystemExit)
 def check_filter_features_raises_system_exit(cmd_args):
     """
-    Little helper to make test output cleaner for tests that check that
-    filter_features exits with the specified arguments.
+    Clean test output.
+
+    Make test output cleaner for tests that check that `filter_features` exits
+    with the specified arguments.
     """
     ff.main(cmd_args)
 
@@ -1626,18 +1605,18 @@ def test_filter_features_unmatched_formats():
 
 def check_join_features_argparse(extension, label_col="y", id_col="id", quiet=False):
     """
-    A utility function to check that we are setting up argument parsing
-    correctly for join_features for ALL file types. We are not checking
-    whether the results are correct because we have separate tests for that.
-    """
+    Check that we are setting up argument parsing correctly for `join_features`.
 
+    We are not checking whether the results are correct because we have separate
+    tests for that.
+    """
     # replace the run_configuration function that's called
     # by the main() in filter_feature with a mocked up version
     writer_class = EXT_TO_WRITER[extension]
 
     # create some dummy input and output filenames
-    infile1 = join(other_dir, f"test_join_features1{extension}")
-    infile2 = join(other_dir, f"test_join_features2{extension}")
+    infile1 = other_dir / f"test_join_features1{extension}"
+    infile2 = other_dir / f"test_join_features2{extension}"
     outfile = f"bar{extension}"
 
     # create a simple featureset with actual ids, labels and features
@@ -1646,7 +1625,7 @@ def check_join_features_argparse(extension, label_col="y", id_col="id", quiet=Fa
         num_labels=3, train_test_ratio=1.0, feature_prefix="g", random_state=5678
     )
 
-    jf_cmd_args = [infile1, infile2, outfile]
+    jf_cmd_args = [str(infile1), str(infile2), outfile]
 
     if extension in [".tsv", ".csv", ".arff"]:
         writer1 = writer_class(infile1, fs1, label_col=label_col, id_col=id_col)
@@ -1673,7 +1652,7 @@ def check_join_features_argparse(extension, label_col="y", id_col="id", quiet=Fa
         jf.main(argv=jf_cmd_args)
 
         # get the various arguments from the three mocked up methods
-        add_pos_arguments, add_kw_arguments = add_mock.call_args
+        add_pos_arguments, _ = add_mock.call_args
         write_pos_arguments, write_kw_arguments = write_init_mock.call_args
 
         # make sure that the arguments they got were the ones we specified
@@ -1700,40 +1679,28 @@ def test_join_features_argparse():
 
 @raises(SystemExit)
 def test_join_features_libsvm_input_argparse():
-    """
-    Make sure that join_features exits when passing in input libsvm files
-    """
-
+    """Make sure that join_features exits when passing in input libsvm files."""
     jf_cmd_args = ["foo.libsvm", "bar.libsvm", "baz.csv"]
     jf.main(argv=jf_cmd_args)
 
 
 @raises(SystemExit)
 def test_join_features_libsvm_output_argparse():
-    """
-    Make sure that join_features exits when passing in output libsvm files
-    """
-
+    """Make sure that join_features exits when passing in output libsvm files."""
     jf_cmd_args = ["foo.csv", "bar.csv", "baz.libsvm"]
     jf.main(argv=jf_cmd_args)
 
 
 @raises(SystemExit)
 def test_join_features_unknown_input_format():
-    """
-    Make that join_features exits when passing in an unknown input file format
-    """
-
+    """Make that join_features exits when passing in an unknown input file format."""
     jf_cmd_args = ["foo.xxx", "bar.tsv", "baz.csv"]
     jf.main(argv=jf_cmd_args)
 
 
 @raises(SystemExit)
 def test_join_features_unknown_output_format():
-    """
-    Make sure that join_features exits when passing in an unknown output file format
-    """
-
+    """Make sure that join_features exits when passing in an unknown output file format."""
     jf_cmd_args = ["foo.csv", "bar.csv", "baz.xxx"]
     jf.main(argv=jf_cmd_args)
 
@@ -1741,8 +1708,10 @@ def test_join_features_unknown_output_format():
 @raises(SystemExit)
 def check_join_features_raises_system_exit(cmd_args):
     """
-    Little helper to make test output cleaner for tests that check that
-    join_features exits with the specified arguments.
+    Clean test output for `join_features`.
+
+    Make test output cleaner for tests that check that `join_features` exits
+    with the specified arguments.
     """
     jf.main(cmd_args)
 
@@ -1764,10 +1733,7 @@ def test_join_features_unmatched_output_format():
 
 
 def test_filter_features_with_drop_blanks():
-    """
-    Test filter features with CSV and TSV readers
-    using the `drop_blanks` option
-    """
+    """Test `filter_features` with CSV & TSV readers using `drop_blanks` option."""
     df = pd.DataFrame(
         {
             "A": [1, 2, 3, np.nan, 5, 6],
@@ -1782,17 +1748,33 @@ def test_filter_features_with_drop_blanks():
     df_expected["id"] = [f"EXAMPLE_{i}" for i in range(4)]
     df_expected = df_expected[["A", "B", "C", "id", "L"]]
 
-    csv_infile = join(other_dir, "features", "features_drop_blanks.csv")
-    tsv_infile = join(other_dir, "features", "features_drop_blanks.tsv")
+    csv_infile = other_dir / "features" / "features_drop_blanks.csv"
+    tsv_infile = other_dir / "features" / "features_drop_blanks.tsv"
 
-    csv_outfile = join(other_dir, "features", "features_drop_blanks_out.csv")
-    tsv_outfile = join(other_dir, "features", "features_drop_blanks_out.tsv")
+    csv_outfile = other_dir / "features" / "features_drop_blanks_out.csv"
+    tsv_outfile = other_dir / "features" / "features_drop_blanks_out.tsv"
 
     df.to_csv(csv_infile, index=False)
     df.to_csv(tsv_infile, index=False, sep="\t")
 
-    filter_features_csv_cmd = ["-i", csv_infile, "-o", csv_outfile, "-l", "L", "--drop_blanks"]
-    filter_features_tsv_cmd = ["-i", tsv_infile, "-o", tsv_outfile, "-l", "L", "--drop_blanks"]
+    filter_features_csv_cmd = [
+        "-i",
+        str(csv_infile),
+        "-o",
+        str(csv_outfile),
+        "-l",
+        "L",
+        "--drop_blanks",
+    ]
+    filter_features_tsv_cmd = [
+        "-i",
+        str(tsv_infile),
+        "-o",
+        str(tsv_outfile),
+        "-l",
+        "L",
+        "--drop_blanks",
+    ]
 
     ff.main(filter_features_csv_cmd)
     ff.main(filter_features_tsv_cmd)
@@ -1806,10 +1788,7 @@ def test_filter_features_with_drop_blanks():
 
 @raises(ValueError)
 def test_filter_features_with_drop_blanks_all_blanks_csv():
-    """
-    Test filter features with CSV readers
-    using `drop_blanks` and blanks in each row
-    """
+    """Test `filter_features` with CSV readers using `drop_blanks` and blanks in each row."""
     df = pd.DataFrame(
         {
             "A": [1, 2, np.nan, 4, 5, 6],
@@ -1819,21 +1798,18 @@ def test_filter_features_with_drop_blanks_all_blanks_csv():
         }
     )
 
-    csv_infile = join(other_dir, "features", "features_drop_blanks_all_blanks.csv")
+    csv_infile = other_dir / "features" / "features_drop_blanks_all_blanks.csv"
 
     df.to_csv(csv_infile, index=False)
 
-    filter_features_csv_cmd = ["-i", csv_infile, "-o", "blah.csv", "-l", "L", "--drop_blanks"]
+    filter_features_csv_cmd = ["-i", str(csv_infile), "-o", "blah.csv", "-l", "L", "--drop_blanks"]
 
     ff.main(filter_features_csv_cmd)
 
 
 @raises(ValueError)
 def test_filter_features_with_drop_blanks_all_blanks_tsv():
-    """
-    Test filter features with TSV readers
-    using `drop_blanks` and blanks in each row
-    """
+    """Test `filter_features` with TSV readers using `drop_blanks` and blanks in each row."""
     df = pd.DataFrame(
         {
             "A": [1, 2, np.nan, 4, 5, 6],
@@ -1843,20 +1819,17 @@ def test_filter_features_with_drop_blanks_all_blanks_tsv():
         }
     )
 
-    tsv_infile = join(other_dir, "features", "features_drop_blanks_all_blanks.tsv")
+    tsv_infile = other_dir / "features" / "features_drop_blanks_all_blanks.tsv"
 
     df.to_csv(tsv_infile, index=False, sep="\t")
 
-    filter_features_tsv_cmd = ["-i", tsv_infile, "-o", "blah.tsv", "-l", "L", "--drop_blanks"]
+    filter_features_tsv_cmd = ["-i", str(tsv_infile), "-o", "blah.tsv", "-l", "L", "--drop_blanks"]
 
     ff.main(filter_features_tsv_cmd)
 
 
 def test_filter_features_with_replace_blanks_with():
-    """
-    Test filter features with CSV and TSV readers
-    using the `replace_blanks_with` option
-    """
+    """Test `filter_features` with CSV & TSV readers using the `replace_blanks_with` option."""
     df = pd.DataFrame(
         {
             "A": [1, 2, 3, np.nan, 5, 6],
@@ -1871,20 +1844,20 @@ def test_filter_features_with_replace_blanks_with():
     df_expected["id"] = [f"EXAMPLE_{i}" for i in range(6)]
     df_expected = df_expected[["A", "B", "C", "id", "L"]]
 
-    csv_infile = join(other_dir, "features", "features_replace_blanks_with.csv")
-    tsv_infile = join(other_dir, "features", "features_replace_blanks_with.tsv")
+    csv_infile = other_dir / "features" / "features_replace_blanks_with.csv"
+    tsv_infile = other_dir / "features" / "features_replace_blanks_with.tsv"
 
-    csv_outfile = join(other_dir, "features", "features_replace_blanks_with_out.csv")
-    tsv_outfile = join(other_dir, "features", "features_replace_blanks_with_out.tsv")
+    csv_outfile = other_dir / "features" / "features_replace_blanks_with_out.csv"
+    tsv_outfile = other_dir / "features" / "features_replace_blanks_with_out.tsv"
 
     df.to_csv(csv_infile, index=False)
     df.to_csv(tsv_infile, index=False, sep="\t")
 
     filter_features_csv_cmd = [
         "-i",
-        csv_infile,
+        str(csv_infile),
         "-o",
-        csv_outfile,
+        str(csv_outfile),
         "-l",
         "L",
         "--replace_blanks_with",
@@ -1892,9 +1865,9 @@ def test_filter_features_with_replace_blanks_with():
     ]
     filter_features_tsv_cmd = [
         "-i",
-        tsv_infile,
+        str(tsv_infile),
         "-o",
-        tsv_outfile,
+        str(tsv_outfile),
         "-l",
         "L",
         "--replace_blanks_with",
@@ -1915,16 +1888,16 @@ def test_filter_features_with_replace_blanks_with():
 def test_filter_features_with_replace_blanks_with_and_drop_blanks_raises_error():
     df = pd.DataFrame(np.random.randn(5, 10))
 
-    csv_infile = join(other_dir, "features", "features_drop_and_replace_error.csv")
-    csv_outfile = join(other_dir, "features", "features_drop_and_replace_error_out.csv")
+    csv_infile = other_dir / "features" / "features_drop_and_replace_error.csv"
+    csv_outfile = other_dir / "features" / "features_drop_and_replace_error_out.csv"
 
     df.to_csv(csv_infile, index=False)
 
     filter_features_csv_cmd = [
         "-i",
-        csv_infile,
+        str(csv_infile),
         "-o",
-        csv_outfile,
+        str(csv_outfile),
         "--drop_blanks",
         "--replace_blanks_with",
         "4.5",

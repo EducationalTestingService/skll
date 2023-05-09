@@ -7,7 +7,6 @@ Cross-validation tests with grid search for voting learners.
 """
 
 from itertools import product
-from os.path import exists
 from pathlib import Path
 
 import numpy as np
@@ -33,18 +32,18 @@ FS_DIGITS, _ = make_digits_data(test_size=0, use_digit_names=True)
 TRAIN_FS_HOUSING, TEST_FS_HOUSING = make_california_housing_data(num_examples=2000)
 FS_HOUSING, _ = make_california_housing_data(num_examples=2000, test_size=0)
 FS_HOUSING.ids = np.arange(2000)
-CUSTOM_LEARNER_PATH = Path(other_dir) / "custom_logistic_wrapper.py"
+CUSTOM_LEARNER_PATH = other_dir / "custom_logistic_wrapper.py"
 
 
 def setup():
-    """Set up the tests"""
+    """Set up the tests."""
     for dir_path in [other_dir, output_dir]:
-        Path(dir_path).mkdir(exist_ok=True)
+        dir_path.mkdir(exist_ok=True)
 
 
 def tearDown():
-    """Clean up after tests"""
-    for output_file_path in Path(output_dir).glob("test_xval_voting_gs*"):
+    """Clean up after tests."""
+    for output_file_path in output_dir.glob("test_xval_voting_gs*"):
         output_file_path.unlink()
 
 
@@ -65,7 +64,7 @@ def check_cross_validate_with_grid_search(
 
     # set the prediction prefix in case we need to write out the predictions
     prediction_prefix = (
-        Path(output_dir) / f"test_xval_voting_gs_" f"{learner_type}_" f"{with_soft_voting}"
+        output_dir / f"test_xval_voting_gs_" f"{learner_type}_" f"{with_soft_voting}"
     )
     prediction_prefix = str(prediction_prefix)
 
@@ -241,7 +240,7 @@ def check_cross_validate_with_grid_search(
     # `predict()` anyway
     if with_individual_predictions:
         for learner_name in learner_names:
-            ok_(exists(f"{prediction_prefix}_{learner_name}_predictions.tsv"))
+            ok_(Path(f"{prediction_prefix}_{learner_name}_predictions.tsv").exists())
 
 
 def test_cross_validate_with_grid_search():

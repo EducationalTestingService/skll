@@ -7,8 +7,7 @@ Module containing tests for custom metrics.
 
 import json
 import sys
-from glob import glob
-from os.path import join
+from itertools import chain
 
 import numpy as np
 from nose.tools import assert_almost_equal, eq_, ok_, raises, with_setup
@@ -34,36 +33,29 @@ from tests.utils import (
 
 
 def setup_func():
-    """
-    Run before each test function.
-    """
+    """Run before each test function."""
     # clean up any already registered metrics to simulate
     # as if we are starting a new Python session
     _cleanup_custom_metrics()
 
 
 def tearDown():
-    """
-    Clean up after all tests are run.
-    """
-
-    for glob_pattern in [
-        join(config_dir, "*custom_metrics.cfg"),
-        join(config_dir, "*custom_metrics_kappa.cfg"),
-        join(config_dir, "*custom_metrics_bad.cfg"),
-        join(config_dir, "*custom_metrics_kwargs1.cfg"),
-        join(config_dir, "*custom_metrics_kwargs2.cfg"),
-        join(config_dir, "*custom_metrics_kwargs3.cfg"),
-        join(config_dir, "*custom_metrics_kwargs4.cfg"),
-        join(output_dir, "test_custom_metrics*"),
-    ]:
-        for f in glob(glob_pattern):
-            unlink(f)
+    """Clean up after all tests are run."""
+    for filepath in chain(
+        config_dir.glob("*custom_metrics.cfg"),
+        config_dir.glob("*custom_metrics_kappa.cfg"),
+        config_dir.glob("*custom_metrics_bad.cfg"),
+        config_dir.glob("*custom_metrics_kwargs1.cfg"),
+        config_dir.glob("*custom_metrics_kwargs2.cfg"),
+        config_dir.glob("*custom_metrics_kwargs3.cfg"),
+        config_dir.glob("*custom_metrics_kwargs4.cfg"),
+        output_dir.glob("test_custom_metrics*"),
+    ):
+        unlink(filepath)
 
 
 def _cleanup_custom_metrics():
-    """A helper function to clean up any custom metrics"""
-
+    """Clean up any custom metrics."""
     for metric_name in [
         "f06_micro",
         "f075_macro",
@@ -110,10 +102,9 @@ def _cleanup_custom_metrics():
 
 @with_setup(setup_func)
 def test_register_custom_metric_load_one():
-    """Test loading a single custom metric"""
-
+    """Test loading a single custom metric."""
     # load a single metric from a custom metric file
-    custom_metrics_file = join(other_dir, "custom_metrics.py")
+    custom_metrics_file = other_dir / "custom_metrics.py"
     register_custom_metric(custom_metrics_file, "f075_macro")
 
     # make sure that this metric is now registered with SKLL
@@ -128,10 +119,9 @@ def test_register_custom_metric_load_one():
 
 @with_setup(setup_func)
 def test_register_custom_metric_load_both():
-    """Test loading two custom metrics from one file"""
-
+    """Test loading two custom metrics from one file."""
     # load both metrics in the custom file
-    custom_metrics_file = join(other_dir, "custom_metrics.py")
+    custom_metrics_file = other_dir / "custom_metrics.py"
     register_custom_metric(custom_metrics_file, "f075_macro")
     register_custom_metric(custom_metrics_file, "ratio_of_ones")
 
@@ -144,11 +134,10 @@ def test_register_custom_metric_load_both():
 
 @with_setup(setup_func)
 def test_register_custom_metric_load_different_files():
-    """Test loading two custom metrics from two files"""
-
+    """Test loading two custom metrics from two files."""
     # load two custom metrics from two different files
-    custom_metrics_file1 = join(other_dir, "custom_metrics.py")
-    custom_metrics_file2 = join(other_dir, "custom_metrics2.py")
+    custom_metrics_file1 = other_dir / "custom_metrics.py"
+    custom_metrics_file2 = other_dir / "custom_metrics2.py"
     register_custom_metric(custom_metrics_file1, "f075_macro")
     register_custom_metric(custom_metrics_file2, "f06_micro")
 
@@ -162,10 +151,9 @@ def test_register_custom_metric_load_different_files():
 @with_setup(setup_func)
 @raises(NameError)
 def test_reregister_same_metric_same_session():
-    """Test loading custom metric again in same session"""
-
+    """Test loading custom metric again in same session."""
     # try to load a metric from a txt file, not a py file
-    custom_metrics_file = join(other_dir, "custom_metrics.py")
+    custom_metrics_file = other_dir / "custom_metrics.py"
     register_custom_metric(custom_metrics_file, "f075_macro")
 
     # re-registering should raise an error
@@ -174,10 +162,9 @@ def test_reregister_same_metric_same_session():
 
 @with_setup(setup_func)
 def test_reregister_same_metric_different_session():
-    """Test loading custom metric again in different session"""
-
+    """Test loading custom metric again in different session."""
     # try to load a metric from a txt file, not a py file
-    custom_metrics_file = join(other_dir, "custom_metrics.py")
+    custom_metrics_file = other_dir / "custom_metrics.py"
     register_custom_metric(custom_metrics_file, "f075_macro")
 
     # clean up any already registered metrics to simulate
@@ -191,18 +178,16 @@ def test_reregister_same_metric_different_session():
 @with_setup(setup_func)
 @raises(ValueError)
 def test_register_custom_metric_bad_extension():
-    """Test loading custom metric from non-py file"""
-
+    """Test loading custom metric from non-py file."""
     # try to load a metric from a txt file, not a py file
-    bad_custom_metrics_file = join(other_dir, "custom_metrics.txt")
+    bad_custom_metrics_file = other_dir / "custom_metrics.txt"
     register_custom_metric(bad_custom_metrics_file, "f075_macro")
 
 
 @with_setup(setup_func)
 @raises(ValueError)
 def test_register_custom_metric_missing_name():
-    """Test loading custom metric from empty string"""
-
+    """Test loading custom metric from empty string."""
     # try to load a metric from a missing file name
     # which can happen via a bad configuration file
     register_custom_metric("", "f075_macro")
@@ -211,39 +196,35 @@ def test_register_custom_metric_missing_name():
 @with_setup(setup_func)
 @raises(ValueError)
 def test_register_custom_metric_missing_file():
-    """Test loading custom metric from missing file"""
-
+    """Test loading custom metric from missing file."""
     # try to load a metric from a py file that does not exist
-    missing_custom_metrics_file = join(other_dir, "missing_metrics.py")
+    missing_custom_metrics_file = other_dir / "missing_metrics.py"
     register_custom_metric(missing_custom_metrics_file, "f075_macro")
 
 
 @with_setup(setup_func)
 @raises(AttributeError)
 def test_register_custom_metric_wrong_name():
-    """Test loading custom metric with wrong name"""
-
+    """Test loading custom metric with wrong name."""
     # try to load a metric that does not exist in a file
-    custom_metrics_file = join(other_dir, "custom_metrics.py")
+    custom_metrics_file = other_dir / "custom_metrics.py"
     register_custom_metric(custom_metrics_file, "blah")
 
 
 @with_setup(setup_func)
 @raises(NameError)
 def test_register_custom_metric_conflicting_metric_name():
-    """Test loading custom metric with conflicting name"""
-
+    """Test loading custom metric with conflicting name."""
     # try to load a metric that does not exist in a file
-    custom_metrics_file = join(other_dir, "custom_metrics.py")
+    custom_metrics_file = other_dir / "custom_metrics.py"
     register_custom_metric(custom_metrics_file, "r2")
 
 
 @with_setup(setup_func)
 def test_register_custom_metric_values():
-    """Test to check values of custom metrics"""
-
+    """Test to check values of custom metrics."""
     # register two metrics in the same file
-    custom_metrics_file = join(other_dir, "custom_metrics.py")
+    custom_metrics_file = other_dir / "custom_metrics.py"
     register_custom_metric(custom_metrics_file, "f075_macro")
     register_custom_metric(custom_metrics_file, "ratio_of_ones")
 
@@ -265,17 +246,16 @@ def test_register_custom_metric_values():
 
 @with_setup(setup_func)
 def test_custom_metric_api_experiment():
-    """Test API with custom metrics"""
-
+    """Test API with custom metrics."""
     # register two different metrics from two files
-    custom_metrics_file1 = join(other_dir, "custom_metrics.py")
+    custom_metrics_file1 = other_dir / "custom_metrics.py"
     register_custom_metric(custom_metrics_file1, "f075_macro")
-    custom_metrics_file2 = join(other_dir, "custom_metrics2.py")
+    custom_metrics_file2 = other_dir / "custom_metrics2.py"
     register_custom_metric(custom_metrics_file2, "f06_micro")
 
     # read in some train/test data
-    train_file = join(other_dir, "examples_train.jsonlines")
-    test_file = join(other_dir, "examples_test.jsonlines")
+    train_file = other_dir / "examples_train.jsonlines"
+    test_file = other_dir / "examples_test.jsonlines"
 
     train_fs = NDJReader.for_path(train_file).read()
     test_fs = NDJReader.for_path(test_file).read()
@@ -300,13 +280,12 @@ def test_custom_metric_api_experiment():
 
 @with_setup(setup_func)
 def test_custom_metric_config_experiment():
-    """Test config with custom metrics"""
-
+    """Test config with custom metrics."""
     # Run experiment
-    train_file = join(other_dir, "examples_train.jsonlines")
-    test_file = join(other_dir, "examples_test.jsonlines")
+    train_file = other_dir / "examples_train.jsonlines"
+    test_file = other_dir / "examples_test.jsonlines"
     config_path = fill_in_config_paths_for_single_file(
-        join(config_dir, "test_custom_metrics.template.cfg"), train_file, test_file
+        config_dir / "test_custom_metrics.template.cfg", train_file, test_file
     )
     run_configuration(config_path, local=True, quiet=True)
 
@@ -314,11 +293,8 @@ def test_custom_metric_config_experiment():
 
     # objective function f075_macro
     with open(
-        join(
-            output_dir,
-            "test_custom_metrics_train_examples_train.jsonlines_test_"
-            "examples_test.jsonlines_LogisticRegression.results.json",
-        )
+        output_dir / "test_custom_metrics_train_examples_train.jsonlines_test_examples_"
+        "test.jsonlines_LogisticRegression.results.json"
     ) as f:
         result_dict = json.load(f)[0]
 
@@ -335,16 +311,15 @@ def test_custom_metric_config_experiment():
 
 @with_setup(setup_func)
 def test_custom_metric_api_experiment_with_kappa_filename():
-    """Test API with metric defined in a file named kappa"""
-
+    """Test API with metric defined in a file named kappa."""
     # register a dummy metric that just returns 1 from
     # a file called 'kappa.py'
-    custom_metrics_file = join(other_dir, "kappa.py")
+    custom_metrics_file = other_dir / "kappa.py"
     register_custom_metric(custom_metrics_file, "dummy_metric")
 
     # read in some train/test data
-    train_file = join(other_dir, "examples_train.jsonlines")
-    test_file = join(other_dir, "examples_test.jsonlines")
+    train_file = other_dir / "examples_train.jsonlines"
+    test_file = other_dir / "examples_test.jsonlines"
 
     train_fs = NDJReader.for_path(train_file).read()
     test_fs = NDJReader.for_path(test_file).read()
@@ -373,13 +348,12 @@ def test_custom_metric_api_experiment_with_kappa_filename():
 
 @with_setup(setup_func)
 def test_custom_metric_config_experiment_with_kappa_filename():
-    """Test config with metric defined in a file named kappa"""
-
+    """Test config with metric defined in a file named kappa."""
     # Run experiment
-    train_file = join(other_dir, "examples_train.jsonlines")
-    test_file = join(other_dir, "examples_test.jsonlines")
+    train_file = other_dir / "examples_train.jsonlines"
+    test_file = other_dir / "examples_test.jsonlines"
     config_path = fill_in_config_paths_for_single_file(
-        join(config_dir, "test_custom_metrics_kappa.template.cfg"), train_file, test_file
+        config_dir / "test_custom_metrics_kappa.template.cfg", train_file, test_file
     )
     run_configuration(config_path, local=True, quiet=True)
 
@@ -387,12 +361,8 @@ def test_custom_metric_config_experiment_with_kappa_filename():
 
     # objective function f075_macro
     with open(
-        join(
-            output_dir,
-            "test_custom_metrics_kappa_train_examples_train.jsonlines"
-            "_test_examples_test.jsonlines_LogisticRegression.results"
-            ".json",
-        )
+        output_dir / "test_custom_metrics_kappa_train_examples_train.jsonlines"
+        "_test_examples_test.jsonlines_LogisticRegression.results.json"
     ) as f:
         result_dict = json.load(f)[0]
 
@@ -409,13 +379,12 @@ def test_custom_metric_config_experiment_with_kappa_filename():
 
 @with_setup(setup_func)
 def test_custom_metric_config_with_invalid_custom_metric():
-    """Test config with a valid and an invalid custom metric"""
-
+    """Test config with a valid and an invalid custom metric."""
     # Run experiment
-    train_file = join(other_dir, "examples_train.jsonlines")
-    test_file = join(other_dir, "examples_test.jsonlines")
+    train_file = other_dir / "examples_train.jsonlines"
+    test_file = other_dir / "examples_test.jsonlines"
     config_path = fill_in_config_paths_for_single_file(
-        join(config_dir, "test_custom_metrics_bad.template.cfg"), train_file, test_file
+        config_dir / "test_custom_metrics_bad.template.cfg", train_file, test_file
     )
     # since this configuration file consists of an invalid
     # metric, this should raise an error
@@ -431,11 +400,10 @@ def test_custom_metric_config_with_invalid_custom_metric():
 
 @with_setup(setup_func)
 def test_api_with_inverted_custom_metric():
-    """Test API with a lower-is-better custom metric"""
-
+    """Test API with a lower-is-better custom metric."""
     # register a lower-is-better custom metrics from our file
     # which is simply 1 minus the precision score
-    custom_metrics_file1 = join(other_dir, "custom_metrics.py")
+    custom_metrics_file1 = other_dir / "custom_metrics.py"
     register_custom_metric(custom_metrics_file1, "one_minus_precision")
 
     # create some classification data
@@ -473,24 +441,20 @@ def test_api_with_inverted_custom_metric():
 
 @with_setup(setup_func)
 def test_config_with_inverted_custom_metric():
-    """Test config with a lower-is-better custom metric"""
-
+    """Test config with a lower-is-better custom metric."""
     # run the first experiment that uses a lower-is-better custom metric
     # for grid saerch defined as simply 1 minus the macro-averaged F1 score
-    train_file = join(other_dir, "examples_train.jsonlines")
-    test_file = join(other_dir, "examples_test.jsonlines")
+    train_file = other_dir / "examples_train.jsonlines"
+    test_file = other_dir / "examples_test.jsonlines"
     config_path1 = fill_in_config_paths_for_single_file(
-        join(config_dir, "test_custom_metrics_kwargs1.template.cfg"), train_file, test_file
+        config_dir / "test_custom_metrics_kwargs1.template.cfg", train_file, test_file
     )
     run_configuration(config_path1, local=True, quiet=True)
 
     # laod the results
     with open(
-        join(
-            output_dir,
-            "test_custom_metrics_kwargs1_train_examples_train.jsonlines"
-            "_LogisticRegression.results.json",
-        )
+        output_dir / "test_custom_metrics_kwargs1_train_examples_"
+        "train.jsonlines_LogisticRegression.results.json"
     ) as f:
         result_dict1 = json.load(f)
         grid_score1 = result_dict1["grid_score"]
@@ -499,17 +463,14 @@ def test_config_with_inverted_custom_metric():
     # now run the second experiment that is identical except that
     # that it uses the regular macro-averaged F1 score for grid search
     config_path2 = fill_in_config_paths_for_single_file(
-        join(config_dir, "test_custom_metrics_kwargs2.template.cfg"), train_file, test_file
+        config_dir / "test_custom_metrics_kwargs2.template.cfg", train_file, test_file
     )
     run_configuration(config_path2, local=True, quiet=True)
 
     # laod the results
     with open(
-        join(
-            output_dir,
-            "test_custom_metrics_kwargs2_train_examples_train.jsonlines"
-            "_LogisticRegression.results.json",
-        )
+        output_dir / "test_custom_metrics_kwargs2_train_examples_"
+        "train.jsonlines_LogisticRegression.results.json"
     ) as f:
         result_dict2 = json.load(f)
         grid_score2 = result_dict2["grid_score"]
@@ -534,10 +495,9 @@ def test_config_with_inverted_custom_metric():
 
 @with_setup(setup_func)
 def test_api_with_custom_prob_metric():
-    """Test API with custom probabilistic metric"""
-
+    """Test API with custom probabilistic metric."""
     # register a custom metric from our file that requires probabilities
-    custom_metrics_file = join(other_dir, "custom_metrics.py")
+    custom_metrics_file = other_dir / "custom_metrics.py"
     register_custom_metric(custom_metrics_file, "fake_prob_metric")
 
     # create some classification data
@@ -564,14 +524,13 @@ def test_api_with_custom_prob_metric():
 
 @with_setup(setup_func)
 def test_config_with_custom_prob_metric():
-    """Test config with custom probabilistic metric"""
-
+    """Test config with custom probabilistic metric."""
     # run the first experiment that uses a custom probabilistic metric
     # for grid search but with a learner that does not produce probabilities
-    train_file = join(other_dir, "examples_train.jsonlines")
-    test_file = join(other_dir, "examples_test.jsonlines")
+    train_file = other_dir / "examples_train.jsonlines"
+    test_file = other_dir / "examples_test.jsonlines"
     config_path = fill_in_config_paths_for_single_file(
-        join(config_dir, "test_custom_metrics_kwargs3.template.cfg"), train_file, test_file
+        config_dir / "test_custom_metrics_kwargs3.template.cfg", train_file, test_file
     )
 
     # this should fail as expected
@@ -587,17 +546,15 @@ def test_config_with_custom_prob_metric():
     # now run the second experiment that is identical except that
     # the learner now produces probabilities
     config_path = fill_in_config_paths_for_single_file(
-        join(config_dir, "test_custom_metrics_kwargs4.template.cfg"), train_file, test_file
+        config_dir / "test_custom_metrics_kwargs4.template.cfg", train_file, test_file
     )
     # this should succeed and produce results
     run_configuration(config_path, local=True, quiet=True)
 
     # laod the results and verify them
     with open(
-        join(
-            output_dir,
-            "test_custom_metrics_kwargs4_train_examples_train.jsonlines" "_SVC.results.json",
-        )
+        output_dir / "test_custom_metrics_kwargs4_train_examples_"
+        "train.jsonlines_SVC.results.json"
     ) as f:
         result_dict = json.load(f)
         grid_score = result_dict["grid_score"]

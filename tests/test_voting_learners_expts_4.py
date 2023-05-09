@@ -12,7 +12,6 @@ tested comprehensively in ``test_voting_learners_api_4.py``.
 """
 
 from itertools import product
-from os.path import join
 from pathlib import Path
 from unittest.mock import DEFAULT, patch
 
@@ -31,31 +30,30 @@ from tests.utils import (
 
 
 def setup():
-    """Set up the tests"""
+    """Set up the tests."""
     for dir_path in [train_dir, output_dir]:
-        Path(dir_path).mkdir(exist_ok=True)
+        dir_path.mkdir(exist_ok=True)
 
     # create the training and test data files that we will use
     create_jsonlines_feature_files(train_dir)
 
 
 def tearDown():
-    """Clean up after tests"""
-    for output_file_path in Path(output_dir).glob("test_voting_learner_cross_validate*"):
+    """Clean up after tests."""
+    for output_file_path in output_dir.glob("test_voting_learner_cross_validate*"):
         output_file_path.unlink()
 
     for output_file_path in Path(".").glob("test_voting_learner_cross_validate*"):
         output_file_path.unlink()
 
-    config_file_path = Path(config_dir) / "test_voting_learner_cross_validate.cfg"
+    config_file_path = config_dir / "test_voting_learner_cross_validate.cfg"
     config_file_path.unlink()
 
     remove_jsonlines_feature_files(train_dir)
 
 
 def check_xval_task(learner_type, options_dict):
-    """Check given combination of cross-validation configuration options"""
-
+    """Check given combination of cross-validation configuration options."""
     # create a configuration file with the given options
     (
         config_path,
@@ -200,14 +198,13 @@ def check_xval_task(learner_type, options_dict):
                     options_dict["with_grid_search"]
                     and not options_dict["with_multiple_objectives"]
                 ):
-                    expected_save_args = (join(output_dir, f"{job_name}_fold{fold_idx+1}.model"),)
+                    expected_save_args = (output_dir / f"{job_name}_fold{fold_idx+1}.model",)
                 else:
                     expected_save_args = (
-                        join(
-                            output_dir,
-                            f"{job_name}_{objectives[objective_idx]}_fold{fold_idx+1}.model",
-                        ),
+                        output_dir
+                        / f"{job_name}_{objectives[objective_idx]}_fold{fold_idx+1}.model",
                     )
+
                 eq_(actual_call[0], expected_save_args)
 
     # stop all the patchers

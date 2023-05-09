@@ -30,9 +30,9 @@ from tests.utils import (
 
 
 def setup():
-    """Set up the tests"""
+    """Set up the tests."""
     for dir_path in [train_dir, test_dir, output_dir]:
-        Path(dir_path).mkdir(exist_ok=True)
+        dir_path.mkdir(exist_ok=True)
 
     # create the training and test data files that we will use
     create_jsonlines_feature_files(train_dir)
@@ -40,14 +40,14 @@ def setup():
 
 
 def tearDown():
-    """Clean up after tests"""
-    for output_file_path in Path(output_dir).glob("test_voting_learner_learning_curve*"):
+    """Clean up after tests."""
+    for output_file_path in output_dir.glob("test_voting_learner_learning_curve*"):
         output_file_path.unlink()
 
     for output_file_path in Path(".").glob("test_voting_learner_learning_curve*"):
         output_file_path.unlink()
 
-    config_file_path = Path(config_dir) / "test_voting_learner_learning_curve.cfg"
+    config_file_path = config_dir / "test_voting_learner_learning_curve.cfg"
     config_file_path.unlink()
 
     remove_jsonlines_feature_files(train_dir)
@@ -55,8 +55,7 @@ def tearDown():
 
 
 def check_learning_curve_task(learner_type, options_dict):
-    """Check given combination of prediction configuration options"""
-
+    """Check given combination of prediction configuration options."""
     # create a configuration file with the given options
     (
         config_path,
