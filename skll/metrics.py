@@ -11,7 +11,7 @@ Metrics that can be used to evaluate the performance of learners.
 import sys
 from importlib import import_module
 from inspect import signature
-from os.path import abspath, basename, dirname, exists
+from pathlib import Path
 
 import numpy as np
 from scipy.stats import kendalltau, pearsonr, spearmanr
@@ -25,10 +25,12 @@ _CUSTOM_METRICS = set()
 
 def kappa(y_true, y_pred, weights=None, allow_off_by_one=False):
     """
-    Calculates the kappa inter-rater agreement between two the gold standard
-    and the predicted ratings. Potential values range from -1 (representing
-    complete disagreement) to 1 (representing complete agreement).  A kappa
-    value of 0 is expected if all agreement is due to chance.
+    Calculate the kappa inter-rater agreement.
+
+    The agreement is calculated between the gold standard and the predicted
+    ratings. Potential values range from -1 (representing complete disagreement)
+    to 1 (representing complete agreement).  A kappa value of 0 is expected if
+    all agreement is due to chance.
 
     In the course of calculating kappa, all items in ``y_true`` and ``y_pred`` will
     first be converted to floats and then rounded to integers.
@@ -80,7 +82,6 @@ def kappa(y_true, y_pred, weights=None, allow_off_by_one=False):
     ValueError
         If invalid weight scheme.
     """
-
     # Ensure that the lists are both the same length
     assert len(y_true) == len(y_pred)
 
@@ -156,14 +157,15 @@ def kappa(y_true, y_pred, weights=None, allow_off_by_one=False):
 
 def correlation(y_true, y_pred, corr_type="pearson"):
     """
-    Calculate given correlation between ``y_true`` and ``y_pred``. ``y_pred``
-    can be multi-dimensional. If ``y_pred`` is 1-dimensional, it may either
-    contain probabilities, most-likely classification labels, or regressor
-    predictions. In that case, we simply return the correlation between
-    ``y_true`` and ``y_pred``. If ``y_pred`` is multi-dimensional,
-    it contains probabilties for multiple classes in which case, we infer
-    the most likely labels and then compute the correlation between those
-    and ``y_true``.
+    Calculate given correlation type between ``y_true`` and ``y_pred``.
+
+    ``y_pred`` can be multi-dimensional. If ``y_pred`` is 1-dimensional, it
+    may either contain probabilities, most-likely classification labels, or
+    regressor predictions. In that case, we simply return the correlation
+    between ``y_true`` and ``y_pred``. If ``y_pred`` is multi-dimensional,
+    it contains probabilties for multiple classes in which case, we infer the
+    most likely labels and then compute the correlation between those and
+    ``y_true``.
 
     Parameters
     ----------
@@ -182,7 +184,6 @@ def correlation(y_true, y_pred, corr_type="pearson"):
     ret_score : float
         correlation value if well-defined, else 0.0
     """
-
     # get the correlation function to use based on the given type
     corr_func = pearsonr
     if corr_type == "spearman":
@@ -205,8 +206,7 @@ def correlation(y_true, y_pred, corr_type="pearson"):
 
 def f1_score_least_frequent(y_true, y_pred):
     """
-    Calculate the F1 score of the least frequent label/class in ``y_true`` for
-    ``y_pred``.
+    Calculate F1 score of the least frequent label/class.
 
     Parameters
     ----------
@@ -230,7 +230,7 @@ def register_custom_metric(custom_metric_path, custom_metric_name):
 
     Parameters
     ----------
-    custom_metric_path : str
+    custom_metric_path : Union[str, Path]
         The path to a custom metric.
     custom_metric_name : str
         The name of the custom metric function to load.
@@ -253,16 +253,17 @@ def register_custom_metric(custom_metric_path, custom_metric_name):
             f"custom metric path was not set and " f"metric {custom_metric_name} was not found."
         )
 
-    if not exists(custom_metric_path):
+    custom_metric_path = Path(custom_metric_path)
+    if not custom_metric_path.exists():
         raise ValueError(f"custom metric path '{custom_metric_path}' " f"does not exist.")
 
-    if not custom_metric_path.endswith(".py"):
+    if custom_metric_path.suffix != ".py":
         raise ValueError(
             f"custom metric path must end in .py, you specified " f"{custom_metric_path}"
         )
 
     # get the name of the module containing the custom metric
-    custom_metric_module_name = basename(custom_metric_path)[:-3]
+    custom_metric_module_name = custom_metric_path.stem
 
     # once we know that the module name is okay, we need to make sure
     # that the metric function name is also okay
@@ -275,7 +276,7 @@ def register_custom_metric(custom_metric_path, custom_metric_name):
 
     # dynamically import the module unless we have already done it
     if custom_metric_module_name not in sys.modules:
-        sys.path.append(dirname(abspath(custom_metric_path)))
+        sys.path.append(str(custom_metric_path.resolve().parent))
         metric_module = import_module(custom_metric_module_name)
 
         # this statement is only necessary so that if we end
@@ -306,10 +307,11 @@ def register_custom_metric(custom_metric_path, custom_metric_name):
 
 def use_score_func(func_name, y_true, y_pred):
     """
-    Call the scoring function in the given name. This takes care of handling
-    keyword arguments that were pre-specified when creating the scorer.
-    This applies any sign-flipping that was specified by ``make_scorer()``
-    when the scorer was created.
+    Call the given scoring function.
+
+    This takes care of handling keyword arguments that were pre-specified
+    when creating the scorer. This applies any sign-flipping that was
+    specified by ``make_scorer()`` when the scorer was created.
 
     Parameters
     ----------
