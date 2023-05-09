@@ -10,7 +10,6 @@ Utility classes and functions for SKLL learners.
 
 import inspect
 import logging
-import os
 import sys
 from collections import Counter, defaultdict
 from csv import DictWriter, excel_tab
@@ -49,6 +48,8 @@ from skll.version import VERSION
 
 class Densifier(BaseEstimator, TransformerMixin):
     """
+    Custom pipeline stage for handling dense feature arrays.
+
     A custom pipeline stage that will be inserted into the
     learner pipeline attribute to accommodate the situation
     when SKLL needs to manually convert feature arrays from
@@ -57,20 +58,23 @@ class Densifier(BaseEstimator, TransformerMixin):
     """
 
     def fit(self, X, y=None):
+        """Fit the estimator."""
         return self
 
     def fit_transform(self, X, y=None):
+        """Fit the estimator and transform the input."""
         return self
 
     def transform(self, X):
+        """Transform the input using already fit estimator."""
         return X.toarray()
 
 
 class FilteredLeaveOneGroupOut(LeaveOneGroupOut):
-
     """
-    Version of ``LeaveOneGroupOut`` cross-validation iterator that only outputs
-    indices of instances with IDs in a prespecified set.
+    Custom version ``LeaveOneGroupOut`` cross-validation iterator.
+
+    This version only outputs indices of instances with IDs in a prespecified set.
 
     Parameters
     ----------
@@ -81,6 +85,7 @@ class FilteredLeaveOneGroupOut(LeaveOneGroupOut):
     """
 
     def __init__(self, keep, example_ids, logger=None):
+        """Initialize the model."""
         super(FilteredLeaveOneGroupOut, self).__init__()
         self.keep = keep
         self.example_ids = example_ids
@@ -103,7 +108,7 @@ class FilteredLeaveOneGroupOut(LeaveOneGroupOut):
             train/test set.
 
         Yields
-        -------
+        ------
         train_index : np.array
             The training set indices for that split.
         test_index : np.array
@@ -125,8 +130,9 @@ class FilteredLeaveOneGroupOut(LeaveOneGroupOut):
 
 
 class SelectByMinCount(SelectKBest):
-
     """
+    Select or discard features based on how often they occur in the data.
+
     Select features occurring in more (and/or fewer than) than a specified
     number of examples in the training data (or a CV training fold).
 
@@ -138,6 +144,7 @@ class SelectByMinCount(SelectKBest):
     """
 
     def __init__(self, min_count=1):
+        """Initialize the model."""
         self.min_count = min_count
         self.scores_ = None
 
@@ -150,12 +157,12 @@ class SelectByMinCount(SelectKBest):
         X : array-like, with shape (n_samples, n_features)
             The training data to fit.
         y : Ignored
+            This is ignored.
 
         Returns
         -------
         self
         """
-
         # initialize a list of counts of times each feature appears
         col_counts = [0 for _ in range(X.shape[1])]
 
@@ -174,7 +181,8 @@ class SelectByMinCount(SelectKBest):
 
     def _get_support_mask(self):
         """
-        Returns an indication of which features to keep.
+        Return a mask indicating which features to keep.
+
         Adapted from ``SelectKBest``.
 
         Returns
@@ -233,6 +241,8 @@ def compute_evaluation_metrics(
     logger=None,
 ):
     """
+    Compute given evaluation metrics.
+
     Compute given metrics to evaluate the given predictions generated
     by the given type of estimator against the given true labels.
 
@@ -393,8 +403,7 @@ def compute_evaluation_metrics(
 
 def compute_num_folds_from_example_counts(cv_folds, labels, model_type, logger=None):
     """
-    Calculate the number of folds we should use for cross-validation, based
-    on the number of examples we have for each label.
+    Calculate number of cross-validation folds, based on number of examples per label.
 
     Parameters
     ----------
@@ -447,6 +456,8 @@ def compute_num_folds_from_example_counts(cv_folds, labels, model_type, logger=N
 
 def contiguous_ints_or_floats(numbers):
     """
+    Check for continuity in given list of numbers.
+
     Check whether the given list of numbers contains
     contiguous integers or contiguous integer-like
     floats. For example, [1, 2, 3] or [4.0, 5.0, 6.0]
@@ -471,7 +482,6 @@ def contiguous_ints_or_floats(numbers):
     ValueError
         If ``numbers`` is empty.
     """
-
     try:
         # make sure that number is not empty
         assert len(numbers) > 0
@@ -496,8 +506,7 @@ def contiguous_ints_or_floats(numbers):
 
 def get_acceptable_classification_metrics(label_array):
     """
-    Return the set of metrics that are acceptable given the
-    the unique set of labels that we are classifying.
+    Return acceptable metrics given the the unique set of labels being classified.
 
     Parameters
     ----------
@@ -512,7 +521,6 @@ def get_acceptable_classification_metrics(label_array):
         A set of metric names that are acceptable
         for the given classification scenario.
     """
-
     # this is a classifier so the acceptable objective
     # functions definitely include those metrics that
     # are specifically for classification and also
@@ -559,10 +567,7 @@ def get_acceptable_classification_metrics(label_array):
 
 
 def get_acceptable_regression_metrics():
-    """
-    Return the set of metrics that are acceptable for regression.
-    """
-
+    """Return the set of metrics that are acceptable for regression."""
     # it's fairly straightforward for regression since
     # we do not have to check the labels
     acceptable_metrics = (
@@ -585,7 +590,7 @@ def load_custom_learner(custom_learner_path, custom_learner_name):
 
     Parameters
     ----------
-    custom_learner_path : str
+    custom_learner_path : Union[str, Path]
         The path to a custom learner.
     custom_learner_name : str
         The name of a custom learner.
@@ -605,19 +610,21 @@ def load_custom_learner(custom_learner_path, custom_learner_name):
             "custom_learner_path was not set and learner " f"{custom_learner_name} was not found."
         )
 
-    if not custom_learner_path.endswith(".py"):
+    # convert to a Path object
+    custom_learner_path = Path(custom_learner_path)
+
+    if custom_learner_path.suffix != ".py":
         raise ValueError("custom_learner_path must end in .py " f"({custom_learner_path})")
 
-    custom_learner_module_name = os.path.basename(custom_learner_path)[:-3]
-    sys.path.append(os.path.dirname(os.path.abspath(custom_learner_path)))
+    custom_learner_module_name = custom_learner_path.stem
+    sys.path.append(str(custom_learner_path.resolve().parent))
     import_module(custom_learner_module_name)
     return getattr(sys.modules[custom_learner_module_name], custom_learner_name)
 
 
 def get_predictions(learner, xtest):
     """
-    Get various different types of predictions generated by the given
-    learner (or meta-learner) on the given feature array.
+    Get predictions from the given learner (or meta-learner) for given features.
 
     The various types of predictions include:
 
@@ -650,7 +657,6 @@ def get_predictions(learner, xtest):
         If the scikit-learn model does not implement ``predict_proba()`` to
         get the class probabilities.
     """
-
     # deferred import to avoid circular dependencies
     from skll.learner.voting import VotingLearner
 
@@ -694,8 +700,10 @@ def get_predictions(learner, xtest):
 
 def rescaled(cls):
     """
-    Decorator to create regressors that store a min and a max for the training
-    data and make sure that predictions fall within that range.  It also stores
+    Create regressors that rescale their predictions.
+
+    This decorator creates regressors that store a min and a max for the training
+    data and make sure that predictions fall within that range.  They also store
     the means and SDs of the gold standard and the predictions on the training
     set to rescale the predictions (e.g., as in e-rater).
 
@@ -728,9 +736,11 @@ def rescaled(cls):
 
     # Define all new versions of functions
     @wraps(cls.fit)
-    def fit(self, X, y=None):
+    def fit(self, X, y=None):  # noqa: D417
         """
-        Fit a model, then store the mean, SD, max and min of the training set
+        Fit a model.
+
+        Also store the mean, SD, max and min of the training set
         and the mean and SD of the predictions on the training set.
 
         Parameters
@@ -738,12 +748,12 @@ def rescaled(cls):
         X : array-like, with shape (n_samples, n_features)
             The data to fit.
         y : Ignored
+            This is ignored.
 
         Returns
         -------
         self
         """
-
         # fit a regular regression model
         orig_fit(self, X, y=y)
 
@@ -763,8 +773,10 @@ def rescaled(cls):
         return self
 
     @wraps(cls.predict)
-    def predict(self, X):
+    def predict(self, X):  # noqa: D417
         """
+        Predict with regressor and rescale.
+
         Make predictions with the super class, and then adjust them using the
         stored min, max, means, and standard deviations.
 
@@ -796,6 +808,8 @@ def rescaled(cls):
     @wraps(cls._get_param_names)
     def _get_param_names(class_x):
         """
+        Get kwargs for superclass and add new kwargs.
+
         This is adapted from scikit-learns's ``BaseEstimator`` class.
         It gets the kwargs for the superclass's init method and adds the
         kwargs for newly added ``__init__()`` method.
@@ -815,7 +829,6 @@ def rescaled(cls):
         RunTimeError
             If `varargs` exist in the scikit-learn estimator.
         """
-
         # initialize the empty list of parameter names
         args = []
 
@@ -859,10 +872,9 @@ def rescaled(cls):
         return args
 
     @wraps(cls.__init__)
-    def init(self, constrain=True, rescale=True, **kwargs):
+    def init(self, constrain=True, rescale=True, **kwargs):  # noqa: D417
         """
-        This special init function is used by the decorator to make sure
-        that things get initialized in the right order.
+        Initialize things in the right order.
 
         Parameters
         ----------
@@ -990,6 +1002,8 @@ def setup_cv_split_iterator(cv_folds, examples):
 
 def train_and_score(learner, train_examples, test_examples, metric):
     """
+    Train learner, generate predictions, and evaluate predictions.
+
     A utility method to train a given learner instance on the given
     training examples, generate predictions on the training set itself
     and also the given test set, and score those predictions using the
@@ -1083,7 +1097,7 @@ def write_predictions(
         The IDs of the examples for which the predictions have been generated.
     predictions_to_write : array-like
         The predictions to write out to the file.
-    file_prefix : TYPE
+    file_prefix : str
         The prefix for the output file. The output file will be named
         "<file_prefix>_predictions.tsv".
     model_type : str
@@ -1143,7 +1157,7 @@ def _save_learner_to_disk(learner, filepath):
     ----------
     learner : skll.learner.Learner or skll.learner.voting.VotingLearner
         A ``Learner`` or ``VotingLearner`` instance to save to disk.
-    filepath : str
+    filepath : Union[str, Path]
         The path to save the learner instance to.
     """
     # create the directory if it doesn't exist
@@ -1165,7 +1179,7 @@ def _load_learner_from_disk(learner_type, filepath, logger):
     ----------
     learner_type : skll.learner.Learner or skll.learner.voting.VotingLearner
         The type of learner instance to load from disk.
-    filepath : str
+    filepath : Union[str, Path]
         The path to a saved ``Learner`` or ``VotingLearner`` file.
     logger : logging object
         A logging object.
