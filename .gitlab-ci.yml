@@ -13,8 +13,8 @@ variables:
 # set up the basic job
 .runtests:
   before_script:
-    - "conda create --prefix /root/sklldev --channel conda-forge --file requirements.txt python=${PYVERSION} --yes --quiet"
-    - curl -o /root/sklldev/bin/codecov https://uploader.codecov.io/latest/linux/codecov
+    - "conda create --prefix /root/sklldev --channel conda-forge --file requirements.txt python=${PYVERSION} curl --yes --quiet"
+    - /root/sklldev/bin/curl -o /root/sklldev/bin/codecov https://uploader.codecov.io/latest/linux/codecov
     - chmod +x /root/sklldev/bin/codecov
     - echo "import os" > sitecustomize.py
     - echo "try:" >> sitecustomize.py
