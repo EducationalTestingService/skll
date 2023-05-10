@@ -456,7 +456,7 @@ def compute_num_folds_from_example_counts(cv_folds, labels, model_type, logger=N
 
 def contiguous_ints_or_floats(numbers):
     """
-    Check for continuity in given list of numbers.
+    Check for continuity in the given list of numbers.
 
     Check whether the given list of numbers contains
     contiguous integers or contiguous integer-like
@@ -506,7 +506,7 @@ def contiguous_ints_or_floats(numbers):
 
 def get_acceptable_classification_metrics(label_array):
     """
-    Return acceptable metrics given the the unique set of labels being classified.
+    Return acceptable metrics given the unique set of labels being classified.
 
     Parameters
     ----------

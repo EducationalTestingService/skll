@@ -1077,9 +1077,10 @@ class ARFFReader(DelimitedReader):
 
 def safe_float(text, replace_dict=None, logger=None):
     """
-    Convert string to int and then float.
+    Convert string to a float.
 
-    If neither is possible, return the original string value.
+    It first tries to convert to an integer and then to a float if that fails.
+    If neither is possible, the originals string value is returned.
 
     Parameters
     ----------

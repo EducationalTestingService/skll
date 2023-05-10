@@ -49,7 +49,7 @@ def main(argv=None):
     logging.captureWarnings(True)
     logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - " "%(message)s")
 
-    # conver to Path objects
+    # convert to Path objects
     tsv_file = Path(args.tsv_file)
     output_dir = Path(args.output_dir)
 
