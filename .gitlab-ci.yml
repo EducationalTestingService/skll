@@ -25,7 +25,7 @@ variables:
     - echo "except ImportError:" >> sitecustomize.py
     - echo "    pass" >> sitecustomize.py
   script:
-    - "/root/sklldev/bin/nosetests --with-coverage --cover-package=skll ${TESTFILES}"
+    - "/root/sklldev/bin/nosetests --with-coverage --cover-package=skll --cover-xml ${TESTFILES}"
   after_script:
     - /root/sklldev/bin/codecov
 
