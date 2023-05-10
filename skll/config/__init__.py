@@ -1013,7 +1013,7 @@ def _setup_config_parser(config_path, validate=True):
 
     Raises
     ------
-    IOError
+    FileNotFoundError
         If the configuration file does not exist.
     """
     # initialize config parser with the given defaults
@@ -1024,7 +1024,7 @@ def _setup_config_parser(config_path, validate=True):
 
     # Read file if it exists
     if not config_path.exists():
-        raise FileNotFoundError("The configuration file {config_path} does not exist.")
+        raise FileNotFoundError(f"The configuration file {config_path} does not exist.")
 
     config.read(config_path)
 

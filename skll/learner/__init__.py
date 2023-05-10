@@ -1734,7 +1734,7 @@ class Learner(object):
         """
         Generate learning curves for the learner using the examples.
 
-        The learning curves arge generated on the training examples
+        The learning curves are generated on the training examples
         via cross-validation. Adapted from the scikit-learn code for learning
         curve generation (cf.``sklearn.model_selection.learning_curve``).
 
