@@ -14,6 +14,7 @@ import logging
 import os
 from os.path import basename, join
 from pathlib import Path
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 import numpy as np
 import ruamel.yaml as yaml
@@ -41,7 +42,7 @@ __all__ = ["SKLLConfigParser", "fix_json", "load_cv_folds", "locate_file"]
 class SKLLConfigParser(configparser.ConfigParser):
     """A custom configuration file parser for SKLL."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize configuration parser."""
         # these are the three options that must be set in a config
         # file and no defaults are provided
@@ -151,17 +152,17 @@ class SKLLConfigParser(configparser.ConfigParser):
         self._required_options = required
         self._section_mapping = correct_section_mapping
 
-    def _find_invalid_options(self):
+    def _find_invalid_options(self) -> Set[str]:
         """
         Find the set of invalid options specified by the user.
 
         Returns
         -------
-        invalid_options : set of str
+        invalid_options : Set[str]
             The set of invalid options specified by the user.
         """
         # compute a list of all the valid options
-        valid_options = list(self._defaults.keys()) + self._required_options
+        valid_options = list(self.defaults().keys()) + self._required_options
 
         # get a set of all of the specified options
         specified_options = set(
@@ -172,7 +173,9 @@ class SKLLConfigParser(configparser.ConfigParser):
         invalid_options = set(specified_options).difference(valid_options)
         return invalid_options
 
-    def _find_ill_specified_options(self):
+    def _find_ill_specified_options(
+        self,
+    ) -> Tuple[List[Tuple[str, str]], List[Tuple[str, List[str]]]]:
         """
         Find any ill-specified options in the configuration file.
 
@@ -185,11 +188,17 @@ class SKLLConfigParser(configparser.ConfigParser):
 
         Returns
         -------
-        incorrectly_specified_options : list of str
-            A list of incorrectly specified options.
+        incorrectly_specified_options : List[Tuple[str, str]]
+            List of incorrectly specified options. Each element in the list
+            is a tuple with the first item in the tuple being the option name
+            and the second element being the incorrect section name in which
+            the option was specified.
 
-        multiply_specified_options : list of str
-            A list of options specified more than once.
+        multiply_specified_options : List[Tuple[str, List[str]]]
+            List of options specified more than once. Each element in the list
+            is a tuple with the first item in the tuple being the option name
+            and the second item being the list of section names in which the
+            option was multiply specified.
 
         Notes
         -----
@@ -201,7 +210,7 @@ class SKLLConfigParser(configparser.ConfigParser):
         """
         incorrectly_specified_options = []
         multiply_specified_options = []
-        for option_name, default_value in self._defaults.items():
+        for option_name, default_value in self.defaults().items():
             used_sections = [
                 section
                 for section in self.sections()
@@ -219,7 +228,7 @@ class SKLLConfigParser(configparser.ConfigParser):
 
         return (incorrectly_specified_options, multiply_specified_options)
 
-    def validate(self):
+    def validate(self) -> None:
         """
         Validate specified options.
 
@@ -263,7 +272,57 @@ class SKLLConfigParser(configparser.ConfigParser):
             )
 
 
-def parse_config_file(config_path, log_level=logging.INFO):  # noqa: C901
+def parse_config_file(
+    config_path: Union[str, Path], log_level=logging.INFO
+) -> Tuple[
+    str,
+    str,
+    str,
+    List[Dict[str, Any]],
+    bool,
+    int,
+    str,
+    str,
+    str,
+    str,
+    str,
+    List[List[str]],
+    bool,
+    str,
+    bool,
+    List[str],
+    bool,
+    bool,
+    str,
+    str,
+    str,
+    int,
+    str,
+    Optional[int],
+    Optional[Union[int, Dict[Union[float, str], str]]],
+    Optional[Union[int, Dict[Union[float, str], str]]],
+    int,
+    bool,
+    bool,
+    bool,
+    bool,
+    List[Dict[str, Any]],
+    List[Dict[str, Any]],
+    List[str],
+    List[str],
+    str,
+    str,
+    str,
+    str,
+    bool,
+    Optional[Dict[str, List[str]]],
+    str,
+    str,
+    List[int],
+    Union[List[float], List[int]],
+    List[str],
+    bool,
+]:
     """
     Parse a SKLL experiment configuration file with the given path.
 
@@ -292,7 +351,7 @@ def parse_config_file(config_path, log_level=logging.INFO):  # noqa: C901
     sampler : str
         The name of a sampler to perform non-linear transformations of the input.
 
-    fixed_sampler_parameters : dict
+    fixed_sampler_parameters : List[Dict[str, Any]]
         A dictionary containing parameters you want to have fixed for the sampler.
 
     feature_hasher : bool
@@ -319,7 +378,7 @@ def parse_config_file(config_path, log_level=logging.INFO):  # noqa: C901
     suffix : str
         The file format the training/test files are in.
 
-    featuresets : list of str
+    featuresets : List[[List[str]]
         A list of lists of prefixes for the files containing
         the features you would like to train/test on.
 
@@ -332,7 +391,7 @@ def parse_config_file(config_path, log_level=logging.INFO):  # noqa: C901
     do_grid_search : bool
         Whether to perform grid search.
 
-    grid_objectives : list of str
+    grid_objectives : List[str]
         A list of scoring functions to use for tuning.
 
     probability : bool
@@ -360,14 +419,24 @@ def parse_config_file(config_path, log_level=logging.INFO):  # noqa: C901
     folds_file : str
         The path to the folds_file, if specified.
 
-    grid_search_jobs : int
+    grid_search_jobs : Optional[int]
         Number of folds to run in parallel when using grid search.
 
-    grid_search_folds : int
-        The number of folds to use for grid search.
+    grid_search_folds : Optional[Union[int, Dict[Union[float, str], str]]]
+        Folds to use for grid search. This may be:
+        - `None`: if no grid search is to be done
+        - `int`: an integer specifying how many folds to use
+        - `Dict[Union[float, str], str]`: a dictionary mapping example IDs
+          in the data to fold IDs. Example IDs may be either strings or
+          floats depending on the value of `ids_to_floats`.
 
-    cv_folds : dict or int
-        The specified folds mapping, or the number of folds.
+    cv_folds : Optional[Union[int, Dict[Union[float, str], str]]]
+        Folds to use for cross-validation. This may be:
+        - `None`: if no cross-validation is to be done
+        - `int`: an integer specifying how many folds to use
+        - `Dict[Union[float, str], str]`: a dictionary mapping example IDs
+          in the data to fold IDs. Example IDs may be either strings or
+          floats depending on the value of `ids_to_floats`.
 
     cv_seed : int
         The seed value for the random number generator used
@@ -385,17 +454,17 @@ def parse_config_file(config_path, log_level=logging.INFO):  # noqa: C901
     do_stratified_folds : bool
         Whether to use random folds for cross-validation.
 
-    fixed_parameter_list : list of dict
+    fixed_parameter_list : List[Dict[str, Any]]
         List of dicts containing parameters you want to have fixed for
         each classifier in learners list.
 
-    param_grid_list : list of dict
+    param_grid_list : List[Dict[str, Any]]
         List of parameter grids to search, one dict for each learner.
 
-    featureset_names : list of str
+    featureset_names : List[str]
         The names of the featuresets used for each job.
 
-    learners : list of str
+    learners : List[str]
         A list of learners to try using.
 
     prediction_dir : str
@@ -413,8 +482,10 @@ def parse_config_file(config_path, log_level=logging.INFO):  # noqa: C901
     ids_to_floats : bool
         Whether to convert IDs to floats.
 
-    class_map : dict
-        A class map collapsing several labels into one.
+    class_map : Optional[Dict[str, List[str]]]
+        A class map collapsing several labels into one. The keys
+        are the collased labels and each key's value is the list of
+        labels to be collapsed into said label.
 
     custom_learner_path : str
         Path to a .py file that defines a custom learner.
@@ -422,15 +493,15 @@ def parse_config_file(config_path, log_level=logging.INFO):  # noqa: C901
     custom_metric_path : str
         Path to a .py file that defines a custom metric.
 
-    learning_curve_cv_folds_list : list of int
+    learning_curve_cv_folds_list : List[int]
         A list of integers specifying the number of folds to use for CV.
 
-    learning_curve_train_sizes : list of float or list of int
+    learning_curve_train_sizes : Union[List[float], List[int]]
         List of floats or integers representing relative or absolute numbers
         of training examples that will be used to generate the learning
         curve respectively.
 
-    output_metrics : list
+    output_metrics : List[str]
         A list of output metrics to use.
 
     save_votes : bool
@@ -460,7 +531,7 @@ def parse_config_file(config_path, log_level=logging.INFO):  # noqa: C901
     config_dir = config_path.parent
 
     # set up a config parser with the above default values
-    config = _setup_config_parser(config_path)
+    config: SKLLConfigParser = _setup_config_parser(config_path)
 
     # extract parameters from the various sections in the config file
 
@@ -477,7 +548,7 @@ def parse_config_file(config_path, log_level=logging.INFO):  # noqa: C901
     # next, get the log path before anything else since we need to
     # save all logging messages to a log file in addition to displaying
     # them on the console
-    log_value = config.get("Output", "logs")
+    log_value: str = config.get("Output", "logs")
 
     try:
         log_path = locate_file(log_value, config_dir)
@@ -558,8 +629,7 @@ def parse_config_file(config_path, log_level=logging.INFO):  # noqa: C901
     custom_metric_path = locate_file(config.get("Input", "custom_metric_path"), config_dir)
 
     # get the featuresets
-    featuresets_string = config.get("Input", "featuresets")
-    featuresets = yaml.safe_load(fix_json(featuresets_string))
+    featuresets = yaml.safe_load(config.get("Input", "featuresets"))
 
     # ensure that featuresets is either a list of features or a list of lists
     # of features
@@ -628,8 +698,7 @@ def parse_config_file(config_path, log_level=logging.INFO):  # noqa: C901
     do_shuffle = config.getboolean("Input", "shuffle")
 
     fixed_parameter_list = yaml.safe_load(fix_json(config.get("Input", "fixed_parameters")))
-    fixed_sampler_parameters = fix_json(config.get("Input", "sampler_parameters"))
-    fixed_sampler_parameters = yaml.safe_load(fixed_sampler_parameters)
+    fixed_sampler_parameters = yaml.safe_load(fix_json(config.get("Input", "sampler_parameters")))
     param_grid_list = yaml.safe_load(fix_json(config.get("Tuning", "param_grids")))
 
     # read and normalize the value of `pos_label`
@@ -776,8 +845,10 @@ def parse_config_file(config_path, log_level=logging.INFO):  # noqa: C901
         os.makedirs(results_path)
 
     # what are the output metrics?
-    output_metrics = config.get("Output", "metrics")
-    output_metrics = _parse_and_validate_metrics(output_metrics, "metrics", logger=logger)
+    output_metrics_string = config.get("Output", "metrics")
+    output_metrics: List[str] = _parse_and_validate_metrics(
+        output_metrics_string, "metrics", logger=logger
+    )
 
     # do we want to save the individual predictions from voting
     # learner estimators?
@@ -792,8 +863,10 @@ def parse_config_file(config_path, log_level=logging.INFO):  # noqa: C901
     do_grid_search = config.getboolean("Tuning", "grid_search")
 
     # parse any provided grid objective functions
-    grid_objectives = config.get("Tuning", "objectives")
-    grid_objectives = _parse_and_validate_metrics(grid_objectives, "objectives", logger=logger)
+    grid_objectives_string = config.get("Tuning", "objectives")
+    grid_objectives: List[str] = _parse_and_validate_metrics(
+        grid_objectives_string, "objectives", logger=logger
+    )
 
     # if we are doing learning curves , we don't care about
     # grid search
@@ -830,12 +903,17 @@ def parse_config_file(config_path, log_level=logging.INFO):  # noqa: C901
     use_folds_file_for_grid_search = config.getboolean("Tuning", "use_folds_file_for_grid_search")
 
     # how many jobs should we run in parallel for grid search
-    grid_search_jobs = config.getint("Tuning", "grid_search_jobs")
+    grid_search_jobs: Optional[int] = config.getint("Tuning", "grid_search_jobs")
     if not grid_search_jobs:
         grid_search_jobs = None
 
     # how many folds should we run in parallel for grid search
-    grid_search_folds = config.getint("Tuning", "grid_search_folds")
+    # the folds can either be a None, or number, or a mapping
+    # from example IDs to fold IDs; we initialize to the specified
+    # number to start with
+    grid_search_folds: Optional[Union[int, Dict[Union[float, str], str]]] = config.getint(
+        "Tuning", "grid_search_folds"
+    )
 
     # check whether the right things are set for the given task
     if (task == "evaluate" or task == "predict") and not test_path:
@@ -941,6 +1019,7 @@ def parse_config_file(config_path, log_level=logging.INFO):  # noqa: C901
     train_set_name = basename(train_path)
     test_set_name = basename(test_path) if test_path else "cv"
 
+    __import__("ipdb").set_trace()
     return (
         experiment_name,
         task,
@@ -992,7 +1071,7 @@ def parse_config_file(config_path, log_level=logging.INFO):  # noqa: C901
     )
 
 
-def _setup_config_parser(config_path, validate=True):
+def _setup_config_parser(config_path: Union[str, Path], validate=True) -> SKLLConfigParser:
     """
     Return a config parser at a given path.
 
