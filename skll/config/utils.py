@@ -11,11 +11,14 @@ import csv
 import errno
 import logging
 from pathlib import Path
+from typing import Dict, List, Union
 
 import ruamel.yaml as yaml
 
+from skll.data import FeatureSet
 
-def fix_json(json_string):
+
+def fix_json(json_string: str) -> str:
     """
     Fix incorrectly formatted quotes and capitalized booleans in given JSON string.
 
@@ -26,7 +29,7 @@ def fix_json(json_string):
 
     Returns
     -------
-    json_string : str
+    str
         The normalized JSON string.
     """
     json_string = json_string.replace("True", "true")
@@ -35,7 +38,9 @@ def fix_json(json_string):
     return json_string
 
 
-def load_cv_folds(folds_file, ids_to_floats=False):
+def load_cv_folds(
+    folds_file: Union[str, Path], ids_to_floats=False
+) -> Dict[Union[float, str], str]:
     """
     Load cross-validation folds from a CSV file.
 
@@ -51,8 +56,10 @@ def load_cv_folds(folds_file, ids_to_floats=False):
 
     Returns
     -------
-    res : dict
-        A dictionary with example IDs as the keys and fold IDs as the values.
+    res : Dict[Union[float, str], str]
+        Dictionary with example IDs as the keys and fold IDs as the values.
+        If `ids_to_floats` is set to `True`, the example IDs are floats but
+        otherwise they are strings.
 
     Raises
     ------
@@ -64,21 +71,23 @@ def load_cv_folds(folds_file, ids_to_floats=False):
         next(reader)  # discard the header
         res = {}
         for row in reader:
+            example_id: Union[float, str] = row[0]
+            fold_id: str = row[1]
             if ids_to_floats:
                 try:
-                    row[0] = float(row[0])
+                    example_id = float(example_id)
                 except ValueError:
                     raise ValueError(
                         "You set ids_to_floats to true, but ID "
                         f"{row[0]} could not be converted to "
                         "float"
                     )
-            res[row[0]] = row[1]
+            res[example_id] = fold_id
 
     return res
 
 
-def locate_file(file_path, config_dir):
+def locate_file(file_path: Union[str, Path], config_dir: Union[str, Path]) -> str:
     """
     Locate a file, given a file path and configuration directory.
 
@@ -117,7 +126,7 @@ def locate_file(file_path, config_dir):
         return str(path_to_check)
 
 
-def _munge_featureset_name(featureset):
+def _munge_featureset_name(featureset: FeatureSet) -> str:
     """
     Create a munged name for the featureset.
 
@@ -141,7 +150,7 @@ def _munge_featureset_name(featureset):
     return res
 
 
-def _parse_and_validate_metrics(metrics, option_name, logger=None):
+def _parse_and_validate_metrics(metrics: str, option_name: str, logger=None) -> List[str]:
     """
     Parse and validate string containing list of metrics.
 
