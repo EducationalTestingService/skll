@@ -12,6 +12,7 @@ import configparser
 import itertools
 import logging
 import os
+from numbers import Number
 from os.path import basename, join
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
@@ -20,6 +21,7 @@ import numpy as np
 import ruamel.yaml as yaml
 
 from skll.data.readers import safe_float
+from skll.types import FoldMapping, PathOrStr
 from skll.utils.constants import (
     PROBABILISTIC_METRICS,
     VALID_FEATURE_SCALING_OPTIONS,
@@ -273,7 +275,7 @@ class SKLLConfigParser(configparser.ConfigParser):
 
 
 def parse_config_file(
-    config_path: Union[str, Path], log_level=logging.INFO
+    config_path: PathOrStr, log_level=logging.INFO
 ) -> Tuple[
     str,
     str,
@@ -299,8 +301,8 @@ def parse_config_file(
     int,
     str,
     Optional[int],
-    Optional[Union[int, Dict[Union[float, str], str]]],
-    Optional[Union[int, Dict[Union[float, str], str]]],
+    Optional[Union[int, FoldMapping]],
+    Optional[Union[int, FoldMapping]],
     int,
     bool,
     bool,
@@ -319,7 +321,7 @@ def parse_config_file(
     str,
     str,
     List[int],
-    Union[List[float], List[int]],
+    List[Number],
     List[str],
     bool,
 ]:
@@ -330,7 +332,7 @@ def parse_config_file(
 
     Parameters
     ----------
-    config_path : Union[str, Path]
+    config_path : PathOrStr
         The path to the configuration file.
 
     log_level : int, default=logging.INFO
@@ -422,7 +424,7 @@ def parse_config_file(
     grid_search_jobs : Optional[int]
         Number of folds to run in parallel when using grid search.
 
-    grid_search_folds : Optional[Union[int, Dict[Union[float, str], str]]]
+    grid_search_folds : Optional[Union[int, FoldMapping]]
         Folds to use for grid search. This may be:
         - `None`: if no grid search is to be done
         - `int`: an integer specifying how many folds to use
@@ -430,7 +432,7 @@ def parse_config_file(
           in the data to fold IDs. Example IDs may be either strings or
           floats depending on the value of `ids_to_floats`.
 
-    cv_folds : Optional[Union[int, Dict[Union[float, str], str]]]
+    cv_folds : Optional[Union[int, FoldMapping]]
         Folds to use for cross-validation. This may be:
         - `None`: if no cross-validation is to be done
         - `int`: an integer specifying how many folds to use
@@ -496,7 +498,7 @@ def parse_config_file(
     learning_curve_cv_folds_list : List[int]
         A list of integers specifying the number of folds to use for CV.
 
-    learning_curve_train_sizes : Union[List[float], List[int]]
+    learning_curve_train_sizes : List[Number]
         List of floats or integers representing relative or absolute numbers
         of training examples that will be used to generate the learning
         curve respectively.
@@ -911,7 +913,7 @@ def parse_config_file(
     # the folds can either be a None, or number, or a mapping
     # from example IDs to fold IDs; we initialize to the specified
     # number to start with
-    grid_search_folds: Optional[Union[int, Dict[Union[float, str], str]]] = config.getint(
+    grid_search_folds: Optional[Union[int, FoldMapping]] = config.getint(
         "Tuning", "grid_search_folds"
     )
 
@@ -1070,7 +1072,7 @@ def parse_config_file(
     )
 
 
-def _setup_config_parser(config_path: Union[str, Path], validate=True) -> SKLLConfigParser:
+def _setup_config_parser(config_path: PathOrStr, validate=True) -> SKLLConfigParser:
     """
     Return a config parser at a given path.
 
@@ -1078,7 +1080,7 @@ def _setup_config_parser(config_path: Union[str, Path], validate=True) -> SKLLCo
 
     Parameters
     ----------
-    config_path : Union[str, Path]
+    config_path : PathOrStr
         The path to the configuration file.
 
     validate : bool, default=True

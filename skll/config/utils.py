@@ -11,11 +11,12 @@ import csv
 import errno
 import logging
 from pathlib import Path
-from typing import Dict, List, Union
+from typing import List, Union
 
 import ruamel.yaml as yaml
 
 from skll.data import FeatureSet
+from skll.types import FoldMapping, PathOrStr
 
 
 def fix_json(json_string: str) -> str:
@@ -38,9 +39,7 @@ def fix_json(json_string: str) -> str:
     return json_string
 
 
-def load_cv_folds(
-    folds_file: Union[str, Path], ids_to_floats=False
-) -> Dict[Union[float, str], str]:
+def load_cv_folds(folds_file: PathOrStr, ids_to_floats=False) -> FoldMapping:
     """
     Load cross-validation folds from a CSV file.
 
@@ -48,7 +47,7 @@ def load_cv_folds(
 
     Parameters
     ----------
-    folds_file : Union[str, Path]
+    folds_file : PathOrStr
         The path to a folds file to read.
 
     ids_to_floats : bool, default=False
@@ -56,7 +55,7 @@ def load_cv_folds(
 
     Returns
     -------
-    res : Dict[Union[float, str], str]
+    res : FoldMapping
         Dictionary with example IDs as the keys and fold IDs as the values.
         If `ids_to_floats` is set to `True`, the example IDs are floats but
         otherwise they are strings.
@@ -87,16 +86,16 @@ def load_cv_folds(
     return res
 
 
-def locate_file(file_path: Union[str, Path], config_dir: Union[str, Path]) -> str:
+def locate_file(file_path: PathOrStr, config_dir: PathOrStr) -> str:
     """
     Locate a file, given a file path and configuration directory.
 
     Parameters
     ----------
-    file_path : Union[str, Path]
+    file_path : PathOrStr
         The file to locate. Path may be absolute or relative.
 
-    config_dir : Union[str, Path]
+    config_dir : PathOrStr
         The path to the configuration file directory.
 
     Returns
