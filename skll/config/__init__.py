@@ -1019,7 +1019,6 @@ def parse_config_file(
     train_set_name = basename(train_path)
     test_set_name = basename(test_path) if test_path else "cv"
 
-    __import__("ipdb").set_trace()
     return (
         experiment_name,
         task,
