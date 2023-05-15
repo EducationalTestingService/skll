@@ -21,7 +21,7 @@ import numpy as np
 import ruamel.yaml as yaml
 
 from skll.data.readers import safe_float
-from skll.types import FoldMapping, PathOrStr
+from skll.types import ClassMap, FoldMapping, LabelType, PathOrStr
 from skll.utils.constants import (
     PROBABILISTIC_METRICS,
     VALID_FEATURE_SCALING_OPTIONS,
@@ -86,7 +86,7 @@ class SKLLConfigParser(configparser.ConfigParser):
             "random_folds": "False",
             "results": "",
             "sampler": "",
-            "sampler_parameters": "[]",
+            "sampler_parameters": "{}",
             "save_cv_folds": "True",
             "save_cv_models": "False",
             "shuffle": "False",
@@ -296,7 +296,7 @@ def parse_config_file(
     bool,
     bool,
     str,
-    str,
+    Optional[LabelType],
     str,
     int,
     str,
@@ -317,7 +317,7 @@ def parse_config_file(
     str,
     str,
     bool,
-    Optional[Dict[str, List[str]]],
+    Optional[ClassMap],
     str,
     str,
     List[int],
@@ -407,9 +407,8 @@ def parse_config_file(
     results_path : str
         Path to store result files in.
 
-    pos_label : str
-        The string label for the positive class in the binary
-        classification setting.
+    pos_label : Optional[LabelType]
+        The label for the positive class in the binary classification setting.
 
     feature_scaling : str
         How to scale features (e.g. 'with_mean').
@@ -484,7 +483,7 @@ def parse_config_file(
     ids_to_floats : bool
         Whether to convert IDs to floats.
 
-    class_map : Optional[Dict[str, List[str]]]
+    class_map : Optional[ClassMap]
         A class map collapsing several labels into one. The keys
         are the collapsed labels and each key's value is the list of
         labels to be collapsed into said label.
@@ -704,9 +703,8 @@ def parse_config_file(
     param_grid_list = yaml.safe_load(fix_json(config.get("Tuning", "param_grids")))
 
     # read and normalize the value of `pos_label`
-    pos_label = safe_float(config.get("Tuning", "pos_label"))
-    if pos_label == "":
-        pos_label = None
+    pos_label_string = safe_float(config.get("Tuning", "pos_label"))
+    pos_label: Optional[LabelType] = pos_label_string if pos_label_string else None
 
     # ensure that feature_scaling is specified only as one of the
     # four available choices
