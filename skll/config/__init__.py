@@ -280,7 +280,7 @@ def parse_config_file(
     str,
     str,
     str,
-    List[Dict[str, Any]],
+    Dict[str, Any],
     bool,
     int,
     str,
@@ -353,7 +353,7 @@ def parse_config_file(
     sampler : str
         The name of a sampler to perform non-linear transformations of the input.
 
-    fixed_sampler_parameters : List[Dict[str, Any]]
+    fixed_sampler_parameters : Dict[str, Any]
         A dictionary containing parameters you want to have fixed for the sampler.
 
     feature_hasher : bool
@@ -486,7 +486,7 @@ def parse_config_file(
 
     class_map : Optional[Dict[str, List[str]]]
         A class map collapsing several labels into one. The keys
-        are the collased labels and each key's value is the list of
+        are the collapsed labels and each key's value is the list of
         labels to be collapsed into said label.
 
     custom_learner_path : str
