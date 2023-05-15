@@ -428,7 +428,7 @@ def parse_config_file(
         Folds to use for grid search. This may be:
         - `None`: if no grid search is to be done
         - `int`: an integer specifying how many folds to use
-        - `Dict[Union[float, str], str]`: a dictionary mapping example IDs
+        - `FoldMapping`: a dictionary mapping example IDs
           in the data to fold IDs. Example IDs may be either strings or
           floats depending on the value of `ids_to_floats`.
 
@@ -436,7 +436,7 @@ def parse_config_file(
         Folds to use for cross-validation. This may be:
         - `None`: if no cross-validation is to be done
         - `int`: an integer specifying how many folds to use
-        - `Dict[Union[float, str], str]`: a dictionary mapping example IDs
+        - `FoldMapping`: a dictionary mapping example IDs
           in the data to fold IDs. Example IDs may be either strings or
           floats depending on the value of `ids_to_floats`.
 
