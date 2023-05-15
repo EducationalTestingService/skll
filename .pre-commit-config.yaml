@@ -13,6 +13,11 @@ repos:
       - id: check-ast
       - id: check-json
       - id: debug-statements
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: 'v2.2.0'
+    hooks:
+      - id: conventional-pre-commit
+        stages: [commit-msg]
   - repo: https://github.com/ikamensh/flynt/
     rev: '0.78'
     hooks:
