@@ -628,7 +628,7 @@ class ARFFWriter(Writer):
         id_ : IdType
             The ID for the current instance.
 
-        label_ : LabelTyp
+        label_ : LabelType
             The label for the current instance.
 
         feat_dict : FeatureDict
