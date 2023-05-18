@@ -22,7 +22,7 @@ from skll.types import FeatGenerator, FeatureDictList, IdType, LabelType, Sparse
 
 class FeatureSet(object):
     """
-    Encapsulate features, labels, and medata for a given dataset.
+    Encapsulate features, labels, and metadata for a given dataset.
 
     Parameters
     ----------
@@ -137,6 +137,11 @@ class FeatureSet(object):
         other : skll.data.FeatureSet
             The other ``FeatureSet`` to check equivalence with.
 
+        Returns
+        -------
+        bool
+            ``True`` if they are the same, ``False`` otherwise.
+
         Note
         ----
         We consider feature values to be equal if any differences are in the
@@ -183,13 +188,18 @@ class FeatureSet(object):
         """
         Combine two feature sets to create a new one.
 
-        Thie combination is done assuming they both have the same instances
+        The combination is done assuming they both have the same instances
         with the same IDs in the same order.
 
         Parameters
         ----------
         other : skll.data.FeatureSet
             The other ``FeatureSet`` to add to this one.
+
+        Returns
+        -------
+        skll.data.FeatureSet
+            The combined feature set.
 
         Raises
         ------
@@ -246,7 +256,7 @@ class FeatureSet(object):
             if uses_feature_hasher:
                 if self.vectorizer.n_features != other.vectorizer.n_features:
                     raise ValueError(
-                        "Cannot combine FeatureSets that uses "
+                        "Cannot combine FeatureSets that use "
                         "FeatureHashers with different values of "
                         "n_features setting."
                     )
@@ -291,7 +301,7 @@ class FeatureSet(object):
         inverse: bool = False,
     ) -> None:
         """
-        Remove or keep features and/or examples from the `Featureset.
+        Remove or keep features and/or examples from the ``Featureset``.
 
         Filtering is done in-place.
 
@@ -301,7 +311,7 @@ class FeatureSet(object):
             Examples to keep in the FeatureSet. If ``None``, no ID
             filtering takes place.
 
-        labels : Optional[List[FloatOrStr]], default=None
+        labels : Optional[List[LabelType]], default=None
             Labels that we want to retain examples for. If ``None``,
             no label filtering takes place.
 
@@ -407,7 +417,7 @@ class FeatureSet(object):
         label_ : LabelType
             The label of the example.
 
-        feat_dict : Dict[str, Any]
+        feat_dict : FeatureDict
             The feature dictionary, with feature name as the key
             and example value as the value.
 
@@ -515,7 +525,7 @@ class FeatureSet(object):
 
     def __getitem__(
         self, value: Union[int, slice]
-    ) -> Union["FeatureSet", Tuple[IdType, LabelType, SparseFeatureMatrix]]:
+    ) -> Union["FeatureSet", Tuple[IdType, LabelType, FeatureDictList]]:
         """
         Get new feature subset or specific example.
 
@@ -527,7 +537,7 @@ class FeatureSet(object):
 
         Returns
         -------
-        Union["FeatureSet", Tuple[IdType, LabelType, SparseFeatureMatrix]]
+        Union["FeatureSet", Tuple[IdType, LabelType, FeatureDictList]]
             If `value` is a slice, then return a new ``FeatureSet`` instance
             containing a subset of the data. If it's an index, return the
             specific example by row number.
@@ -545,12 +555,12 @@ class FeatureSet(object):
                 vectorizer=self.vectorizer,
             )
         else:
-            label = self.labels[value] if self.labels is not None else None
-            feats = self.features[value, :] if self.features is not None else None
-            if self.vectorizer:
-                features = (
-                    self.vectorizer.inverse_transform(feats)[0] if self.features is not None else {}
-                )
+            label = self.labels[value] if self.labels is not None else ""
+            if self.features is not None and self.vectorizer:
+                submatrix = self.features[value, :]
+                features = self.vectorizer.inverse_transform(submatrix)[0]
+            else:
+                features = [{}]
             return self.ids[value], label, features
 
     @staticmethod
@@ -574,7 +584,7 @@ class FeatureSet(object):
             specified IDs.
 
         ids_for_split2 : Optional[List[int]], default=None
-            An optional ist of example IDs which will be
+            An optional list of example IDs which will be
             split out into the second ``FeatureSet`` instance.
             Note that the ``FeatureSet`` instance will respect
             the order of the specified IDs. If this is

@@ -25,8 +25,8 @@ FoldMapping = Dict[Union[float, str], str]
 # for SKLL IDs that can be both
 IdType = Union[float, str]
 
-# a float or a string; this is useful
-# for SKLL IDs that can be both
+# a float, int, or a string; this is useful
+# for SKLL labels that can be both
 LabelType = Union[float, int, str]
 
 # a generator that yields a three-tuple:

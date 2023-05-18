@@ -617,22 +617,24 @@ class ARFFWriter(Writer):
         # Finish header and start data section
         print("\n@data", file=output_file)
 
-    def _write_line(self, id_, label_, feat_dict, output_file) -> None:
+    def _write_line(
+        self, id_: IdType, label_: LabelType, feat_dict: FeatureDict, output_file: IO[str]
+    ) -> None:
         """
         Write the current line in the file in this Writer's format.
 
         Parameters
         ----------
-        id_ : str
+        id_ : IdType
             The ID for the current instance.
 
-        label_ : str
+        label_ : LabelTyp
             The label for the current instance.
 
-        feat_dict : dict
+        feat_dict : FeatureDict
             The feature dictionary for the current instance.
 
-        output_file : file buffer
+        output_file : IO[str]
             The file being written to.
 
         Raises

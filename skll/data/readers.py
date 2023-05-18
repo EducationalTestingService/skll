@@ -60,7 +60,7 @@ from sklearn.feature_extraction import FeatureHasher
 
 from skll.data import FeatureSet
 from skll.data.dict_vectorizer import DictVectorizer
-from skll.types import FeatGenerator, FeatureDictList, IdType, LabelType, PathOrStr
+from skll.types import ClassMap, FeatGenerator, FeatureDictList, IdType, LabelType, PathOrStr
 
 # define some custom types for readability
 
@@ -71,7 +71,7 @@ class Reader(object):
 
     Parameters
     ----------
-    path_or_list : Union[str, Path, List[Dict[str, Any]]
+    path_or_list : Union[PathOrStr, List[Dict[str, Any]]
         Path or a list of example dictionaries.
 
     quiet : bool, default=True
@@ -92,7 +92,7 @@ class Reader(object):
         If no column with that name exists, or ``None`` is
         specified, example IDs will be automatically generated.
 
-    class_map : Optional[Dict[str, List[str]]], default=None
+    class_map : Optional[ClassMap], default=None
         Mapping from original class labels to new ones. This is
         mainly used for collapsing multiple labels into a single
         class. Anything not in the mapping will be kept the same.
@@ -126,7 +126,7 @@ class Reader(object):
         ids_to_floats=False,
         label_col="y",
         id_col="id",
-        class_map: Optional[Dict[str, List[str]]] = None,
+        class_map: Optional[ClassMap] = None,
         sparse=True,
         feature_hasher=False,
         num_features=None,
@@ -143,10 +143,9 @@ class Reader(object):
         self._progress_msg = ""
         self._use_pandas = False
 
+        self.vectorizer: Union[DictVectorizer, FeatureHasher]
         if feature_hasher:
-            self.vectorizer: Union[DictVectorizer, FeatureHasher] = FeatureHasher(
-                n_features=num_features
-            )
+            self.vectorizer = FeatureHasher(n_features=num_features)
         else:
             self.vectorizer = DictVectorizer(sparse=sparse)
         self.logger = logger if logger else logging.getLogger(__name__)
@@ -237,9 +236,7 @@ class Reader(object):
             print(f"{self._progress_msg}{progress_num:>15}", end=end, file=sys.stderr)
             sys.stderr.flush()
 
-    def _sub_read_rows(
-        self, file: Union[str, Path]
-    ) -> Tuple[np.ndarray, np.ndarray, FeatureDictList]:
+    def _sub_read_rows(self, file: PathOrStr) -> Tuple[np.ndarray, np.ndarray, FeatureDictList]:
         """
         Read the file in row-by-row.
 
@@ -250,8 +247,8 @@ class Reader(object):
 
         Parameters
         ----------
-        file : Union[str, Path]
-            The path to a file.
+        file : PathOrStr
+            The path to the input file.
 
         Returns
         -------
@@ -276,8 +273,8 @@ class Reader(object):
             If the example IDs are not unique.
         """
         # Get labels and IDs
-        ids_list: List[Union[float, str]] = []
-        labels_list: List[str] = []
+        ids_list: List[IdType] = []
+        labels_list: List[LabelType] = []
         ex_num = 0
         with open(file, encoding="utf-8") as f:
             for ex_num, (id_, class_, _) in enumerate(self._sub_read(f), start=1):
@@ -368,7 +365,7 @@ class Reader(object):
         labels : np.array of shape (n_labels,)
             The labels for the feature set.
 
-        features : List[Dict[str, Any]]
+        features : FeatureDictList
             The features for the feature set.
         """
         if df.empty:
@@ -617,7 +614,7 @@ class NDJReader(Reader):
             example = json.loads(line)
             # Convert all IDs to strings initially,
             # for consistency with csv formats.
-            curr_id: Union[float, str] = str(example.get("id", f"EXAMPLE_{example_num}"))
+            curr_id: IdType = str(example.get("id", f"EXAMPLE_{example_num}"))
             class_name: Optional[Union[float, str]] = (
                 safe_float(example["y"], replace_dict=self.class_map) if "y" in example else None
             )
@@ -826,13 +823,13 @@ class CSVReader(Reader):
         self._engine = self._pandas_kwargs.pop("engine", "c")
         self._use_pandas = True
 
-    def _sub_read(self, file: Union[str, Path]) -> Tuple[np.ndarray, np.ndarray, FeatureDictList]:
+    def _sub_read(self, file: PathOrStr) -> Tuple[np.ndarray, np.ndarray, FeatureDictList]:
         """
         Parse rows of CSV file.
 
         Parameters
         ----------
-        file : Union[str, Path]
+        file : PathOrStr
             The path to the CSV file.
 
         Returns
@@ -968,7 +965,7 @@ class ARFFReader(Reader):
 
         Parameters
         ----------
-        file : file buffer
+        file : IO[str]
             A file buffer for the ARFF file.
 
         Yields
