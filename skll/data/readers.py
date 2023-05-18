@@ -47,10 +47,11 @@ import json
 import logging
 import re
 import sys
-from csv import DictReader
 from io import StringIO
 from itertools import chain
+from numbers import Number
 from pathlib import Path
+from typing import IO, Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -59,6 +60,9 @@ from sklearn.feature_extraction import FeatureHasher
 
 from skll.data import FeatureSet
 from skll.data.dict_vectorizer import DictVectorizer
+from skll.types import ClassMap, FeatGenerator, FeatureDictList, IdType, LabelType, PathOrStr
+
+# define some custom types for readability
 
 
 class Reader(object):
@@ -67,7 +71,7 @@ class Reader(object):
 
     Parameters
     ----------
-    path_or_list : Union[str, Path, List[Dict[str, Any]]
+    path_or_list : Union[PathOrStr, List[Dict[str, Any]]
         Path or a list of example dictionaries.
 
     quiet : bool, default=True
@@ -88,10 +92,12 @@ class Reader(object):
         If no column with that name exists, or ``None`` is
         specified, example IDs will be automatically generated.
 
-    class_map : dict, default=None
+    class_map : Optional[ClassMap], default=None
         Mapping from original class labels to new ones. This is
         mainly used for collapsing multiple labels into a single
         class. Anything not in the mapping will be kept the same.
+        The keys are the new labels and the list of values for each
+        key is the labels to be collapsed to said new label.
 
     sparse : bool, default=True
         Whether or not to store the features in a numpy CSR
@@ -115,12 +121,12 @@ class Reader(object):
 
     def __init__(
         self,
-        path_or_list,
+        path_or_list: Union[PathOrStr, FeatureDictList],
         quiet=True,
         ids_to_floats=False,
         label_col="y",
         id_col="id",
-        class_map=None,
+        class_map: Optional[ClassMap] = None,
         sparse=True,
         feature_hasher=False,
         num_features=None,
@@ -137,6 +143,7 @@ class Reader(object):
         self._progress_msg = ""
         self._use_pandas = False
 
+        self.vectorizer: Union[DictVectorizer, FeatureHasher]
         if feature_hasher:
             self.vectorizer = FeatureHasher(n_features=num_features)
         else:
@@ -144,7 +151,7 @@ class Reader(object):
         self.logger = logger if logger else logging.getLogger(__name__)
 
     @classmethod
-    def for_path(cls, path_or_list, **kwargs):
+    def for_path(cls, path_or_list: Union[PathOrStr, FeatureDictList], **kwargs) -> "Reader":
         """
         Instantiate Reader sub-class based on the file extension.
 
@@ -153,10 +160,10 @@ class Reader(object):
 
         Parameters
         ----------
-        path_or_list : Union[str, Path, List[Dict[str, Any]]
+        path_or_list : Union[PathOrStr, FeatureDictList]
             A path or list of example dictionaries.
 
-        kwargs : dict, optional
+        kwargs : Dict[str, Any], optional
             The arguments to the Reader object being instantiated.
 
         Returns
@@ -208,7 +215,7 @@ class Reader(object):
         """
         raise NotImplementedError
 
-    def _print_progress(self, progress_num, end="\r"):
+    def _print_progress(self, progress_num: Union[int, str], end="\r"):
         r"""
         Print out progress numbers in proper format.
 
@@ -216,7 +223,7 @@ class Reader(object):
 
         Parameters
         ----------
-        progress_num
+        progress_num: int
             Progress indicator value. Usually either a line
             number or a percentage. Must be able to convert to string.
 
@@ -229,7 +236,7 @@ class Reader(object):
             print(f"{self._progress_msg}{progress_num:>15}", end=end, file=sys.stderr)
             sys.stderr.flush()
 
-    def _sub_read_rows(self, file):
+    def _sub_read_rows(self, file: PathOrStr) -> Tuple[np.ndarray, np.ndarray, FeatureDictList]:
         """
         Read the file in row-by-row.
 
@@ -240,8 +247,8 @@ class Reader(object):
 
         Parameters
         ----------
-        file : Union[str, Path]
-            The path to a file.
+        file : PathOrStr
+            The path to the input file.
 
         Returns
         -------
@@ -251,7 +258,7 @@ class Reader(object):
         labels : np.array of shape (n_labels,)
             The labels array.
 
-        features : list of dicts
+        features : FeatureDictList
             The features dictionary.
 
         Raises
@@ -266,8 +273,8 @@ class Reader(object):
             If the example IDs are not unique.
         """
         # Get labels and IDs
-        ids = []
-        labels = []
+        ids_list: List[IdType] = []
+        labels_list: List[LabelType] = []
         ex_num = 0
         with open(file, encoding="utf-8") as f:
             for ex_num, (id_, class_, _) in enumerate(self._sub_read(f), start=1):
@@ -281,8 +288,8 @@ class Reader(object):
                             f"ID {id_} could not be converted to"
                             f" float in {self.path_or_list}"
                         )
-                ids.append(id_)
-                labels.append(class_)
+                ids_list.append(id_)
+                labels_list.append(class_)
                 if ex_num % 100 == 0:
                     self._print_progress(ex_num)
             self._print_progress(ex_num)
@@ -293,8 +300,8 @@ class Reader(object):
             raise ValueError("No features found in possibly empty file " f"'{self.path_or_list}'.")
 
         # Convert everything to numpy arrays
-        ids = np.array(ids)
-        labels = np.array(labels)
+        ids = np.array(ids_list)
+        labels = np.array(labels_list)
 
         def feat_dict_generator():
             with open(self.path_or_list, encoding="utf-8") as f:
@@ -309,7 +316,14 @@ class Reader(object):
 
         return ids, labels, features
 
-    def _parse_dataframe(self, df, id_col, label_col, replace_blanks_with=None, drop_blanks=False):
+    def _parse_dataframe(
+        self,
+        df: pd.DataFrame,
+        id_col: Optional[str],
+        label_col: Optional[str],
+        replace_blanks_with: Optional[Union[Number, Dict[str, Number]]] = None,
+        drop_blanks: Optional[bool] = False,
+    ) -> Tuple[np.ndarray, np.ndarray, FeatureDictList]:
         """
         Parse the data frame into ids, labels, and features.
 
@@ -321,21 +335,22 @@ class Reader(object):
 
         Parameters
         ----------
-        df : pd.DataFrame
+        df : pandas.DataFrame
             The pandas data frame to parse.
 
-        id_col : str or None
+        id_col : Optional[str]
             The id column.
 
-        label_col : str or None
+        label_col : Optional[str]
             The label column.
 
-        replace_blanks_with : Number, dict, or None, default=None
+        replace_blanks_with : Optional[Union[Number, Dict[str, Number]]], default=None
             Specifies a new value with which to replace blank values.
             Options are:
 
                 - ``Number`` : A (numeric) value with which to replace blank values.
-                - ``dict`` : A dictionary specifying the replacement value for each column.
+                - ``Dict[str, Number]`` : A dictionary specifying the replacemen
+                  value for each column.
                 - ``None`` : Blank values will be left as blanks, and not replaced.
 
         drop_blanks : bool, default=False
@@ -350,7 +365,7 @@ class Reader(object):
         labels : np.array of shape (n_labels,)
             The labels for the feature set.
 
-        features : list of dicts
+        features : FeatureDictList
             The features for the feature set.
         """
         if df.empty:
@@ -424,7 +439,7 @@ class Reader(object):
 
         return ids, labels, features
 
-    def read(self):
+    def read(self) -> FeatureSet:
         """
         Load examples from various file formats.
 
@@ -433,7 +448,7 @@ class Reader(object):
 
         Returns
         -------
-        feature_set : skll.data.FeatureSet
+        skll.data.FeatureSet
             ``FeatureSet`` instance representing the input file.
 
         Raises
@@ -453,6 +468,9 @@ class Reader(object):
             self._progress_msg = f"Loading {self.path_or_list}..."
             print(self._progress_msg, end="\r", file=sys.stderr)
             sys.stderr.flush()
+
+        # if we are in this method, self.path_or_file must be a path
+        assert isinstance(self.path_or_list, (str, Path)), "file path or path object required"
 
         if self._use_pandas:
             ids, labels, features = self._sub_read(self.path_or_list)
@@ -487,7 +505,7 @@ class DictListReader(Reader):
     a path to a file.
     """
 
-    def read(self):
+    def read(self) -> FeatureSet:
         """
         Read examples from list of dictionaries.
 
@@ -496,11 +514,17 @@ class DictListReader(Reader):
         feature_set : skll.data.FeatureSet
             FeatureSet representing the list of dictionaries we read in.
         """
-        ids = []
-        labels = []
-        feat_dicts = []
+        # if we are in this method, `self.path_or_list` must be a
+        # list of dictionaries
+        assert isinstance(self.path_or_list, list)
+
+        # initialize some variables
+        ids_list: List[IdType] = []
+        labels_list: List[Optional[LabelType]] = []
+        feat_dicts: FeatureDictList = []
+
         for example_num, example in enumerate(self.path_or_list):
-            curr_id = str(example.get("id", f"EXAMPLE_{example_num}"))
+            curr_id: Union[float, str] = str(example.get("id", f"EXAMPLE_{example_num}"))
             if self.ids_to_floats:
                 try:
                     curr_id = float(curr_id)
@@ -525,8 +549,8 @@ class DictListReader(Reader):
                         f"{curr_id} could not be converted to "
                         f"float in {self.path_or_list}"
                     )
-            ids.append(curr_id)
-            labels.append(class_name)
+            ids_list.append(curr_id)
+            labels_list.append(class_name)
             feat_dicts.append(example)
 
             # Print out status
@@ -534,8 +558,8 @@ class DictListReader(Reader):
                 self._print_progress(example_num)
 
         # Convert lists to numpy arrays
-        ids = np.array(ids)
-        labels = np.array(labels)
+        ids = np.array(ids_list)
+        labels = np.array(labels_list)
         features = self.vectorizer.fit_transform(feat_dicts)
 
         return FeatureSet(
@@ -551,7 +575,7 @@ class NDJReader(Reader):
     must be specified as the  "id" key in each JSON dictionary.
     """
 
-    def _sub_read(self, file):
+    def _sub_read(self, file) -> FeatGenerator:
         """
         Iterate through the rows of the file buffer.
 
@@ -562,14 +586,14 @@ class NDJReader(Reader):
 
         Yields
         ------
-        curr_id : str
+        curr_id : IdType
             The current ID for the example.
 
-        class_name : float or str
+        class_name : Optional[LabelType]
             The name of the class label for the example.
 
-        example : dict
-            The example valued in dictionary format, with 'x'
+        example : FeatureDict
+            The example value in dictionary format, with 'x'
             as list of features.
 
         Raises
@@ -590,8 +614,8 @@ class NDJReader(Reader):
             example = json.loads(line)
             # Convert all IDs to strings initially,
             # for consistency with csv formats.
-            curr_id = str(example.get("id", f"EXAMPLE_{example_num}"))
-            class_name = (
+            curr_id: IdType = str(example.get("id", f"EXAMPLE_{example_num}"))
+            class_name: Optional[Union[float, str]] = (
                 safe_float(example["y"], replace_dict=self.class_map) if "y" in example else None
             )
             example = example["x"]
@@ -665,7 +689,7 @@ class LibSVMReader(Reader):
         value = safe_float(value)
         return (name, value)
 
-    def _sub_read(self, file):
+    def _sub_read(self, file: IO[str]) -> FeatGenerator:
         """
         Parse rows of LibSVM file.
 
@@ -676,13 +700,13 @@ class LibSVMReader(Reader):
 
         Yields
         ------
-        curr_id : str
+        curr_id : IdType
             The current ID for the example.
 
-        class_name : float or str
+        class_ : LabelType
             The name of the class label for the example.
 
-        example : dict
+        example : FeatureDict
             The example valued in dictionary format, with 'x'
             as list of features.
 
@@ -723,20 +747,26 @@ class LibSVMReader(Reader):
             if not curr_id:
                 curr_id = f"EXAMPLE_{example_num}"
 
+            # the class can be either a float, an int, or a string;
+            # so we can use our `LabelType` type alias for this
+            class_: LabelType
+
+            # get the class number
             class_num = match.group("label_num")
+
             # If we have a mapping from class numbers to labels, get label
             if label_map:
-                class_name = label_map[class_num]
+                class_ = label_map[class_num]
             else:
-                class_name = class_num
-            class_name = safe_float(class_name, replace_dict=self.class_map)
+                class_ = class_num
+            class_ = safe_float(class_, replace_dict=self.class_map)
 
             curr_info_dict = dict(
                 self._pair_to_tuple(pair, feat_map)
                 for pair in match.group("features").strip().split()
             )
 
-            yield curr_id, class_name, curr_info_dict
+            yield curr_id, class_, curr_info_dict
 
 
 class CSVReader(Reader):
@@ -793,13 +823,13 @@ class CSVReader(Reader):
         self._engine = self._pandas_kwargs.pop("engine", "c")
         self._use_pandas = True
 
-    def _sub_read(self, file):
+    def _sub_read(self, file: PathOrStr) -> Tuple[np.ndarray, np.ndarray, FeatureDictList]:
         """
         Parse rows of CSV file.
 
         Parameters
         ----------
-        file : Union[str, Path]
+        file : PathOrStr
             The path to the CSV file.
 
         Returns
@@ -810,8 +840,8 @@ class CSVReader(Reader):
         labels : np.array of shape (n_labels,)
             The labels for the feature set.
 
-        features : list of dicts
-            The features for the features set.
+        features : FeatureDictList
+            The list of feature dictionaries for the feature set.
         """
         df = pd.read_csv(file, sep=self._sep, engine=self._engine, **self._pandas_kwargs)
         return self._parse_dataframe(
@@ -879,89 +909,7 @@ class TSVReader(CSVReader):
         self._sep = str("\t")
 
 
-class DelimitedReader(Reader):
-    """
-    Create a ``FeatureSet`` instance from a delimited (CSV/TSV) file.
-
-    If example/instance IDs are included in the files, they
-    must be specified in the ``id`` column.
-    For ARFF, CSV, and TSV files, there must be a column with the
-    name specified by ``label_col`` if the data is labeled. For ARFF files,
-    this column must also be the final one (as it is in Weka).
-
-    Parameters
-    ----------
-    path_or_list : str
-        The path to a delimited file.
-
-    dialect : str, default='excel-tab'
-        The dialect of to pass on to the underlying CSV reader.
-
-    kwargs : dict, optional
-        Other arguments to the Reader object.
-    """
-
-    def __init__(self, path_or_list, **kwargs):
-        """Initialize DelimitedReader class."""
-        self.dialect = kwargs.pop("dialect", "excel-tab")
-        super(DelimitedReader, self).__init__(path_or_list, **kwargs)
-
-    def _sub_read(self, file):
-        """
-        Parse rows in delimited file.
-
-        Parameters
-        ----------
-        file : file buffer
-            A file buffer for an delimited file.
-
-        Yields
-        ------
-        curr_id : str
-            The current ID for the example.
-
-        class_name : float or str
-            The name of the class label for the example.
-
-        example : dict
-            The example valued in dictionary format, with 'x'
-            as list of features.
-        """
-        reader = DictReader(file, dialect=self.dialect)
-        for example_num, row in enumerate(reader):
-            if self.label_col is not None and self.label_col in row:
-                class_name = safe_float(row[self.label_col], replace_dict=self.class_map)
-                del row[self.label_col]
-            else:
-                class_name = None
-
-            if self.id_col not in row:
-                curr_id = f"EXAMPLE_{example_num}"
-            else:
-                curr_id = row[self.id_col]
-                del row[self.id_col]
-
-            # Convert features to floats and if a feature is 0
-            # then store the name of the feature so we can
-            # delete it later since we don't need to explicitly
-            # store zeros in the feature hash
-            columns_to_delete = []
-            for fname, fval in row.items():
-                fval_float = safe_float(fval)
-                # we don't need to explicitly store zeros
-                if fval_float:
-                    row[fname] = fval_float
-                else:
-                    columns_to_delete.append(fname)
-
-            # remove the columns with zero values
-            for cname in columns_to_delete:
-                del row[cname]
-
-            yield curr_id, class_name, row
-
-
-class ARFFReader(DelimitedReader):
+class ARFFReader(Reader):
     """
     Create a ``FeatureSet`` instance from an ARFF file.
 
@@ -981,13 +929,15 @@ class ARFFReader(DelimitedReader):
 
     def __init__(self, path_or_list, **kwargs):
         """Initialize ARFFReader class."""
-        kwargs["dialect"] = "arff"
         super(ARFFReader, self).__init__(path_or_list, **kwargs)
+        self.dialect = "arff"
         self.relation = ""
         self.regression = False
 
     @staticmethod
-    def split_with_quotes(string, delimiter=" ", quote_char="'", escape_char="\\"):
+    def split_with_quotes(
+        string: str, delimiter=" ", quote_char="'", escape_char="\\"
+    ) -> List[str]:
         r"""
         Split strings but not on split delimiters enclosed in quotes.
 
@@ -1009,24 +959,24 @@ class ARFFReader(DelimitedReader):
             csv.reader([string], delimiter=delimiter, quotechar=quote_char, escapechar=escape_char)
         )
 
-    def _sub_read(self, file):
+    def _sub_read(self, file: IO[str]) -> FeatGenerator:
         """
         Parse rows of ARFF file.
 
         Parameters
         ----------
-        file : file buffer
+        file : IO[str]
             A file buffer for the ARFF file.
 
         Yields
         ------
-        curr_id : str
+        curr_id : IdType
             The current ID for the example.
 
-        class_name : float or str
+        class_name : LabelType
             The name of the class label for the example.
 
-        example : dict
+        example : FeatureDict
             The example valued in dictionary format, with 'x'
             as list of features.
         """
@@ -1071,11 +1021,47 @@ class ARFFReader(DelimitedReader):
         if self.label_col != field_names[-1]:
             self.label_col = None
 
-        # Process data as CSV file
-        return super(ARFFReader, self)._sub_read(chain([field_str], file))
+        # Process iterator as a CSV file
+        csv_file_buffer = chain([field_str], file)
+        reader = csv.DictReader(csv_file_buffer, dialect=self.dialect)
+        for example_num, row in enumerate(reader):
+            if self.label_col is not None and self.label_col in row:
+                class_name = safe_float(row[self.label_col], replace_dict=self.class_map)
+                del row[self.label_col]
+            else:
+                class_name = None
+
+            if self.id_col not in row:
+                curr_id = f"EXAMPLE_{example_num}"
+            else:
+                curr_id = row[self.id_col]
+                del row[self.id_col]
+
+            # Convert features to floats and if a feature is 0
+            # then store the name of the feature so we can
+            # delete it later since we don't need to explicitly
+            # store zeros in the feature hash
+            columns_to_delete = []
+            for fname, fval in row.items():
+                fval_float = safe_float(fval)
+                # we don't need to explicitly store zeros
+                if fval_float:
+                    row[fname] = fval_float
+                else:
+                    columns_to_delete.append(fname)
+
+            # remove the columns with zero values
+            for cname in columns_to_delete:
+                del row[cname]
+
+            yield curr_id, class_name, row
 
 
-def safe_float(text, replace_dict=None, logger=None):
+def safe_float(
+    text: Any,
+    replace_dict: Optional[Dict[str, List[str]]] = None,
+    logger: Optional[logging.Logger] = None,
+) -> Union[float, int, str]:
     """
     Convert string to a float.
 
@@ -1084,24 +1070,25 @@ def safe_float(text, replace_dict=None, logger=None):
 
     Parameters
     ----------
-    text : str
+    text : Any
         The text to convert.
 
-    replace_dict : dict, default=None
+    replace_dict : Optional[Dict[str, List[str]]], default=None
         Mapping from text to replacement text values. This is
         mainly used for collapsing multiple labels into a
         single class. Replacing happens before conversion to
         floats. Anything not in the mapping will be kept the
         same.
 
-    logger : logging.Logger, default=None
+    logger : Optional[logging.Logger], default=None
         The Logger instance to use to log messages. Used instead of
         creating a new Logger instance by default.
 
     Returns
     -------
-    text : int or float or str
-        The text value converted to int or float, if possible
+    Union[float, int, str]
+        The text value converted to int or float, if possible. Otherwise
+        it's a string.
     """
     # convert to str to be "Safe"!
     text = str(text)

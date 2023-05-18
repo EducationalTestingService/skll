@@ -10,7 +10,6 @@ Run tests related to FeatureSets.
 
 import itertools
 from collections import OrderedDict
-from io import StringIO
 from shutil import rmtree
 
 import numpy as np
@@ -50,18 +49,34 @@ def tearDown():
 
     file_names = [
         f"{x}.jsonlines" for x in ["test_string_ids", "test_string_ids_df", "test_string_labels_df"]
+    ] + [
+        "test_read_csv_tsv_drop_blanks.csv",
+        "test_read_csv_tsv_drop_blanks.tsv",
+        "test_read_csv_tsv_fill_blanks.csv",
+        "test_read_csv_tsv_fill_blanks.tsv",
+        "test_read_csv_tsv_fill_blanks_dict.csv",
+        "test_read_csv_tsv_fill_blanks_dict.tsv",
+        "test_drop_blanks_error.csv",
     ]
+
     for file_name in file_names:
         unlink(other_dir / file_name)
 
     for dir_name in ["test_conversion", "test_merging"]:
-        rmtree(train_dir / dir_name)
+        path = train_dir / dir_name
+        if path.exists():
+            rmtree(train_dir / dir_name)
 
 
 def _create_empty_file(filetype):
     filepath = other_dir / f"empty.{filetype}"
     open(filepath, "w").close()
     return filepath
+
+
+def _create_test_file(filepath, contents):
+    with open(filepath, "w") as filefh:
+        filefh.write(contents)
 
 
 @raises(ValueError)
@@ -231,6 +246,51 @@ def test_vectorizer_inequality():
     assert_not_equal(v, 1)
     assert_not_equal(v, "passthrough")
     assert_not_equal(v, [1.0, 2.0, 3.0])
+
+
+@raises(ValueError)
+def test_merge_no_vectorizers():
+    """Test to ensure rejection of merging featuresets with no labels."""
+    # create a featureset each with a DictVectorizer
+    fs1, _ = make_classification_data(
+        num_examples=100, num_features=4, num_labels=3, train_test_ratio=1.0
+    )
+
+    # create another featureset using hashing
+    fs2, _ = make_classification_data(
+        num_examples=100,
+        num_features=4,
+        feature_prefix="g",
+        num_labels=3,
+        train_test_ratio=1.0,
+        use_feature_hashing=True,
+    )
+    fs2.vectorizer = None
+
+    # This should raise a ValueError
+    fs1 + fs2
+
+
+@raises(ValueError)
+def test_merge_no_features():
+    """Test to ensure rejection of merging featuresets with no labels."""
+    # create a featureset each with a DictVectorizer
+    fs1, _ = make_classification_data(
+        num_examples=100, num_features=4, num_labels=3, train_test_ratio=1.0
+    )
+    fs1.features = None
+
+    # create another featureset using hashing
+    fs2, _ = make_classification_data(
+        num_examples=100,
+        num_features=4,
+        feature_prefix="g",
+        num_labels=3,
+        train_test_ratio=1.0,
+        use_feature_hashing=True,
+    )
+    # This should raise a ValueError
+    fs1 + fs2
 
 
 @raises(ValueError)
@@ -1054,10 +1114,17 @@ def test_reading_csv_and_tsv_with_drop_blanks():
 
     fs_expected = FeatureSet.from_data_frame(expected, "test", labels_column="L")
 
-    fs_csv = CSVReader(StringIO(test_csv), drop_blanks=True, pandas_kwargs=kwargs).read()
+    # write out the test data
+    csv_path = other_dir / "test_read_csv_tsv_drop_blanks.csv"
+    _create_test_file(csv_path, test_csv)
+
+    tsv_path = other_dir / "test_read_csv_tsv_drop_blanks.tsv"
+    _create_test_file(tsv_path, test_tsv)
+
+    fs_csv = CSVReader(csv_path, drop_blanks=True, pandas_kwargs=kwargs).read()
     fs_csv.name = "test"
 
-    fs_tsv = TSVReader(StringIO(test_tsv), drop_blanks=True, pandas_kwargs=kwargs).read()
+    fs_tsv = TSVReader(tsv_path, drop_blanks=True, pandas_kwargs=kwargs).read()
     fs_tsv.name = "test"
 
     eq_(fs_csv, fs_expected)
@@ -1092,10 +1159,17 @@ def test_reading_csv_and_tsv_with_fill_blanks():
 
     fs_expected = FeatureSet.from_data_frame(expected, "test", labels_column="L")
 
-    fs_csv = CSVReader(StringIO(test_csv), replace_blanks_with=4.5, pandas_kwargs=kwargs).read()
+    # write out the test data
+    csv_path = other_dir / "test_read_csv_tsv_fill_blanks.csv"
+    _create_test_file(csv_path, test_csv)
+
+    tsv_path = other_dir / "test_read_csv_tsv_fill_blanks.tsv"
+    _create_test_file(tsv_path, test_tsv)
+
+    fs_csv = CSVReader(csv_path, replace_blanks_with=4.5, pandas_kwargs=kwargs).read()
     fs_csv.name = "test"
 
-    fs_tsv = TSVReader(StringIO(test_tsv), replace_blanks_with=4.5, pandas_kwargs=kwargs).read()
+    fs_tsv = TSVReader(tsv_path, replace_blanks_with=4.5, pandas_kwargs=kwargs).read()
     fs_tsv.name = "test"
 
     eq_(fs_csv, fs_expected)
@@ -1130,15 +1204,18 @@ def test_reading_csv_and_tsv_with_fill_blanks_with_dictionary():
 
     fs_expected = FeatureSet.from_data_frame(expected, "test", labels_column="L")
 
+    # write out the test data
+    csv_path = other_dir / "test_read_csv_tsv_fill_blanks_dict.csv"
+    _create_test_file(csv_path, test_csv)
+
+    tsv_path = other_dir / "test_read_csv_tsv_fill_blanks_dict.tsv"
+    _create_test_file(tsv_path, test_tsv)
+
     replacement_dict = {"A": 4.5, "B": 2.5, "C": 1}
-    fs_csv = CSVReader(
-        StringIO(test_csv), replace_blanks_with=replacement_dict, pandas_kwargs=kwargs
-    ).read()
+    fs_csv = CSVReader(csv_path, replace_blanks_with=replacement_dict, pandas_kwargs=kwargs).read()
     fs_csv.name = "test"
 
-    fs_tsv = TSVReader(
-        StringIO(test_tsv), replace_blanks_with=replacement_dict, pandas_kwargs=kwargs
-    ).read()
+    fs_tsv = TSVReader(tsv_path, replace_blanks_with=replacement_dict, pandas_kwargs=kwargs).read()
     fs_tsv.name = "test"
 
     eq_(fs_csv, fs_expected)
@@ -1148,4 +1225,6 @@ def test_reading_csv_and_tsv_with_fill_blanks_with_dictionary():
 @raises(ValueError)
 def test_drop_blanks_and_replace_blanks_with_raises_error():
     test_csv = "1,1,6\n2,,2\n3,9,3\n,,\n,5,\n,,\n2,7,7"
-    CSVReader(StringIO(test_csv), replace_blanks_with=4.5, drop_blanks=True).read()
+    csv_path = other_dir / "test_drop_blanks_error.csv"
+    _create_test_file(csv_path, test_csv)
+    CSVReader(csv_path, replace_blanks_with=4.5, drop_blanks=True).read()

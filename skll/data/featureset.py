@@ -9,37 +9,38 @@ Classes related to storing/merging feature sets.
 """
 
 from copy import deepcopy
+from typing import Collection, List, Optional, Tuple, Union
 
 import numpy as np
 import scipy.sparse as sp
+from pandas import DataFrame
 from sklearn.feature_extraction import DictVectorizer, FeatureHasher
 
-from skll.data.dict_vectorizer import DictVectorizer as NewDictVectorizer
+from skll.data.dict_vectorizer import DictVectorizer as SkllDictVectorizer
+from skll.types import FeatGenerator, FeatureDictList, IdType, LabelType, SparseFeatureMatrix
 
 
 class FeatureSet(object):
-
     """
-    Encapsulation of all of the features, values, and metadata about a given
-    set of data. This replaces ``ExamplesTuple`` from older versions of SKLL.
+    Encapsulate features, labels, and metadata for a given dataset.
 
     Parameters
     ----------
     name : str
         The name of this feature set.
 
-    ids : np.array of shape (n_ids,)
+    ids :list or  np.array of shape (n_ids,)
         Example IDs for this set.
 
     labels : np.array of shape (n_labels,), default=None
         labels for this set.
 
-    features : list of dict or an array-like of shape (n_samples, n_features), default=None
+    features : Optional[Union[FeatureDictList, np.ndarray]], default=None
         The features for each instance represented as either a
         list of dictionaries or an array-like (if ``vectorizer`` is
         also specified).
 
-    vectorizer : DictVectorizer or FeatureHasher, default=None
+    vectorizer : Union[DictVectorizer, FeatureHasher], default=None
         Vectorizer which will be used to generate the feature matrix.
 
     Warnings
@@ -57,26 +58,49 @@ class FeatureSet(object):
     each array must be equal.
     """
 
-    def __init__(self, name, ids, labels=None, features=None, vectorizer=None):
+    def __init__(
+        self,
+        name: str,
+        ids: Union[List[str], np.ndarray],
+        labels: Optional[Union[List[str], np.ndarray]] = None,
+        features: Optional[Union[FeatureDictList, SparseFeatureMatrix]] = None,
+        vectorizer: Optional[Union[DictVectorizer, FeatureHasher]] = None,
+    ):
+        """Initialize a FeatureSet instance."""
         super(FeatureSet, self).__init__()
+
+        # clearly define the attribute types
+        self.ids: np.ndarray
+        self.labels: Optional[np.ndarray]
+        self.features: Optional[SparseFeatureMatrix]
+        self.vectorizer: Optional[Union[DictVectorizer, FeatureHasher]]
+
         self.name = name
+
         if isinstance(ids, list):
-            ids = np.array(ids)
-        self.ids = ids
+            self.ids = np.array(ids)
+        elif isinstance(ids, np.ndarray):
+            self.ids = ids
+        else:
+            raise ValueError("Ids must be a list or numpy array.")
+
         if isinstance(labels, list):
             labels = np.array(labels)
         self.labels = labels
-        self.features = features
+
         self.vectorizer = vectorizer
-        # Convert list of dicts to numpy array
-        if isinstance(self.features, list):
+
+        # convert features from list of dictionaries to sparse array, if needed
+        if isinstance(features, list):
             if self.vectorizer is None:
-                self.vectorizer = NewDictVectorizer(sparse=True)
-            self.features = self.vectorizer.fit_transform(self.features)
+                self.vectorizer = SkllDictVectorizer(sparse=True)
+            features_array: SparseFeatureMatrix = self.vectorizer.fit_transform(features)
+            self.features = features_array
+        else:
+            self.features = features
+
         if self.features is not None:
             num_feats = self.features.shape[0]
-            if self.ids is None:
-                raise ValueError("A list of IDs is required")
             num_ids = self.ids.shape[0]
             if num_feats != num_ids:
                 raise ValueError(
@@ -113,12 +137,16 @@ class FeatureSet(object):
         other : skll.data.FeatureSet
             The other ``FeatureSet`` to check equivalence with.
 
+        Returns
+        -------
+        bool
+            ``True`` if they are the same, ``False`` otherwise.
+
         Note
         ----
         We consider feature values to be equal if any differences are in the
         sixth decimal place or higher.
         """
-
         return (
             self.ids.shape == other.ids.shape
             and self.labels.shape == other.labels.shape
@@ -132,9 +160,7 @@ class FeatureSet(object):
         )
 
     def __iter__(self):
-        """
-        Iterate through (ID, label, feature_dict) tuples in feature set.
-        """
+        """Iterate through (ID, label, feature_dict) tuples in feature set."""
         if self.features is not None:
             if not isinstance(self.vectorizer, DictVectorizer):
                 raise ValueError(
@@ -154,26 +180,35 @@ class FeatureSet(object):
         else:
             return
 
-    def __len__(self):
-        """
-        The number of rows in the ``FeatureSet`` instance.
-        """
-        return self.features.shape[0]
+    def __len__(self) -> int:
+        """Return number of rows in the ``FeatureSet`` instance."""
+        return self.features.shape[0] if self.features is not None else 0
 
-    def __add__(self, other):
+    def __add__(self, other: "FeatureSet") -> "FeatureSet":
         """
-        Combine two feature sets to create a new one.  This is done assuming
-        they both have the same instances with the same IDs in the same order.
+        Combine two feature sets to create a new one.
+
+        The combination is done assuming they both have the same instances
+        with the same IDs in the same order.
 
         Parameters
         ----------
         other : skll.data.FeatureSet
             The other ``FeatureSet`` to add to this one.
 
+        Returns
+        -------
+        skll.data.FeatureSet
+            The combined feature set.
+
         Raises
         ------
         ValueError
             If IDs are not in the same order in each ``FeatureSet`` instance.
+
+        ValueError
+            If either the 'features' or 'vectorizer' attributes are
+            ``None`` for either of the two ``FeatureSet`` instances.
 
         ValueError
             If vectorizers are different between the two ``FeatureSet`` instances.
@@ -184,7 +219,6 @@ class FeatureSet(object):
         ValueError
             If there are conflicting labels.
         """
-
         # Check that the sets of IDs are equal
         if set(self.ids) != set(other.ids):
             raise ValueError("IDs are not in the same order in each " "feature set")
@@ -196,7 +230,19 @@ class FeatureSet(object):
         # Initialize the new feature set with a name and the IDs.
         new_set = FeatureSet("+".join(sorted([self.name, other.name])), deepcopy(self.ids))
 
-        # Combine feature matrices and vectorizers.
+        # Make sure that features and vectorizer in either feature set are not None
+        if (
+            self.vectorizer is None
+            or other.vectorizer is None
+            or self.features is None
+            or other.features is None
+        ):
+            raise ValueError(
+                "Cannot combine FeatureSets since either the vectorizer "
+                "or the features are not defined."
+            )
+
+        # Make sure the two vectorizers are the same type
         if not isinstance(self.vectorizer, type(other.vectorizer)):
             raise ValueError(
                 "Cannot combine FeatureSets because they are "
@@ -204,59 +250,72 @@ class FeatureSet(object):
                 "vectorizer (e.g., DictVectorizer, "
                 "FeatureHasher)"
             )
-        uses_feature_hasher = isinstance(self.vectorizer, FeatureHasher)
-        if uses_feature_hasher:
-            if self.vectorizer.n_features != other.vectorizer.n_features:
-                raise ValueError(
-                    "Cannot combine FeatureSets that uses "
-                    "FeatureHashers with different values of "
-                    "n_features setting."
-                )
+        # they have to be the same types in this block
         else:
-            # Check for duplicate feature names.
-            if set(self.vectorizer.feature_names_) & set(other.vectorizer.feature_names_):
-                raise ValueError(
-                    "Cannot combine FeatureSets because they " "have duplicate feature names."
-                )
-        num_feats = self.features.shape[1]
+            uses_feature_hasher = isinstance(self.vectorizer, FeatureHasher)
+            if uses_feature_hasher:
+                if self.vectorizer.n_features != other.vectorizer.n_features:
+                    raise ValueError(
+                        "Cannot combine FeatureSets that use "
+                        "FeatureHashers with different values of "
+                        "n_features setting."
+                    )
+            else:
+                # Check for duplicate feature names.
+                if set(self.vectorizer.feature_names_) & set(other.vectorizer.feature_names_):
+                    raise ValueError(
+                        "Cannot combine FeatureSets because they have duplicate feature names."
+                    )
+            num_feats = self.features.shape[1]
 
-        new_set.features = sp.hstack([self.features, other.features[relative_order]], "csr")
-        new_set.vectorizer = deepcopy(self.vectorizer)
-        if not uses_feature_hasher:
-            for feat_name, index in other.vectorizer.vocabulary_.items():
-                new_set.vectorizer.vocabulary_[feat_name] = index + num_feats
-            other_names = other.vectorizer.feature_names_
-            new_set.vectorizer.feature_names_.extend(other_names)
+            new_set.features = sp.hstack([self.features, other.features[relative_order]], "csr")
+            new_set.vectorizer = deepcopy(self.vectorizer)
+            if not uses_feature_hasher:
+                for feat_name, index in other.vectorizer.vocabulary_.items():
+                    new_set.vectorizer.vocabulary_[feat_name] = index + num_feats
+                other_names = other.vectorizer.feature_names_
+                new_set.vectorizer.feature_names_.extend(other_names)
 
-        # If either set has labels, check that they don't conflict.
-        if self.has_labels:
-            # labels should be the same for each FeatureSet, so store once.
-            if other.has_labels and not np.all(self.labels == other.labels[relative_order]):
-                raise ValueError(
-                    "Feature sets have conflicting labels for " "examples with the same ID."
-                )
-            new_set.labels = deepcopy(self.labels)
-        else:
-            new_set.labels = deepcopy(other.labels[relative_order])
+            # If either set has labels, check that they don't conflict.
+            if self.has_labels:
+                # labels should be the same for each FeatureSet, so store once.
+                conflicts = not np.all(self.labels == other.labels[relative_order])  # type: ignore
+                if other.has_labels and conflicts:
+                    raise ValueError(
+                        "Feature sets have conflicting labels for examples with the same ID."
+                    )
+                new_set.labels = deepcopy(self.labels)
+            else:
+                labels = other.labels
+                if other.has_labels:
+                    labels = deepcopy(other.labels[relative_order])  # type: ignore
+                new_set.labels = labels
 
         return new_set
 
-    def filter(self, ids=None, labels=None, features=None, inverse=False):
+    def filter(
+        self,
+        ids: Optional[List[IdType]] = None,
+        labels: Optional[List[LabelType]] = None,
+        features: Optional[List[str]] = None,
+        inverse: bool = False,
+    ) -> None:
         """
-        Removes or keeps features and/or examples from the `Featureset` depending
-        on the parameters. Filtering is done in-place.
+        Remove or keep features and/or examples from the ``Featureset``.
+
+        Filtering is done in-place.
 
         Parameters
         ----------
-        ids : list of str/float, default=None
+        ids : Optional[List[FloatOrStr]], default=None
             Examples to keep in the FeatureSet. If ``None``, no ID
             filtering takes place.
 
-        labels : list of str/float, default=None
+        labels : Optional[List[LabelType]], default=None
             Labels that we want to retain examples for. If ``None``,
             no label filtering takes place.
 
-        features : list of str, default=None
+        features : Optional[List[str]], default=None
             Features to keep in the FeatureSet. To help with
             filtering string-valued features that were converted
             to sequences of boolean features when read in, any
@@ -279,9 +338,9 @@ class FeatureSet(object):
         """
         # Construct mask that indicates which examples to keep
         mask = np.ones(len(self), dtype=bool)
-        if ids is not None:
+        if ids:
             mask = np.logical_and(mask, np.in1d(self.ids, ids))
-        if labels is not None:
+        if labels and self.labels is not None:
             mask = np.logical_and(mask, np.in1d(self.labels, labels))
 
         if inverse and (labels is not None or ids is not None):
@@ -289,14 +348,16 @@ class FeatureSet(object):
 
         # Remove examples not in mask
         self.ids = self.ids[mask]
-        self.labels = self.labels[mask]
-        self.features = self.features[mask, :]
+        if self.labels is not None:
+            self.labels = self.labels[mask]
+        if self.features is not None:
+            self.features = self.features[mask, :]
 
         # Filter features
-        if features is not None:
+        if features and self.features is not None and self.vectorizer is not None:
             if isinstance(self.vectorizer, FeatureHasher):
                 raise ValueError(
-                    "FeatureSets with FeatureHasher vectorizers" " cannot be filtered by feature."
+                    "FeatureSets with FeatureHasher vectorizers cannot be filtered by feature."
                 )
             columns = np.array(
                 sorted(
@@ -313,22 +374,27 @@ class FeatureSet(object):
             self.features = self.features[:, columns]
             self.vectorizer.restrict(columns, indices=True)
 
-    def filtered_iter(self, ids=None, labels=None, features=None, inverse=False):
+    def filtered_iter(
+        self,
+        ids: Optional[List[IdType]] = None,
+        labels: Optional[List[LabelType]] = None,
+        features: Optional[Collection[str]] = None,
+        inverse: bool = False,
+    ) -> FeatGenerator:
         """
-        A version of `__iter__` that retains only the specified features
-        and/or examples from the output.
+        Retain only the specified features and/or examples from the output.
 
         Parameters
         ----------
-        ids : list of str/float, default=None
+        ids : Optional[List[IdType]], default=None
             Examples to keep in the ``FeatureSet``. If ``None``, no ID
             filtering takes place.
 
-        labels : list of str/float, default=None
+        labels : Optional[List[LabelType]], default=None
             Labels that we want to retain examples for. If ``None``,
             no label filtering takes place.
 
-        features : list of str, default=None
+        features : Optional[Collection[str]], default=None
             Features to keep in the ``FeatureSet``. To help with
             filtering string-valued features that were converted
             to sequences of boolean features when read in, any
@@ -345,13 +411,13 @@ class FeatureSet(object):
 
         Yields
         ------
-        id_ : str
+        id_ : IdType
             The ID of the example.
 
-        label_ : str
+        label_ : LabelType
             The label of the example.
 
-        feat_dict : dict
+        feat_dict : FeatureDict
             The feature dictionary, with feature name as the key
             and example value as the value.
 
@@ -359,6 +425,10 @@ class FeatureSet(object):
         ------
         ValueError
             If the vectorizer is not a ``DictVectorizer``.
+
+        ValueError
+            If any of the "labels", "features", or "vectorizer" attribute
+            is ``None``.
         """
         if self.features is not None and not isinstance(self.vectorizer, DictVectorizer):
             raise ValueError(
@@ -367,32 +437,34 @@ class FeatureSet(object):
                 "vectorizer."
             )
 
-        for id_, label_, feats in zip(self.ids, self.labels, self.features):
-            # Skip instances with IDs not in filter
-            if ids is not None and (id_ in ids) == inverse:
-                continue
-            # Skip instances with labels not in filter
-            if labels is not None and (label_ in labels) == inverse:
-                continue
+        if self.labels is None or self.features is None or self.vectorizer is None:
+            raise ValueError("Cannot filter featureset with no labels, features, or vectorizer.")
+        else:
+            for id_, label_, feats in zip(self.ids, self.labels, self.features):
+                # Skip instances with IDs not in filter
+                if ids is not None and (id_ in ids) == inverse:
+                    continue
+                # Skip instances with labels not in filter
+                if labels is not None and (label_ in labels) == inverse:
+                    continue
 
-            # reshape to a 2D matrix if we are not using a sparse matrix
-            # to store the features
-            feats = feats.reshape(1, -1) if not sp.issparse(feats) else feats
-            feat_dict = self.vectorizer.inverse_transform(feats)[0]
-            if features is not None:
-                feat_dict = {
-                    name: value
-                    for name, value in feat_dict.items()
-                    if (inverse != (name in features or name.split("=", 1)[0] in features))
-                }
-            elif not inverse:
-                feat_dict = {}
-            yield id_, label_, feat_dict
+                # reshape to a 2D matrix if we are not using a sparse matrix
+                # to store the features
+                feats = feats.reshape(1, -1) if not sp.issparse(feats) else feats
+                feat_dict = self.vectorizer.inverse_transform(feats)[0]
+                if features is not None:
+                    feat_dict = {
+                        name: value
+                        for name, value in feat_dict.items()
+                        if (inverse != (name in features or name.split("=", 1)[0] in features))
+                    }
+                elif not inverse:
+                    feat_dict = {}
+                yield id_, label_, feat_dict
 
-    def __sub__(self, other):
+    def __sub__(self, other: "FeatureSet") -> "FeatureSet":
         """
-        Subset ``FeatureSet`` instance by removing all the features from the
-        other ``FeatureSet`` instance.
+        Subset ``FeatureSet`` instance by removing all features from ``other`` instance.
 
         Parameters
         ----------
@@ -402,10 +474,12 @@ class FeatureSet(object):
 
         Returns
         -------
-        A copy of ``self`` with all features in ``other`` removed.
+        FeatureSet:
+            A copy of ``self`` with all features in ``other`` removed.
         """
         new_set = deepcopy(self)
-        new_set.filter(features=other.vectorizer.feature_names_, inverse=True)
+        if other.vectorizer:
+            new_set.filter(features=other.vectorizer.feature_names_, inverse=True)
         return new_set
 
     @property
@@ -429,31 +503,44 @@ class FeatureSet(object):
 
     def __str__(self):
         """
+        Return a string representation of ``FeatureSet``.
+
         Returns
         -------
-        A string representation of ``FeatureSet``.
+        str:
+            A string representation of ``FeatureSet``.
         """
         return str(self.__dict__)
 
     def __repr__(self):
         """
+        Return a string representation of ``FeatureSet``.
+
         Returns
         -------
-        A string representation of ``FeatureSet``.
+        str:
+            A string representation of ``FeatureSet``.
         """
         return repr(self.__dict__)
 
-    def __getitem__(self, value):
+    def __getitem__(
+        self, value: Union[int, slice]
+    ) -> Union["FeatureSet", Tuple[IdType, LabelType, FeatureDictList]]:
         """
+        Get new feature subset or specific example.
+
         Parameters
         ----------
-        value
-            The value to retrieve.
+        value: Union[int, slice]
+            The value to use for retrieval. This can either be a slice or
+            an index.
 
         Returns
         -------
-        A specific example by row number or, if given a slice,
-        a new ``FeatureSet`` instance containing a subset of the data.
+        Union["FeatureSet", Tuple[IdType, LabelType, FeatureDictList]]
+            If `value` is a slice, then return a new ``FeatureSet`` instance
+            containing a subset of the data. If it's an index, return the
+            specific example by row number.
         """
         # Check if we're slicing
         if isinstance(value, slice):
@@ -468,32 +555,36 @@ class FeatureSet(object):
                 vectorizer=self.vectorizer,
             )
         else:
-            label = self.labels[value] if self.labels is not None else None
-            feats = self.features[value, :]
-            features = (
-                self.vectorizer.inverse_transform(feats)[0] if self.features is not None else {}
-            )
+            label = self.labels[value] if self.labels is not None else ""
+            if self.features is not None and self.vectorizer:
+                submatrix = self.features[value, :]
+                features = self.vectorizer.inverse_transform(submatrix)[0]
+            else:
+                features = [{}]
             return self.ids[value], label, features
 
     @staticmethod
-    def split_by_ids(fs, ids_for_split1, ids_for_split2=None):
+    def split_by_ids(
+        fs: "FeatureSet", ids_for_split1: List[int], ids_for_split2: Optional[List[int]] = None
+    ) -> Tuple["FeatureSet", "FeatureSet"]:
         """
-        Split the ``FeatureSet`` into two new ``FeatureSet`` instances based on
-        the given IDs for the two splits.
+        Split ``FeatureSet`` into two new ``FeatureSet`` instances.
+
+        The splitting is done based on the given IDs for the two splits.
 
         Parameters
         ----------
         fs : skll.data.FeatureSet
             The ``FeatureSet`` instance to split.
 
-        ids_for_split1 : list of int
+        ids_for_split1 : List[int]
             A list of example IDs which will be split out into
             the first ``FeatureSet`` instance. Note that the
             FeatureSet instance will respect the order of the
             specified IDs.
 
-        ids_for_split2 : list of int, default=None
-            An optional ist of example IDs which will be
+        ids_for_split2 : Optional[List[int]], default=None
+            An optional list of example IDs which will be
             split out into the second ``FeatureSet`` instance.
             Note that the ``FeatureSet`` instance will respect
             the order of the specified IDs. If this is
@@ -509,7 +600,6 @@ class FeatureSet(object):
         fs2 : skll.data.FeatureSet
             The second ``FeatureSet``.
         """
-
         # Note: an alternative way to implement this is to make copies
         # of the given FeatureSet instance and then use the `filter()`
         # method but that wastes too much memory since it requires making
@@ -517,16 +607,18 @@ class FeatureSet(object):
         # the current implementation, we are creating new objects but
         # they should be much smaller than the original FeatureSet.
         ids1 = fs.ids[ids_for_split1]
-        labels1 = fs.labels[ids_for_split1]
-        features1 = fs.features[ids_for_split1]
+        labels1 = fs.labels[ids_for_split1] if fs.labels is not None else None
+        features1 = fs.features[ids_for_split1] if fs.features is not None else None
         if ids_for_split2 is None:
             ids2 = fs.ids[~np.in1d(fs.ids, ids_for_split1)]
-            labels2 = fs.labels[~np.in1d(fs.ids, ids_for_split1)]
-            features2 = fs.features[~np.in1d(fs.ids, ids_for_split1)]
+            labels2 = fs.labels[~np.in1d(fs.ids, ids_for_split1)] if fs.labels is not None else None
+            features2 = (
+                fs.features[~np.in1d(fs.ids, ids_for_split1)] if fs.features is not None else None
+            )
         else:
             ids2 = fs.ids[ids_for_split2]
-            labels2 = fs.labels[ids_for_split2]
-            features2 = fs.features[ids_for_split2]
+            labels2 = fs.labels[ids_for_split2] if fs.labels is not None else None
+            features2 = fs.features[ids_for_split2] if fs.features is not None else None
 
         fs1 = FeatureSet(
             f"{fs.name}_1", ids1, labels=labels1, features=features1, vectorizer=fs.vectorizer
@@ -537,24 +629,30 @@ class FeatureSet(object):
         return fs1, fs2
 
     @staticmethod
-    def from_data_frame(df, name, labels_column=None, vectorizer=None):
+    def from_data_frame(
+        df: DataFrame,
+        name: str,
+        labels_column: Optional[str] = None,
+        vectorizer: Optional[Union[DictVectorizer, FeatureHasher]] = None,
+    ) -> "FeatureSet":
         """
-        Helper function to create a ``FeatureSet`` instance from a `pandas.DataFrame`.
+        Create a ``FeatureSet`` instance from a `pandas.DataFrame`.
+
         Will raise an Exception if pandas is not installed in your environment.
         The ``ids`` in the ``FeatureSet`` will be the index from the given frame.
 
         Parameters
         ----------
-        df : pd.DataFrame
+        df : pandas.DataFrame
             The pandas.DataFrame object to use as a ``FeatureSet``.
 
         name : str
             The name of the output ``FeatureSet`` instance.
 
-        labels_column : str, default=None
+        labels_column : Optional[str], default=None
             The name of the column containing the labels (data to predict).
 
-        vectorizer : DictVectorizer or FeatureHasher, default=None
+        vectorizer : Optional[Union[DictVectorizer, FeatureHasher]], default=None
             Vectorizer which will be used to generate the feature matrix.
 
         Returns
