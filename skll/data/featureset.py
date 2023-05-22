@@ -612,7 +612,7 @@ class FeatureSet(object):
 
         # if ids_for_split2 is not given, it will be the complement of ids_split1
         if ids_for_split2 is None:
-            ids_for_split2 = [ind for ind in range(0, len(fs.ids)) if ind not in ids_for_split1]
+            ids_for_split2 = [ind for ind in range(len(fs.ids)) if ind not in ids_for_split1]
 
         ids2 = fs.ids[ids_for_split2]
         labels2 = fs.labels[ids_for_split2] if fs.labels is not None else None

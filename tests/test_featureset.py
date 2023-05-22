@@ -1231,7 +1231,7 @@ def test_drop_blanks_and_replace_blanks_with_raises_error():
 
 
 def test_split_two_id_sets():
-    """Test split_by_ids with two input id sets."""
+    """Test split() with two input id sets."""
     fs, _ = make_classification_data(
         num_examples=10, num_features=4, num_labels=2, train_test_ratio=1.0
     )
@@ -1252,7 +1252,7 @@ def test_split_two_id_sets():
 
 
 def test_split_one_id_set():
-    """Test split_by_ids with one input id sets."""
+    """Test split() with one input id sets."""
     fs, _ = make_classification_data(
         num_examples=10, num_features=4, num_labels=2, train_test_ratio=1.0
     )
@@ -1272,7 +1272,7 @@ def test_split_one_id_set():
 
 
 def test_split_int_ids():
-    """Test split_by_ids when ids are integers."""
+    """Test split() when ids are integers."""
     fs, _ = make_classification_data(
         num_examples=10, num_features=4, num_labels=2, train_test_ratio=1.0, id_type="integer"
     )
