@@ -19,7 +19,7 @@ How to contribute
 
 3. Create an isolated environment for SKLL development. We recommend using the [conda](https://conda.io/en/latest/) package manager. To create a `conda` environment, run the following command in the root of the working directory:
 
-         $ conda create -n sklldev -c conda-forge --file conda_requirements.txt
+         $ conda create -n sklldev -c conda-forge --file requirements.txt --python=3.10
 
 4. Activate the conda environment
 

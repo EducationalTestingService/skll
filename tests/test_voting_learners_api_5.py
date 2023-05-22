@@ -191,7 +191,7 @@ def check_cross_validate_with_grid_search(
             sklearn_model_kwargs["voting"] = voting_type
         sklearn_vl = sklearn_model_type(**sklearn_model_kwargs)
 
-        train_fs_fold, test_fs_fold = FeatureSet.split_by_ids(featureset, train, test)
+        train_fs_fold, test_fs_fold = FeatureSet.split(featureset, train, test)
         sklearn_vl.fit(train_fs_fold.features, train_fs_fold.labels)
 
         # save the (argmax-ed) sklearn predictions into our data frame

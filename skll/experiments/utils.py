@@ -14,7 +14,7 @@ from collections import defaultdict
 
 import numpy as np
 from sklearn.pipeline import Pipeline
-from tabulate import tabulate
+from tabulate import tabulate  # type: ignore
 
 from skll.utils.logging import get_skll_logger
 
