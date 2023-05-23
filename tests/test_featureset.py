@@ -1228,3 +1228,63 @@ def test_drop_blanks_and_replace_blanks_with_raises_error():
     csv_path = other_dir / "test_drop_blanks_error.csv"
     _create_test_file(csv_path, test_csv)
     CSVReader(csv_path, replace_blanks_with=4.5, drop_blanks=True).read()
+
+
+def test_split_two_id_sets():
+    """Test split() with two input id sets."""
+    fs, _ = make_classification_data(
+        num_examples=10, num_features=4, num_labels=2, train_test_ratio=1.0
+    )
+
+    # split by two id sets
+    ids_split1 = range(5)
+    ids_split2 = range(5, 10)
+
+    fs1, fs2 = FeatureSet.split(fs, ids_split1, ids_split2)
+
+    # verify that the ids, labels and features are split as expected
+    assert_array_equal(fs.ids[ids_split1], fs1.ids)
+    assert_array_equal(fs.ids[ids_split2], fs2.ids)
+    assert_array_equal(fs.labels[ids_split1], fs1.labels)
+    assert_array_equal(fs.labels[ids_split2], fs2.labels)
+    assert_array_equal(fs.features[ids_split1, :].data, fs1.features.data)
+    assert_array_equal(fs.features[ids_split2, :].data, fs2.features.data)
+
+
+def test_split_one_id_set():
+    """Test split() with one input id sets."""
+    fs, _ = make_classification_data(
+        num_examples=10, num_features=4, num_labels=2, train_test_ratio=1.0
+    )
+    # split by one id set
+    ids1_idx = [2, 3, 5, 6, 7]
+    ids2_idx = [0, 1, 4, 8, 9]  # these are the expected ids for the second set
+
+    fs1, fs2 = FeatureSet.split(fs, ids1_idx)
+
+    # verify that the ids, labels and features are split as expected
+    assert_array_equal(fs.ids[ids1_idx], fs1.ids)
+    assert_array_equal(fs.ids[ids2_idx], fs2.ids)
+    assert_array_equal(fs.labels[ids1_idx], fs1.labels)
+    assert_array_equal(fs.labels[ids2_idx], fs2.labels)
+    assert_array_equal(fs.features[ids1_idx, :].data, fs1.features.data)
+    assert_array_equal(fs.features[ids2_idx, :].data, fs2.features.data)
+
+
+def test_split_int_ids():
+    """Test split() when ids are integers."""
+    fs, _ = make_classification_data(
+        num_examples=10, num_features=4, num_labels=2, train_test_ratio=1.0, id_type="integer"
+    )
+    ids1_idx = [1, 3, 5, 7, 9]
+    ids2_idx = [0, 2, 4, 6, 8]
+
+    fs1, fs2 = FeatureSet.split(fs, ids1_idx, ids2_idx)
+
+    # verify that the ids, labels and features are split as expected
+    assert_array_equal(fs.ids[ids1_idx], fs1.ids)
+    assert_array_equal(fs.ids[ids2_idx], fs2.ids)
+    assert_array_equal(fs.labels[ids1_idx], fs1.labels)
+    assert_array_equal(fs.labels[ids2_idx], fs2.labels)
+    assert_array_equal(fs.features[ids1_idx, :].data, fs1.features.data)
+    assert_array_equal(fs.features[ids2_idx, :].data, fs2.features.data)

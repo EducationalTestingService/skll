@@ -564,13 +564,13 @@ class FeatureSet(object):
             return self.ids[value], label, features
 
     @staticmethod
-    def split_by_ids(
+    def split(
         fs: "FeatureSet", ids_for_split1: List[int], ids_for_split2: Optional[List[int]] = None
     ) -> Tuple["FeatureSet", "FeatureSet"]:
         """
         Split ``FeatureSet`` into two new ``FeatureSet`` instances.
 
-        The splitting is done based on the given IDs for the two splits.
+        The splitting is done based on the given indices for the two splits.
 
         Parameters
         ----------
@@ -578,19 +578,19 @@ class FeatureSet(object):
             The ``FeatureSet`` instance to split.
 
         ids_for_split1 : List[int]
-            A list of example IDs which will be split out into
+            A list of example indices which will be split out into
             the first ``FeatureSet`` instance. Note that the
             FeatureSet instance will respect the order of the
-            specified IDs.
+            specified indices.
 
         ids_for_split2 : Optional[List[int]], default=None
-            An optional list of example IDs which will be
+            An optional list of example indices which will be
             split out into the second ``FeatureSet`` instance.
             Note that the ``FeatureSet`` instance will respect
-            the order of the specified IDs. If this is
+            the order of the specified indices. If this is
             not specified, then the second ``FeatureSet``
             instance will contain the complement of the
-            first set of IDs sorted in ascending order.
+            first set of indices sorted in ascending order.
 
         Returns
         -------
@@ -609,16 +609,14 @@ class FeatureSet(object):
         ids1 = fs.ids[ids_for_split1]
         labels1 = fs.labels[ids_for_split1] if fs.labels is not None else None
         features1 = fs.features[ids_for_split1] if fs.features is not None else None
+
+        # if ids_for_split2 is not given, it will be the complement of ids_split1
         if ids_for_split2 is None:
-            ids2 = fs.ids[~np.in1d(fs.ids, ids_for_split1)]
-            labels2 = fs.labels[~np.in1d(fs.ids, ids_for_split1)] if fs.labels is not None else None
-            features2 = (
-                fs.features[~np.in1d(fs.ids, ids_for_split1)] if fs.features is not None else None
-            )
-        else:
-            ids2 = fs.ids[ids_for_split2]
-            labels2 = fs.labels[ids_for_split2] if fs.labels is not None else None
-            features2 = fs.features[ids_for_split2] if fs.features is not None else None
+            ids_for_split2 = [ind for ind in range(len(fs.ids)) if ind not in ids_for_split1]
+
+        ids2 = fs.ids[ids_for_split2]
+        labels2 = fs.labels[ids_for_split2] if fs.labels is not None else None
+        features2 = fs.features[ids_for_split2] if fs.features is not None else None
 
         fs1 = FeatureSet(
             f"{fs.name}_1", ids1, labels=labels1, features=features1, vectorizer=fs.vectorizer

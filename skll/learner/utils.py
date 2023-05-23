@@ -995,7 +995,7 @@ def setup_cv_split_iterator(cv_folds, examples):
 
     # create an iterator over train/test featuresets based on the
     # cross-validation index iterator
-    featureset_iter = (FeatureSet.split_by_ids(examples, train, test) for train, test in cv_iter)
+    featureset_iter = (FeatureSet.split(examples, train, test) for train, test in cv_iter)
 
     return featureset_iter, n_max_training_samples
 
