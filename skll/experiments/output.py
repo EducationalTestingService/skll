@@ -14,6 +14,7 @@ import math
 import sys
 from collections import defaultdict
 from pathlib import Path
+from typing import IO, Any, Dict, List, Tuple
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -22,13 +23,16 @@ import pandas as pd
 import ruamel.yaml as yaml
 import seaborn as sns
 
+from skll.types import FoldMapping, PathOrStr
 from skll.utils.logging import get_skll_logger
 
 # Turn off interactive plotting for matplotlib
 plt.ioff()
 
 
-def _compute_ylimits_for_featureset(df, metrics):
+def _compute_ylimits_for_featureset(
+    df: pd.DataFrame, metrics: List[str]
+) -> Dict[str, Tuple[float, float]]:
     """
     Compute the y-limits for learning curve plots.
 
@@ -37,12 +41,12 @@ def _compute_ylimits_for_featureset(df, metrics):
     df : pd.DataFrame
         A data_frame with relevant metric information for
         train and test.
-    metrics : list of str
+    metrics : List[str]
         A list of metrics for learning curve plots.
 
     Returns
     -------
-    ylimits : dict
+    ylimits : Dict[str, Tuple[float, float]]
         A dictionary, with metric names as keys
         and a tuple of (lower_limit, upper_limit) as values.
     """
@@ -77,7 +81,9 @@ def _compute_ylimits_for_featureset(df, metrics):
     return ylimits
 
 
-def generate_learning_curve_plots(experiment_name, output_dir, learning_curve_tsv_file):
+def generate_learning_curve_plots(
+    experiment_name: str, output_dir: PathOrStr, learning_curve_tsv_file: PathOrStr
+) -> None:
     """
     Generate learning curves using the TSV output file from a learning curve experiment.
 
@@ -85,9 +91,9 @@ def generate_learning_curve_plots(experiment_name, output_dir, learning_curve_ts
     ----------
     experiment_name : str
         The name of the experiment.
-    output_dir : Union[str, Path]
+    output_dir : PathOrStr
         Path to the output directory for the plots.
-    learning_curve_tsv_file : str
+    learning_curve_tsv_file : PathOrStr
         The path to the learning curve TSV file.
     """
     # convert output_dir to Path object
@@ -203,15 +209,17 @@ def generate_learning_curve_plots(experiment_name, output_dir, learning_curve_ts
             plt.close(fig)
 
 
-def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
+def _print_fancy_output(
+    learner_result_dicts: List[Dict[str, Any]], output_file: IO[str] = sys.stdout
+) -> None:
     """
     Print nice tables with all of the results from cross-validation folds.
 
     Parameters
     ----------
-    learner_result_dicts : list of str
-        A list of paths to the individual result JSON files.
-    output_file : file buffer, optional
+    learner_result_dicts : List[Dict[str, Any]]
+        List of result dictionaries.
+    output_file : IO[str]
         The file buffer to print to.
         Defaults to ``sys.stdout``.
     """
@@ -290,7 +298,7 @@ def _print_fancy_output(learner_result_dicts, output_file=sys.stdout):
         print("", file=output_file)
 
 
-def _write_learning_curve_file(result_json_paths, output_file):
+def _write_learning_curve_file(result_json_paths: List[str], output_file: IO[str]) -> None:
     """
     Combine individual learning curve results JSON files into single TSV.
 
@@ -299,17 +307,17 @@ def _write_learning_curve_file(result_json_paths, output_file):
 
     Parameters
     ----------
-    result_json_paths : list of str
-        A list of paths to the individual result JSON files.
-    output_file : str
-        The path to the output file (TSV format).
+    result_json_paths : List[str]
+        list of paths to the individual result JSON files.
+    output_file : IO[str]
+        The file buffer to write to.
     """
     learner_result_dicts = []
 
     # Map from feature set names to all features in them
     logger = get_skll_logger("experiment")
-    for json_path in result_json_paths:
-        json_path = Path(json_path)
+    for json_path_str in result_json_paths:
+        json_path = Path(json_path_str)
         if not json_path.exists():
             logger.error(
                 f"JSON results file {json_path} not found. Skipping "
@@ -371,15 +379,15 @@ def _write_learning_curve_file(result_json_paths, output_file):
     output_file.flush()
 
 
-def _write_skll_folds(skll_fold_ids, skll_fold_ids_file):
+def _write_skll_folds(skll_fold_ids: FoldMapping, skll_fold_ids_file: IO[str]) -> None:
     """
     Take a dictionary of id->test-fold-number and write it to a file.
 
     Parameters
     ----------
-    skll_fold_ids : dict
+    skll_fold_ids : FoldMapping
         Dictionary with ids as keys and test-fold-numbers as values.
-    skll_fold_ids_file : file buffer
+    skll_fold_ids_file : IO[str]
         An open file handler to write to.
     """
     f = csv.writer(skll_fold_ids_file)
@@ -390,7 +398,7 @@ def _write_skll_folds(skll_fold_ids, skll_fold_ids_file):
     skll_fold_ids_file.flush()
 
 
-def _write_summary_file(result_json_paths, output_file, ablation=0):
+def _write_summary_file(result_json_paths: List[str], output_file: IO[str], ablation: int = 0):
     """
     Summarize individual result JSON files.
 
@@ -399,11 +407,11 @@ def _write_summary_file(result_json_paths, output_file, ablation=0):
 
     Parameters
     ----------
-    result_json_paths : list of str
+    result_json_paths : List[str]
         A list of paths to the individual result JSON files.
-    output_file : str
-        The path to the output file (TSV format).
-    ablation : int, optional
+    output_file : IO[str]
+        The file buffer to write to.
+    ablation : int
         The number of features to remove when doing ablation experiment.
         Defaults to 0.
     """
@@ -411,8 +419,8 @@ def _write_summary_file(result_json_paths, output_file, ablation=0):
     # Map from feature set names to all features in them
     all_features = defaultdict(set)
     logger = get_skll_logger("experiment")
-    for json_path in result_json_paths:
-        json_path = Path(json_path)
+    for json_path_str in result_json_paths:
+        json_path = Path(json_path_str)
         if not json_path.exists():
             logger.error(
                 f"JSON results file {json_path} not found. Skipping "
@@ -431,10 +439,10 @@ def _write_summary_file(result_json_paths, output_file, ablation=0):
                 learner_result_dicts.extend(obj)
 
     # Build and write header
-    header = set(learner_result_dicts[0].keys()) - {"result_table", "descriptive"}
+    unique_columns = set(learner_result_dicts[0].keys()) - {"result_table", "descriptive"}
     if ablation != 0:
-        header.add("ablated_features")
-    header = sorted(header)
+        unique_columns.add("ablated_features")
+    header = sorted(unique_columns)
     writer = csv.DictWriter(output_file, header, extrasaction="ignore", dialect=csv.excel_tab)
     writer.writeheader()
 
