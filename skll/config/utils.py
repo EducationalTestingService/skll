@@ -11,17 +11,16 @@ import csv
 import errno
 import logging
 from pathlib import Path
-from typing import List, Union
+from typing import Iterable, List, Union
 
 import ruamel.yaml as yaml
 
-from skll.data import FeatureSet
 from skll.types import FoldMapping, PathOrStr
 
 
 def fix_json(json_string: str) -> str:
     """
-    Fix incorrectly formatted quotes and capitalized booleans in given JSON string.
+    Fix incorrectly formatted quotes and capitalized booleans in JSON string.
 
     Parameters
     ----------
@@ -125,7 +124,7 @@ def locate_file(file_path: PathOrStr, config_dir: PathOrStr) -> str:
         return str(path_to_check)
 
 
-def _munge_featureset_name(featureset: FeatureSet) -> str:
+def _munge_featureset_name(featureset: Union[Iterable, str]) -> str:
     """
     Create a munged name for the featureset.
 
@@ -134,7 +133,7 @@ def _munge_featureset_name(featureset: FeatureSet) -> str:
 
     Parameters
     ----------
-    featureset : skll.data.FeatureSet
+    featureset : Union[skll.data.FeatureSet, str]
         A SKLL ``FeatureSet`` object.
 
     Returns
