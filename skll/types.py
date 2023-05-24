@@ -40,3 +40,22 @@ PathOrStr = Union[Path, str]
 
 # a sparse matrix for features
 SparseFeatureMatrix = csr_matrix
+
+# confusion matrix
+ConfusionMatrix = List[List[int]]
+
+# Learner task results 6-tuple:
+# - confusion matrix (classifier) / None (regressor)
+# - accuracy (classifier) / None (regressor)
+# - dictionary of results
+# - model parameters dictionary
+# - score for the grid objective, None if no grid search
+# - dictionary of score for any additional metrics
+EvaluateTaskResults = Tuple[
+    Optional[ConfusionMatrix],
+    Optional[float],
+    Dict[str, Any],
+    Dict[str, Any],
+    Optional[float],
+    Dict[str, float],
+]
