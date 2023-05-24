@@ -11,16 +11,20 @@ import json
 import math
 import re
 from collections import defaultdict
+from typing import Any, Dict, List
 
 import numpy as np
 from sklearn.pipeline import Pipeline
 from tabulate import tabulate  # type: ignore
 
+from skll.types import EvaluateTaskResults
 from skll.utils.logging import get_skll_logger
 
 
 class NumpyTypeEncoder(json.JSONEncoder):
     """
+    Serialize results to JSON in a numpy-compatible way.
+
     This class is used when serializing results, particularly the input label
     values if the input has int-valued labels.  Numpy int64 objects can't
     be serialized by the json module, so we must convert them to int objects.
@@ -30,6 +34,7 @@ class NumpyTypeEncoder(json.JSONEncoder):
     """
 
     def default(self, obj):
+        """Encode given object."""
         if isinstance(obj, (np.int32, np.int64)):
             return int(obj)
         elif isinstance(obj, np.ndarray):
@@ -38,11 +43,10 @@ class NumpyTypeEncoder(json.JSONEncoder):
 
 
 class PipelineTypeEncoder(json.JSONEncoder):
-    """
-    This class is used for serializing ``sklearn.pipeline.Pipeline`` objects.
-    """
+    """Serialize ``sklearn.pipeline.Pipeline`` objects."""
 
     def default(self, obj):
+        """Encode given pipeline."""
         if isinstance(obj, Pipeline):
             pipeline_steps = str(obj.named_steps)
             pipeline_steps = re.sub(r"\n", "", pipeline_steps)
@@ -51,13 +55,13 @@ class PipelineTypeEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, obj)
 
 
-def _check_job_results(job_results):
+def _check_job_results(job_results: List[List[Dict[str, Any]]]) -> None:
     """
     See if we have a complete results dictionary for every job.
 
     Parameters
     ----------
-    job_results : list of dicts
+    job_results : List[List[Dict[str, Any]]]
         A list of job result dictionaries.
     """
     logger = get_skll_logger("experiment")
@@ -68,29 +72,31 @@ def _check_job_results(job_results):
 
 
 def _create_learner_result_dicts(
-    task_results, grid_scores, grid_search_cv_results_dicts, learner_result_dict_base
-):
+    task_results: List[EvaluateTaskResults],
+    grid_scores: List[float],
+    grid_search_cv_results_dicts: List[Dict[str, Any]],
+    learner_result_dict_base: Dict[str, Any],
+) -> List[Dict[str, Any]]:
     """
-    Create the learner result dictionaries that are used to create JSON and
-    plain-text results files.
+    Create result dictionaries used to write JSON and plain-text results.
 
     Parameters
     ----------
-    task_results : list
+    task_results : List[EvaluateTaskResults]
         The task results list.
-    grid_scores : list
+    grid_scores : List[float]
         The grid scores list.
-    grid_search_cv_results_dicts : list of dicts
+    grid_search_cv_results_dicts : List[Dict[str, Any]]
         A list of dictionaries of grid search CV results, one per fold,
         with keys such as "params", "mean_test_score", etc, that are
-        mapped to lists of values associated with each hyperparameter set
+        mapped to values associated with each hyperparameter set
         combination.
-    learner_result_dict_base : dict
+    learner_result_dict_base : Dict[str, Any]
         Base dictionary for all learner results.
 
     Returns
     -------
-    res : list of dicts
+    res : List[Dict[str, Any]]
         The results of the learners, as a list of
         dictionaries.
     """
@@ -99,11 +105,11 @@ def _create_learner_result_dicts(
     num_folds = len(task_results)
     accuracy_sum = 0.0
     pearson_sum = 0.0
-    additional_metric_score_sums = {}
+    additional_metric_score_sums: Dict[str, float] = {}
     score_sum = None
-    prec_sum_dict = defaultdict(float)
-    recall_sum_dict = defaultdict(float)
-    f_sum_dict = defaultdict(float)
+    prec_sum_dict: Dict[str, float] = defaultdict(float)
+    recall_sum_dict: Dict[str, float] = defaultdict(float)
+    f_sum_dict: Dict[str, float] = defaultdict(float)
     result_table = None
 
     for k, (
@@ -139,17 +145,20 @@ def _create_learner_result_dicts(
             headers = [""] + labels + ["Precision", "Recall", "F-measure"]
             rows = []
             for i, actual_label in enumerate(labels):
-                conf_matrix[i][i] = f"[{conf_matrix[i][i]}]"
-                label_prec = _get_stat_float(result_dict[actual_label], "Precision")
-                label_recall = _get_stat_float(result_dict[actual_label], "Recall")
-                label_f = _get_stat_float(result_dict[actual_label], "F-measure")
+                conf_matrix_row = (
+                    conf_matrix[i][:i] + [str([conf_matrix[i][i]])] + conf_matrix[i][i + 1 :]
+                )
+                label_prf_dict: Dict[str, float] = result_dict[actual_label]
+                label_prec = _get_stat_float(label_prf_dict, "Precision")
+                label_recall = _get_stat_float(label_prf_dict, "Recall")
+                label_f = _get_stat_float(label_prf_dict, "F-measure")
                 if not math.isnan(label_prec):
                     prec_sum_dict[actual_label] += float(label_prec)
                 if not math.isnan(label_recall):
                     recall_sum_dict[actual_label] += float(label_recall)
                 if not math.isnan(label_f):
                     f_sum_dict[actual_label] += float(label_f)
-                result_row = [actual_label] + conf_matrix[i] + [label_prec, label_recall, label_f]
+                result_row = [actual_label] + conf_matrix_row + [label_prec, label_recall, label_f]
                 rows.append(result_row)
 
             result_table = tabulate(
@@ -157,8 +166,9 @@ def _create_learner_result_dicts(
             )
             result_table_str = f"{result_table}\n(row = reference; column = " "predicted)"
             learner_result_dict["result_table"] = result_table_str
-            learner_result_dict["accuracy"] = fold_accuracy
-            accuracy_sum += fold_accuracy
+            if isinstance(fold_accuracy, float):
+                learner_result_dict["accuracy"] = fold_accuracy
+                accuracy_sum += fold_accuracy
 
         # if there is no confusion matrix, then we must be dealing
         # with a regression model
@@ -210,17 +220,17 @@ def _create_learner_result_dicts(
             scoredict[metric] = score_sum / num_folds
         learner_result_dict["additional_scores"] = scoredict
         res.append(learner_result_dict)
+
     return res
 
 
-def _get_stat_float(label_result_dict, stat):
+def _get_stat_float(label_result_dict: Dict[str, float], stat: str) -> float:
     """
-    A helper function to get output for the precision, recall, and f-score
-    columns in the confusion matrix.
+    Extract precision, recall, and f-score values from the given dictionary.
 
     Parameters
     ----------
-    label_result_dict : dict
+    label_result_dict : Dict[str, float]
         Dictionary containing the stat we'd like
         to retrieve for a particular label.
     stat : str
@@ -228,7 +238,7 @@ def _get_stat_float(label_result_dict, stat):
 
     Returns
     -------
-    stat_float : float
+    float
         The value of the stat if it's in the dictionary, and NaN
         otherwise.
     """

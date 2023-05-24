@@ -13,6 +13,7 @@ import json
 import logging
 from itertools import combinations
 from pathlib import Path
+from typing import Any, Dict, List, Optional, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -24,6 +25,7 @@ from skll.config.utils import _munge_featureset_name
 from skll.learner import MAX_CONCURRENT_PROCESSES, Learner, load_custom_learner
 from skll.learner.voting import VotingLearner
 from skll.metrics import _CUSTOM_METRICS, register_custom_metric
+from skll.types import EvaluateTaskResults, PathOrStr
 from skll.utils.logging import close_and_remove_logger_handlers, get_skll_logger
 from skll.version import __version__
 
@@ -52,19 +54,19 @@ plt.ioff()
 __all__ = ["generate_learning_curve_plots", "load_featureset", "run_configuration"]
 
 
-def _classify_featureset(args):  # noqa: C901
+def _classify_featureset(args: Dict[str, Any]) -> List[Dict[str, Any]]:
     """
     Classification job to be submitted to grid.
 
     Parameters
     ----------
-    args : dict
+    args : Dict[str, Any]
         A dictionary with arguments for classifying the
         ``FeatureSet`` instance.
 
     Returns
     -------
-    res : list of dicts
+    res : List[Dict[str, Any]]
         The results of the classification, in the format
         of a list of dictionaries.
 
@@ -235,7 +237,7 @@ def _classify_featureset(args):  # noqa: C901
                 logger=logger,
             )
 
-            train_set_size = len(train_examples.ids)
+            train_set_size: Union[int, str] = len(train_examples.ids)
             if not train_examples.has_labels:
                 raise ValueError("Training examples do not have labels")
 
@@ -251,6 +253,7 @@ def _classify_featureset(args):  # noqa: C901
             }
 
             # instantiate the right type of learner object
+            learner: Union[Learner, VotingLearner]
             if learner_name in ["VotingClassifier", "VotingRegressor"]:
                 # the fixed parameters dictionary must at least
                 # contains the estimator names for the voting;
@@ -305,6 +308,7 @@ def _classify_featureset(args):  # noqa: C901
                 learner = Learner.from_file(modelfile, logger=logger)
 
         # Load test set if there is one
+        test_set_size: Union[int, str]
         if task == "evaluate" or task == "predict":
             test_examples = load_featureset(
                 test_path,
@@ -365,7 +369,7 @@ def _classify_featureset(args):  # noqa: C901
 
         # check if we're doing cross-validation, because we only load/save
         # models when we're not.
-        task_results = None
+        task_results: List[EvaluateTaskResults]
         if task == "cross_validate":
             logger.info("Cross-validating")
 
@@ -537,10 +541,9 @@ def _classify_featureset(args):  # noqa: C901
 
         elif task == "learning_curve":
             results_json_path = Path(results_path) / f"{job_name}.results.json"
-
-            res = {}
-            res.update(learner_result_dict_base)
-            res.update(
+            result_dict = {}
+            result_dict.update(learner_result_dict_base)
+            result_dict.update(
                 {
                     "learning_curve_cv_folds": learning_curve_cv_folds,
                     "given_curve_train_sizes": learning_curve_train_sizes,
@@ -553,7 +556,7 @@ def _classify_featureset(args):  # noqa: C901
             )
 
             # we need to return and write out a list of dictionaries
-            res = [res]
+            res = [result_dict]
 
             # write out the result dictionary to a json file
             with open(results_json_path, "w") as json_file:
@@ -589,44 +592,44 @@ def _classify_featureset(args):  # noqa: C901
 
 
 def run_configuration(
-    config_file,
-    local=False,
-    overwrite=True,
-    queue="all.q",  # noqa: C901
-    hosts=None,
-    write_summary=True,
-    quiet=False,
-    ablation=0,
-    resume=False,
-    log_level=logging.INFO,
-):
+    config_file: PathOrStr,
+    local: bool = False,
+    overwrite: bool = True,
+    queue: str = "all.q",  # noqa: C901
+    hosts: Optional[List[str]] = None,
+    write_summary: bool = True,
+    quiet: bool = False,
+    ablation: int = 0,
+    resume: bool = False,
+    log_level: int = logging.INFO,
+) -> List[str]:
     """
     Run jobs specified in the configuration file locally or on the grid.
 
     Parameters
     ----------
-    config_file : Union[str, Path]
+    config_file : PathOrStr
         Path to the configuration file we would like to use.
-    local : bool, optional
+    local : bool
         Should this be run locally instead of on the cluster?
         Defaults to ``False``.
-    overwrite : bool, optional
+    overwrite : bool
         If the model files already exist, should we overwrite
         them instead of re-using them?
         Defaults to ``True``.
-    queue : str, optional
+    queue : str
         The DRMAA queue to use if we're running on the cluster.
         Defaults to ``'all.q'``.
-    hosts : list of str, optional
+    hosts : Optional[List[str]]
         If running on the cluster, these are the machines we should use.
         Defaults to ``None``.
-    write_summary : bool, optional
+    write_summary : bool
         Write a TSV file with a summary of the results.
         Defaults to ``True``.
-    quiet : bool, optional
+    quiet : bool
         Suppress printing of "Loading..." messages.
         Defaults to ``False``.
-    ablation : int, optional
+    ablation : int
         Number of features to remove when doing an ablation
         experiment. If positive, we will perform repeated ablation
         runs for all combinations of features removing the
@@ -635,18 +638,18 @@ def run_configuration(
         ablation is performed. If negative, a ``ValueError`` is
         raised.
         Defaults to 0.
-    resume : bool, optional
+    resume : bool
         If result files already exist for an experiment, do not
         overwrite them. This is very useful when doing a large
         ablation experiment and part of it crashes.
         Defaults to ``False``.
-    log_level : str, optional
+    log_level : int
         The level for logging messages.
         Defaults to ``logging.INFO``.
 
     Returns
     -------
-    result_json_paths : list of str
+    result_json_paths : List[str]
         A list of paths to .json results files for each variation in the
         experiment.
 
@@ -745,28 +748,30 @@ def run_configuration(
             # Make new feature set lists so that we can iterate without issue
             expanded_fs = []
             expanded_fs_names = []
-            for features, featureset_name in zip(featuresets, featureset_names):
-                features = sorted(features)
-                featureset = set(features)
+            for featureset_prefix_list, featureset_name in zip(featuresets, featureset_names):
+                featureset_prefix_sorted_list = sorted(featureset_prefix_list)
+                featureset_prefix_set = set(featureset_prefix_sorted_list)
                 # Expand to all feature combinations if ablation is None
                 if ablation is None:
-                    for i in range(1, len(features)):
-                        for excluded_features in combinations(features, i):
-                            expanded_fs.append(sorted(featureset - set(excluded_features)))
+                    for i in range(1, len(featureset_prefix_sorted_list)):
+                        for excluded_features in combinations(featureset_prefix_sorted_list, i):
+                            expanded_fs.append(
+                                sorted(featureset_prefix_set - set(excluded_features))
+                            )
                             expanded_fs_names.append(
                                 f"{featureset_name}_minus_"
                                 f"{_munge_featureset_name(excluded_features)}"
                             )
                 # Otherwise, just expand removing the specified number at a time
                 else:
-                    for excluded_features in combinations(features, ablation):
-                        expanded_fs.append(sorted(featureset - set(excluded_features)))
+                    for excluded_features in combinations(featureset_prefix_sorted_list, ablation):
+                        expanded_fs.append(sorted(featureset_prefix_set - set(excluded_features)))
                         expanded_fs_names.append(
                             f"{featureset_name}_minus_"
                             f"{_munge_featureset_name(excluded_features)}"
                         )
                 # Also add version with nothing removed as baseline
-                expanded_fs.append(features)
+                expanded_fs.append(featureset_prefix_sorted_list)
                 expanded_fs_names.append(f"{featureset_name}_all")
 
             # Replace original feature set lists
@@ -809,16 +814,16 @@ def run_configuration(
         # a list containing a single None so as to allow the parallelization
         # to proceeed and to pass the correct default value of grid_objective
         # down to _classify_featureset().
-        if not grid_objectives:
-            grid_objectives = [None]
+        grid_objectives_extra: Union[List[str], List[None]]
+        grid_objectives_extra = [None] if not grid_objectives else grid_objectives
 
         # Run each featureset-learner-objective combination
         for featureset, featureset_name in zip(featuresets, featureset_names):
             for learner_num, learner_name in enumerate(learners):
-                for grid_objective in grid_objectives:
+                for grid_objective in grid_objectives_extra:
                     # for the individual job name, we need to add the feature set name
                     # and the learner name
-                    if grid_objective is None or len(grid_objectives) == 1:
+                    if grid_objective is None or len(grid_objectives_extra) == 1:
                         job_name_components = [experiment_name, featureset_name, learner_name]
                     else:
                         job_name_components = [
@@ -853,7 +858,7 @@ def run_configuration(
                         continue
 
                     # create job if we're doing things on the grid
-                    job_args = {}
+                    job_args: Dict[str, Any] = {}
                     job_args["experiment_name"] = experiment_name
                     job_args["task"] = task
                     job_args["sampler"] = sampler

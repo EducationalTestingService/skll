@@ -7,77 +7,83 @@ Functions for reading inputs for SKLL experiments.
 :author: Michael Heilman (mheilman@ets.org)
 """
 
+import logging
 from pathlib import Path
+from typing import List, Optional
 
+from skll.data import FeatureSet
 from skll.data.readers import Reader
+from skll.types import ClassMap, PathOrStr
 
 
 def load_featureset(
-    dir_path,
-    feat_files,
-    suffix,
-    id_col="id",
-    label_col="y",
-    ids_to_floats=False,
-    quiet=False,
-    class_map=None,
-    feature_hasher=False,
-    num_features=None,
-    logger=None,
-):
+    dir_path: PathOrStr,
+    feat_files: List[str],
+    suffix: str,
+    id_col: str = "id",
+    label_col: str = "y",
+    ids_to_floats: bool = False,
+    quiet: bool = False,
+    class_map: Optional[ClassMap] = None,
+    feature_hasher: bool = False,
+    num_features: Optional[int] = None,
+    logger: Optional[logging.Logger] = None,
+) -> FeatureSet:
     """
     Load a list of feature files and merge them.
 
     Parameters
     ----------
-    dir_path : Union[str, Path]
+    dir_path : PathOrStr
         Path to the directory that contains the feature files.
-    feat_files : list of str
+    feat_files : List[str]
         A list of feature file prefixes.
     suffix : str
         The suffix to add to feature file prefixes to get the full filenames.
-    id_col : str, optional
+    id_col : str
         Name of the column which contains the instance IDs.
         If no column with that name exists, or `None` is
         specified, example IDs will be automatically generated.
         Defaults to ``'id'``.
-    label_col : str, optional
+    label_col : str
         Name of the column which contains the class labels.
         If no column with that name exists, or `None` is
         specified, the data is considered to be unlabeled.
         Defaults to ``'y'``.
-    ids_to_floats : bool, optional
+    ids_to_floats : bool
         Whether to convert the IDs to floats to save memory. Will raise error
         if we encounter non-numeric IDs.
         Defaults to ``False``.
-    quiet : bool, optional
+    quiet : bool
         Do not print "Loading..." status message to stderr.
         Defaults to ``False``.
-    class_map : dict, optional
+    class_map : Optional[ClassMap]
         Mapping from original class labels to new ones. This is
         mainly used for collapsing multiple labels into a single
         class. Anything not in the mapping will be kept the same.
         Defaults to ``None``.
-    feature_hasher : bool, optional
-        Should we use a FeatureHasher when vectorizing
-        features?
+    feature_hasher : bool
+        Should we use a FeatureHasher when vectorizing features?
         Defaults to ``False``.
-    num_features : int, optional
+    num_features : Optional[int]
         The number of features to use with the ``FeatureHasher``.
         This should always be set to the power of 2 greater
         than the actual number of features you're using.
         Defaults to ``None``.
-    logger : logging.Logger, optional
+    logger : Optional[logging.Logger]
         A logger instance to use to log messages instead of creating
         a new one by default.
         Defaults to ``None``.
 
     Returns
     -------
-    merged_set : skll.FeatureSet
+    merged_set : skll.data.FeatureSet
         A ``FeatureSet`` instance containing the specified labels, IDs, features,
         and feature vectorizer.
     """
+    # get a logger if one was not provided
+    logger = logger if logger else logging.getLogger(__name__)
+
     # convert to Path object
     dir_path = Path(dir_path)
 
@@ -102,7 +108,7 @@ def load_featureset(
                 "feature hashing applies to each specified "
                 "feature file separately."
             )
-        merged_set = None
+        merged_set = FeatureSet("empty", [])
         for file_name in sorted(dir_path / f"{featfile}{suffix}" for featfile in feat_files):
             fs = Reader.for_path(
                 file_name,
@@ -115,8 +121,10 @@ def load_featureset(
                 num_features=num_features,
                 logger=logger,
             ).read()
-            if merged_set is None:
+
+            if len(merged_set) == 0:
                 merged_set = fs
             else:
                 merged_set += fs
+
         return merged_set
