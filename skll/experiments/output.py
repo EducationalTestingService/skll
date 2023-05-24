@@ -219,7 +219,7 @@ def _print_fancy_output(
     ----------
     learner_result_dicts : List[Dict[str, Any]]
         List of result dictionaries.
-    output_file : IO[str], optional
+    output_file : IO[str]
         The file buffer to print to.
         Defaults to ``sys.stdout``.
     """
@@ -411,7 +411,7 @@ def _write_summary_file(result_json_paths: List[str], output_file: IO[str], abla
         A list of paths to the individual result JSON files.
     output_file : IO[str]
         The file buffer to write to.
-    ablation : int, optional
+    ablation : int
         The number of features to remove when doing ablation experiment.
         Defaults to 0.
     """

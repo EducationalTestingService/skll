@@ -222,6 +222,7 @@ def _classify_featureset(args: Dict[str, Any]) -> List[Dict[str, Any]]:
         # check whether a trained model on the same data with the same
         # featureset already exists if so, load it and then use it on test data
         modelfile = Path(model_path) / f"{job_name}.model"
+        train_set_size: Union[int, str] = "unknown"
         if task in ["cross_validate", "learning_curve"] or not modelfile.exists() or overwrite:
             train_examples = load_featureset(
                 train_path,
@@ -237,7 +238,7 @@ def _classify_featureset(args: Dict[str, Any]) -> List[Dict[str, Any]]:
                 logger=logger,
             )
 
-            train_set_size: Union[int, str] = len(train_examples.ids)
+            train_set_size = len(train_examples.ids)
             if not train_examples.has_labels:
                 raise ValueError("Training examples do not have labels")
 
@@ -297,7 +298,6 @@ def _classify_featureset(args: Dict[str, Any]) -> List[Dict[str, Any]]:
             # a saved model
             if custom_learner_path:
                 globals()[learner_name] = load_custom_learner(custom_learner_path, learner_name)
-            train_set_size = "unknown"
 
             # load the non-custom learner from disk
             if modelfile.exists() and not overwrite:
@@ -308,7 +308,7 @@ def _classify_featureset(args: Dict[str, Any]) -> List[Dict[str, Any]]:
                 learner = Learner.from_file(modelfile, logger=logger)
 
         # Load test set if there is one
-        test_set_size: Union[int, str]
+        test_set_size: Union[int, str] = "n/a"
         if task == "evaluate" or task == "predict":
             test_examples = load_featureset(
                 test_path,
@@ -323,8 +323,6 @@ def _classify_featureset(args: Dict[str, Any]) -> List[Dict[str, Any]]:
                 num_features=hasher_features,
             )
             test_set_size = len(test_examples.ids)
-        else:
-            test_set_size = "n/a"
 
         # compute information about xval and grid folds that can be put in results
         # in readable form

@@ -124,7 +124,7 @@ def locate_file(file_path: PathOrStr, config_dir: PathOrStr) -> str:
         return str(path_to_check)
 
 
-def _munge_featureset_name(featureset: Union[Iterable, str]) -> str:
+def _munge_featureset_name(name_or_list: Union[Iterable, str]) -> str:
     """
     Create a munged name for the featureset.
 
@@ -133,18 +133,18 @@ def _munge_featureset_name(featureset: Union[Iterable, str]) -> str:
 
     Parameters
     ----------
-    featureset : Union[skll.data.FeatureSet, str]
-        A SKLL ``FeatureSet`` object.
+    name_or_list : Union[Iterable, str]
+        A featureset name or name components in a list.
 
     Returns
     -------
     res : str
-        ``featureset`` names joined with '+', if ``featureset`` is not a string.
+        name components joined with '+' if input is a list or the name itself.
     """
-    if isinstance(featureset, str):
-        return featureset
+    if isinstance(name_or_list, str):
+        return name_or_list
 
-    res = "+".join(sorted(featureset))
+    res = "+".join(sorted(name_or_list))
     return res
 
 
