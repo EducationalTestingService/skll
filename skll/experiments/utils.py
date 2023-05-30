@@ -11,13 +11,13 @@ import json
 import math
 import re
 from collections import defaultdict
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Union
 
 import numpy as np
 from sklearn.pipeline import Pipeline
 from tabulate import tabulate  # type: ignore
 
-from skll.types import EvaluateTaskResults
+from skll.types import EvaluateTaskResults, LabelType
 from skll.utils.logging import get_skll_logger
 
 
@@ -73,8 +73,8 @@ def _check_job_results(job_results: List[List[Dict[str, Any]]]) -> None:
 
 def _create_learner_result_dicts(
     task_results: List[EvaluateTaskResults],
-    grid_scores: List[float],
-    grid_search_cv_results_dicts: List[Dict[str, Any]],
+    grid_scores: Union[List[None], List[float]],
+    grid_search_cv_results_dicts: Union[List[None], List[Dict[str, Any]]],
     learner_result_dict_base: Dict[str, Any],
 ) -> List[Dict[str, Any]]:
     """
@@ -84,13 +84,15 @@ def _create_learner_result_dicts(
     ----------
     task_results : List[EvaluateTaskResults]
         The task results list.
-    grid_scores : List[float]
-        The grid scores list.
-    grid_search_cv_results_dicts : List[Dict[str, Any]]
+    grid_scores : Union[List[None], List[float]]
+        The grid scores list or a list containing `None` instances for tasks
+        that do not involve any grid search.
+    grid_search_cv_results_dicts : Union[List[None], List[Dict[str, Any]]]
         A list of dictionaries of grid search CV results, one per fold,
         with keys such as "params", "mean_test_score", etc, that are
         mapped to values associated with each hyperparameter set
-        combination.
+        combination. Or a list of `None` instances for tasks that do not
+        involve any grid search.
     learner_result_dict_base : Dict[str, Any]
         Base dictionary for all learner results.
 
@@ -107,9 +109,9 @@ def _create_learner_result_dicts(
     pearson_sum = 0.0
     additional_metric_score_sums: Dict[str, float] = {}
     score_sum = None
-    prec_sum_dict: Dict[str, float] = defaultdict(float)
-    recall_sum_dict: Dict[str, float] = defaultdict(float)
-    f_sum_dict: Dict[str, float] = defaultdict(float)
+    prec_sum_dict: Dict[LabelType, float] = defaultdict(float)
+    recall_sum_dict: Dict[LabelType, float] = defaultdict(float)
+    f_sum_dict: Dict[LabelType, float] = defaultdict(float)
     result_table = None
 
     for k, (
@@ -173,7 +175,7 @@ def _create_learner_result_dicts(
         # if there is no confusion matrix, then we must be dealing
         # with a regression model
         else:
-            learner_result_dict.update(result_dict)
+            learner_result_dict.update(result_dict)  # type: ignore
             pearson_sum += float(learner_result_dict["pearson"])
 
         # get the scores for all the metrics and compute the sums
