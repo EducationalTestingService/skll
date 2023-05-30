@@ -1338,7 +1338,7 @@ class Learner(object):
 
         Returns
         -------
-        np.ndarray
+        numpy.ndarray
             The predictions returned by the ``Learner`` instance.
 
         Raises

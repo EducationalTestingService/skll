@@ -85,8 +85,8 @@ def _create_learner_result_dicts(
     task_results : List[EvaluateTaskResults]
         The task results list.
     grid_scores : Union[List[None], List[float]]
-        The grid scores list or a list containing `None` instances for tasks
-        that do not involve any grid search.
+        List of grid scores or a list of ``None`` for tasks that do not involve
+        grid search.
     grid_search_cv_results_dicts : Union[List[None], List[Dict[str, Any]]]
         A list of dictionaries of grid search CV results, one per fold,
         with keys such as "params", "mean_test_score", etc, that are

@@ -129,7 +129,7 @@ class VotingLearner(object):
         model_kwargs_list: Optional[List[Dict[str, Any]]] = None,
         sampler_list: Optional[List[str]] = None,
         sampler_kwargs_list: Optional[List[Dict[str, Any]]] = None,
-        logger=None,
+        logger: Optional[logging.Logger] = None,
     ):
         """Initialize a ``VotingLearner`` object with the specified settings."""
         # initialize various attributes
