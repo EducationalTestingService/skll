@@ -14,6 +14,7 @@ from importlib import import_module
 from itertools import combinations
 from math import floor, log10
 from multiprocessing import cpu_count
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import joblib
 import numpy as np
@@ -27,7 +28,6 @@ from sklearn.ensemble import (
     RandomForestClassifier,
     RandomForestRegressor,
 )
-from sklearn.feature_extraction import DictVectorizer as OldDictVectorizer
 from sklearn.feature_extraction import FeatureHasher
 from sklearn.kernel_approximation import (  # noqa: F401
     AdditiveChi2Sampler,
@@ -67,6 +67,18 @@ from skll.data import FeatureSet
 from skll.data.dict_vectorizer import DictVectorizer
 from skll.data.readers import safe_float
 from skll.metrics import _SCORERS
+
+# import types when type checking but not otherwise to avoid circular imports
+# if TYPE_CHECKING:
+from skll.types import (
+    CrossValidateTaskResults,
+    EvaluateTaskResults,
+    FoldMapping,
+    IndexIterator,
+    LabelType,
+    LearningCurveSizes,
+    PathOrStr,
+)
 from skll.utils.constants import (
     CORRELATION_METRICS,
     KNOWN_DEFAULT_PARAM_GRIDS,
@@ -100,6 +112,7 @@ from .utils import (
 _REQUIRES_DENSE = copy.copy(KNOWN_REQUIRES_DENSE)
 _DEFAULT_PARAM_GRIDS = copy.deepcopy(KNOWN_DEFAULT_PARAM_GRIDS)
 
+
 __all__ = ["Learner", "MAX_CONCURRENT_PROCESSES", "load_custom_learner"]
 
 
@@ -112,11 +125,11 @@ class Learner(object):
     model_type : str
         Name of estimator to create (e.g., ``'LogisticRegression'``).
         See the skll package documentation for valid options.
-    probability : bool, optional
+    probability : bool
         Should learner return probabilities of all
         labels (instead of just label with highest probability)?
         Defaults to ``False``.
-    pipeline : bool, optional
+    pipeline : bool
         Should learner contain a pipeline attribute that
         contains a scikit-learn Pipeline object composed
         of all steps including the vectorizer, the feature
@@ -125,19 +138,19 @@ class Learner(object):
         size of the learner object in memory and also when
         it is saved to disk.
         Defaults to ``False``.
-    feature_scaling : str, optional
+    feature_scaling : str
         How to scale the features, if at all. Options are
         -  'with_std': scale features using the standard deviation
         -  'with_mean': center features using the mean
         -  'both': do both scaling as well as centering
         -  'none': do neither scaling nor centering
         Defaults to 'none'.
-    model_kwargs : dict, optional
+    model_kwargs : Optional[Dict[str, Any]]
         A dictionary of keyword arguments to pass to the
         initializer for the specified model.
         Defaults to ``None``.
-    pos_label : str, optional
-        A string denoting the label of the class to be
+    pos_label : Optional[LabelType]
+        An integer or string denoting the label of the class to be
         treated as the positive class in a binary classification
         setting. If ``None``, the class represented by the label
         that appears second when sorted is chosen as the positive
@@ -145,11 +158,11 @@ class Learner(object):
         and "B" and ``pos_label`` is not specified, "B" will
         be chosen as the positive class.
         Defaults to ``None``.
-    min_feature_count : int, optional
+    min_feature_count : int
         The minimum number of examples a feature
         must have a nonzero value in to be included.
         Defaults to 1.
-    sampler : str, optional
+    sampler : Optional[str]
         The sampler to use for kernel approximation, if desired.
         Valid values are
         -  'AdditiveChi2Sampler'
@@ -157,47 +170,47 @@ class Learner(object):
         -  'RBFSampler'
         -  'SkewedChi2Sampler'
         Defaults to ``None``.
-    sampler_kwargs : dict, optional
+    sampler_kwargs : Optional[Dict[str, Any]]
         A dictionary of keyword arguments to pass to the
         initializer for the specified sampler.
         Defaults to ``None``.
-    custom_learner_path : str, optional
+    custom_learner_path : Optional[str]
         Path to module where a custom classifier is defined.
         Defaults to ``None``.
-    logger : logging object, optional
+    logger : Optional[logging.Logger]
         A logging object. If ``None`` is passed, get logger from ``__name__``.
         Defaults to ``None``.
     """
 
     def __init__(
-        self,  # noqa: C901
-        model_type,
-        probability=False,
-        pipeline=False,
-        feature_scaling="none",
-        model_kwargs=None,
-        pos_label=None,
-        min_feature_count=1,
-        sampler=None,
-        sampler_kwargs=None,
-        custom_learner_path=None,
-        logger=None,
-    ):
+        self,
+        model_type: str,
+        probability: bool = False,
+        pipeline: bool = False,
+        feature_scaling: str = "none",
+        model_kwargs: Optional[Dict[str, Any]] = None,
+        pos_label: Optional[LabelType] = None,
+        min_feature_count: int = 1,
+        sampler: Optional[str] = None,
+        sampler_kwargs: Optional[Dict[str, Any]] = None,
+        custom_learner_path: Optional[PathOrStr] = None,
+        logger: Optional[logging.Logger] = None,
+    ) -> None:
         """Initialize a learner object with the specified settings."""
         super(Learner, self).__init__()
 
-        self.feat_vectorizer = None
-        self.scaler = None
-        self.label_dict = None
-        self.label_list = None
+        self.feat_vectorizer: Optional[Union[DictVectorizer, FeatureHasher]] = None
+        self.scaler: Optional[StandardScaler] = None
+        self.label_dict: Dict[LabelType, int] = {}
+        self.label_list: List[LabelType] = []
         self.pos_label = safe_float(pos_label) if pos_label is not None else pos_label
         self._model = None
         self._store_pipeline = pipeline
         self._feature_scaling = feature_scaling
-        self.feat_selector = None
         self._min_feature_count = min_feature_count
-        self._model_kwargs = {}
-        self._sampler_kwargs = {}
+        self.feat_selector: SelectByMinCount = SelectByMinCount(min_count=self._min_feature_count)
+        self._model_kwargs: Dict[str, Any] = {}
+        self._sampler_kwargs: Dict[str, Any] = {}
         self.logger = logger if logger else logging.getLogger(__name__)
 
         if model_type not in globals():
@@ -219,7 +232,6 @@ class Learner(object):
                 _REQUIRES_DENSE = _REQUIRES_DENSE + (model_class,)
 
         self._model_type = globals()[model_type]
-        self._probability = None
         # Use setter to set self.probability
         self.probability = probability
 
@@ -338,6 +350,7 @@ class Learner(object):
                 issubclass(self._model_type, RANSACRegressor) and "estimator" in model_kwargs
             )
             if is_ada_has_base_estimator or is_ransac_has_estimator:
+                base_estimator_kwargs: Dict[str, Any]
                 base_estimator_name = model_kwargs.get(
                     "base_estimator", model_kwargs.get("estimator")
                 )
@@ -364,15 +377,17 @@ class Learner(object):
             self._model_kwargs.update(model_kwargs)
 
     @classmethod
-    def from_file(cls, learner_path, logger=None):
+    def from_file(
+        cls, learner_path: PathOrStr, logger: Optional[logging.Logger] = None
+    ) -> "Learner":
         """
         Load a saved ``Learner`` instance from a file path.
 
         Parameters
         ----------
-        learner_path : Union[str, Path]
+        learner_path : PathOrStr
             The path to a saved ``Learner`` instance file.
-        logger : logging object, optional
+        logger : Optional[logging.Logger]
             A logging object. If ``None`` is passed, get logger from ``__name__``.
             Defaults to ``None``.
 
@@ -386,7 +401,9 @@ class Learner(object):
         logger = logger if logger else logging.getLogger(__name__)
 
         # call the learner loding utility function
-        return _load_learner_from_disk(cls, learner_path, logger)
+        obj = _load_learner_from_disk(cls, learner_path, logger)
+        assert isinstance(obj, cls)
+        return obj
 
     @property
     def model_type(self):
@@ -394,7 +411,7 @@ class Learner(object):
         return self._model_type
 
     @property
-    def model_kwargs(self):
+    def model_kwargs(self) -> Dict[str, Any]:
         """Return a dictionary of the underlying scikit-learn model's keyword arguments."""
         return self._model_kwargs
 
@@ -403,19 +420,19 @@ class Learner(object):
         """Return the underlying scikit-learn model."""
         return self._model
 
-    def load(self, learner_path):
+    def load(self, learner_path: PathOrStr) -> None:
         """
         Replace the current learner instance with a saved learner.
 
         Parameters
         ----------
-        learner_path : str
+        learner_path : PathOrStr
             The path to a saved learner object file to load.
         """
         del self.__dict__
         self.__dict__ = Learner.from_file(learner_path).__dict__
 
-    def _convert_coef_array_to_feature_names(self, coef, feature_name_prefix=""):
+    def _convert_coef_array_to_feature_names(self, coef: np.ndarray, feature_name_prefix: str = ""):
         """
         Convert model coefficients array to dictionary.
 
@@ -425,19 +442,20 @@ class Learner(object):
 
         Parameters
         ----------
-        coef : np.array
+        coef : numpy.ndarray
             A numpy array with the model coefficients
-        feature_name_prefix : str, optional
+        feature_name_prefix : str
             An optional string that should be prefixed to the feature
             name, e.g. the name of the class for LogisticRegression
             or the class pair for SVCs with linear kernels.
 
         Returns
         -------
-        res : dict
+        Dict[str, Any]
             A dictionary of labeled weights
         """
         res = {}
+        vocabulary = {}
 
         # if we are doing feature hashing, then we need to make up
         # the feature names
@@ -453,7 +471,7 @@ class Learner(object):
 
         # otherwise we can just use the DictVectorizer vocabulary
         # to get the feature names
-        else:
+        elif isinstance(self.feat_vectorizer, DictVectorizer):
             vocabulary = self.feat_vectorizer.vocabulary_
 
         # create the final result dictionary with the prefixed
@@ -465,7 +483,7 @@ class Learner(object):
         return res
 
     @property
-    def model_params(self):
+    def model_params(self) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         """
         Return model parameters (i.e., weights).
 
@@ -475,9 +493,9 @@ class Learner(object):
 
         Returns
         -------
-        res : dict
+        res : Dict[str, Any]
             A dictionary of labeled weights.
-        intercept : dict
+        intercept : Dict[str, Any]
             A dictionary of intercept(s).
 
         Raises
@@ -486,7 +504,7 @@ class Learner(object):
             If the instance does not support model parameters.
         """
         res = {}
-        intercept = None
+        intercept = {}
         if (
             isinstance(self._model, LinearModel)
             or (isinstance(self._model, SVR) and self._model.kernel == "linear")
@@ -539,7 +557,7 @@ class Learner(object):
             if isinstance(self.model.intercept_, float):
                 intercept = {"_intercept_": self.model.intercept_}
             elif self.model.intercept_.any():
-                intercept = dict(zip(label_list, self.model.intercept_))
+                intercept = dict(zip(label_list, self.model.intercept_))  # type: ignore
 
         # for SVCs with linear kernels, we want to print out the primal
         # weights - that is, the weights for each feature for each one-vs-one
@@ -580,7 +598,7 @@ class Learner(object):
         return res, intercept
 
     @property
-    def probability(self):
+    def probability(self) -> bool:
         """
         Return the value of the probability flag.
 
@@ -590,7 +608,7 @@ class Learner(object):
         return self._probability
 
     @probability.setter
-    def probability(self, value):
+    def probability(self, value: bool) -> None:
         """
         Set the probability flag.
 
@@ -609,7 +627,7 @@ class Learner(object):
             )
             self._probability = False
 
-    def __getstate__(self):
+    def __getstate__(self) -> Dict[str, Any]:
         """
         Return attributes that should be pickled.
 
@@ -620,13 +638,13 @@ class Learner(object):
             del attribute_dict["logger"]
         return attribute_dict
 
-    def save(self, learner_path):
+    def save(self, learner_path: PathOrStr) -> None:
         """
         Save the ``Learner`` instance to a file.
 
         Parameters
         ----------
-        learner_path : Union[str, Path]
+        learner_path : PathOrStr
             The path to save the ``Learner`` instance to.
         """
         _save_learner_to_disk(self, learner_path)
@@ -659,7 +677,7 @@ class Learner(object):
 
         return estimator, default_param_grid
 
-    def get_feature_names_out(self):
+    def get_feature_names_out(self) -> np.ndarray:
         """
         Return the names of the actual features used by the estimator.
 
@@ -672,18 +690,29 @@ class Learner(object):
 
         Returns
         -------
-        names : 1-D array
+        names : numpy.ndarray of shape (num_features,)
             Names of features actually used by the estimator.
-        """
-        return self.feat_vectorizer.get_feature_names_out()[self.feat_selector.get_support()]
 
-    def _check_input_formatting(self, examples):
+        Raises
+        ------
+        ValueError
+            If ``self.feat_vectorizer`` is either ``None`` or a ``FeatureHasher``.
+        """
+        if isinstance(self.feat_vectorizer, DictVectorizer):
+            return self.feat_vectorizer.get_feature_names_out()[self.feat_selector.get_support()]
+        else:
+            raise ValueError(
+                "Cannot get feature names: `feat_vectorizer` is not "
+                "defined or a `FeatureHasher`."
+            )
+
+    def _check_input_formatting(self, examples: FeatureSet) -> None:
         """
         Check that the examples are properly formatted.
 
         Parameters
         ----------
-        examples : skll.FeatureSet
+        examples : skll.data.FeatureSet
             The ``FeatureSet`` instance to use for training.
 
         Raises
@@ -694,7 +723,7 @@ class Learner(object):
             If any features are strings.
         """
         # Make sure the labels for a regression task are not strings.
-        if self.model_type._estimator_type == "regressor":
+        if self.model_type._estimator_type == "regressor" and examples.labels is not None:
             for label in examples.labels:
                 if isinstance(label, str):
                     raise TypeError(
@@ -706,23 +735,24 @@ class Learner(object):
         # make sure that feature values are not strings; to check this
         # we need to get a flattened version of the feature array,
         # whether it is sparse (more likely) or dense
-        if sp.issparse(examples.features):
-            flattened_features = examples.features.data
-        else:
-            flattened_features = examples.features.flat
-        for val in flattened_features:
-            if isinstance(val, str):
-                raise TypeError(
-                    "You have feature values that are strings.  " "Convert them to floats."
-                )
+        if examples.features is not None:
+            if sp.issparse(examples.features):
+                flattened_features = examples.features.data
+            else:
+                flattened_features = examples.features.flat
+            for val in flattened_features:
+                if isinstance(val, str):
+                    raise TypeError(
+                        "You have feature values that are strings.  " "Convert them to floats."
+                    )
 
-    def _check_max_feature_value(self, feat_array):
+    def _check_max_feature_value(self, feat_array: np.ndarray):
         """
         Check if the the maximum absolute value of any feature is too large.
 
         Parameters
         ----------
-        feat_array : np.array
+        feat_array : numpy.ndarray
             A numpy array with features.
         """
         max_feat_abs = np.max(np.abs(feat_array.data))
@@ -734,23 +764,24 @@ class Learner(object):
                 "perform poorly."
             )
 
-    def _create_label_dict(self, examples):
+    def _create_label_dict(self, examples: FeatureSet) -> None:
         """
         Create a dictionary of labels for classification problems.
 
         Parameters
         ----------
-        examples : skll.FeatureSet
+        examples : skll.data.FeatureSet
             The examples to use for training.
         """
         # we don't need to do this if we have already done it
         # or for regression models, so simply return.
-        if self.label_dict is not None or self.model_type._estimator_type == "regressor":
+        if len(self.label_dict) > 0 or self.model_type._estimator_type == "regressor":
             return
 
         # extract list of unique labels if we are doing classification;
         # note that the output of np.unique() is sorted
-        self.label_list = np.unique(examples.labels).tolist()
+        if examples.labels is not None:
+            self.label_list = np.unique(examples.labels).tolist()
 
         # for binary classification, if one label is specified as
         # the positive class, re-sort the label list to make sure
@@ -771,13 +802,13 @@ class Learner(object):
         # numbers.
         self.label_dict = {label: i for i, label in enumerate(self.label_list)}
 
-    def _train_setup(self, examples):
+    def _train_setup(self, examples: FeatureSet) -> None:
         """
         Set up the feature vectorizer and the scaler.
 
         Parameters
         ----------
-        examples : skll.FeatureSet
+        examples : skll.data.FeatureSet
             The ``FeatureSet`` instance to use for training.
         """
         # Check feature values and labels
@@ -785,9 +816,6 @@ class Learner(object):
 
         # Create feature name -> value mapping
         self.feat_vectorizer = examples.vectorizer
-
-        # initialize feature selector
-        self.feat_selector = SelectByMinCount(min_count=self._min_feature_count)
 
         # Create a scaler if we weren't passed one and we are asked
         # to do feature scaling; note that we do not support feature
@@ -804,15 +832,15 @@ class Learner(object):
             self.scaler = StandardScaler(copy=False, with_mean=False, with_std=False)
 
     def train(
-        self,  # noqa: C901
-        examples,
-        param_grid=None,
-        grid_search_folds=5,
-        grid_search=True,
-        grid_objective=None,
-        grid_jobs=None,
-        shuffle=False,
-    ):
+        self,
+        examples: FeatureSet,
+        param_grid: Optional[Dict[str, Any]] = None,
+        grid_search_folds: Union[int, FoldMapping] = 5,
+        grid_search: bool = True,
+        grid_objective: Optional[str] = None,
+        grid_jobs: Optional[int] = None,
+        shuffle: bool = False,
+    ) -> Tuple[float, Dict[str, Any]]:
         """
         Train model underlying the learner.
 
@@ -820,41 +848,41 @@ class Learner(object):
 
         Parameters
         ----------
-        examples : skll.FeatureSet
+        examples : skll.data.FeatureSet
             The ``FeatureSet`` instance to use for training.
-        param_grid : dict, optional
+        param_grid : Optional[Dict[str, Any]]
             The parameter grid to search through for grid
             search. If ``None``, a default parameter grid
             will be used.
             Defaults to ``None``.
-        grid_search_folds : int or dict, optional
+        grid_search_folds : Union[int, FoldMapping]
             The number of folds to use when doing the
-            grid search, or a mapping from
-            example IDs to folds.
-            Defaults to 3.
-        grid_search : bool, optional
+            grid search, or a mapping from example IDs to folds.
+            Defaults to 5.
+        grid_search : bool
             Should we do grid search?
             Defaults to ``True``.
-        grid_objective : str, optional
+        grid_objective : Optional[str]
             The name of the objective function to use when
             doing the grid search. Must be specified if
             ``grid_search`` is ``True``.
             Defaults to ``None``.
-        grid_jobs : int, optional
+        grid_jobs : Optional[int]
             The number of jobs to run in parallel when doing the
             grid search. If ``None`` or 0, the number of
             grid search folds will be used.
             Defaults to ``None``.
-        shuffle : bool, optional
+        shuffle : bool
             Shuffle examples (e.g., for grid search CV.)
             Defaults to ``False``.
 
         Returns
         -------
-        tuple : (float, dict)
-            1) The best grid search objective function score, or 0 if
-            we're not doing grid search, and 2) a dictionary of grid
-            search CV results with keys such as "params",
+        float
+            The best grid search objective function score, or 0 if
+            we're not doing grid search
+        Dict[str, Any]
+            Dictionary of grid search CV results with keys such as "params",
             "mean_test_score", etc, that are mapped to lists of values
             associated with each hyperparameter set combination, or
             None if not doing grid search.
@@ -886,12 +914,13 @@ class Learner(object):
             # get the list of objectives that are acceptable in the current
             # prediction scenario and raise an exception if the current
             # objective is not in this allowed list
-            label_type = examples.labels.dtype.type
-            if estimator_type == "classifier":
-                sorted_unique_labels = np.unique(examples.labels)
-                allowed_objectives = get_acceptable_classification_metrics(sorted_unique_labels)
-            else:
-                allowed_objectives = get_acceptable_regression_metrics()
+            if examples.labels is not None:
+                label_type = examples.labels.dtype.type
+                if estimator_type == "classifier":
+                    sorted_unique_labels = np.unique(examples.labels)
+                    allowed_objectives = get_acceptable_classification_metrics(sorted_unique_labels)
+                else:
+                    allowed_objectives = get_acceptable_regression_metrics()
 
             if grid_objective not in allowed_objectives:
                 raise ValueError(
@@ -978,7 +1007,8 @@ class Learner(object):
             )
 
         # Scale features if necessary
-        xtrain = self.scaler.fit_transform(xtrain)
+        if self.scaler:
+            xtrain = self.scaler.fit_transform(xtrain)
 
         # check whether any feature values are too large
         self._check_max_feature_value(xtrain)
@@ -1001,10 +1031,11 @@ class Learner(object):
 
         # use label dict transformed version of examples.labels if doing
         # classification
-        if estimator_type == "classifier":
-            labels = np.array([self.label_dict[label] for label in examples.labels])
-        else:
-            labels = examples.labels
+        if examples.labels is not None:
+            if estimator_type == "classifier":
+                labels = np.array([self.label_dict[label] for label in examples.labels])
+            else:
+                labels = examples.labels
 
         # Instantiate an estimator and get the default parameter grid to search
         estimator, default_param_grid = self._create_estimator()
@@ -1027,6 +1058,10 @@ class Learner(object):
 
         # set up a grid searcher if we are asked to
         if grid_search:
+            # explicitly declare the variable types
+            folds: Union[int, IndexIterator]
+            final_grid_jobs: int
+
             # set up grid search folds
             if isinstance(grid_search_folds, int):
                 grid_search_folds = compute_num_folds_from_example_counts(
@@ -1034,17 +1069,17 @@ class Learner(object):
                 )
 
                 if not grid_jobs:
-                    grid_jobs = grid_search_folds
+                    final_grid_jobs = grid_search_folds
                 else:
-                    grid_jobs = min(grid_search_folds, grid_jobs)
+                    final_grid_jobs = min(grid_search_folds, grid_jobs)
                 folds = grid_search_folds
-            else:
+            elif examples.labels is not None:
                 # use the number of unique fold IDs as the number of grid jobs
                 num_specified_folds = len(set(grid_search_folds.values()))
                 if not grid_jobs:
-                    grid_jobs = num_specified_folds
+                    final_grid_jobs = num_specified_folds
                 else:
-                    grid_jobs = min(num_specified_folds, grid_jobs)
+                    final_grid_jobs = min(num_specified_folds, grid_jobs)
                 # Only retain IDs within folds if they're in grid_search_folds
                 dummy_label = next(iter(grid_search_folds.values()))
                 fold_groups = [
@@ -1059,15 +1094,15 @@ class Learner(object):
             # number of cores for the machine, whichever is lower; we set
             # `error_score` to "raise" since we want scikit-learn to explicitly
             # raise an exception if the estimator fails to fit for any reason
-            grid_jobs = min(grid_jobs, cpu_count(), MAX_CONCURRENT_PROCESSES)
+            final_grid_jobs = min(final_grid_jobs, cpu_count(), MAX_CONCURRENT_PROCESSES)
             grid_searcher = GridSearchCV(
                 estimator,
                 param_grid,
                 scoring=grid_objective,
                 cv=folds,
-                n_jobs=grid_jobs,
+                n_jobs=final_grid_jobs,
                 error_score="raise",
-                pre_dispatch=grid_jobs,
+                pre_dispatch=final_grid_jobs,
             )
 
             # run the grid search for hyperparameters
@@ -1097,7 +1132,7 @@ class Learner(object):
         # but keep the SKLL model the same
         if self._store_pipeline:
             # initialize the list that will hold the pipeline steps
-            pipeline_steps = []
+            pipeline_steps: List[Tuple[str, Any]] = []
 
             # start with the vectorizer
 
@@ -1116,7 +1151,7 @@ class Learner(object):
             # in SKLL.
             vectorizer_copy = copy.deepcopy(self.feat_vectorizer)
             if self._use_dense_features or isinstance(self.sampler, SkewedChi2Sampler):
-                if isinstance(self.feat_vectorizer, DictVectorizer):
+                if isinstance(vectorizer_copy, DictVectorizer):
                     self.logger.warning(
                         "The `sparse` attribute of the DictVectorizer stage "
                         "will be set to `False` in the pipeline since dense "
@@ -1151,41 +1186,44 @@ class Learner(object):
         return grid_score, grid_cv_results
 
     def evaluate(
-        self, examples, prediction_prefix=None, append=False, grid_objective=None, output_metrics=[]
-    ):
+        self,
+        examples: FeatureSet,
+        prediction_prefix: Optional[str] = None,
+        append: bool = False,
+        grid_objective: Optional[str] = None,
+        output_metrics: List[str] = [],
+    ) -> EvaluateTaskResults:
         """
         Evaluate the learner on a given dev or test ``FeatureSet``.
 
         Parameters
         ----------
-        examples : skll.FeatureSet
+        examples : skll.data.FeatureSet
             The ``FeatureSet`` instance to evaluate the performance of the
             model on.
-        prediction_prefix : str, optional
+        prediction_prefix : Optional[str]
             If not ``None``, predictions will also be written out to a file with
             the name  ``<prediction_prefix>_predictions.tsv``. Note that
             the prefix can also contain a path.
             Defaults to ``None``.
-        append : bool, optional
-            Should we append the current predictions to the file if
-            it exists?
+        append : bool
+            Should we append the current predictions to the file if it exists?
             Defaults to ``False``.
-        grid_objective : function, optional
-            The objective function that was used when doing
-            the grid search.
+        grid_objective : Optional[str]
+            The objective function that was used when doing the grid search.
             Defaults to ``None``.
-        output_metrics : list of str, optional
-            List of additional metric names to compute in
-            addition to grid objective. Empty by default.
+        output_metrics : List[str]
+            List of additional metric names to compute in addition to grid
+            objective. Empty by default.
             Defaults to an empty list.
 
         Returns
         -------
-        res : 6-tuple
-            The confusion matrix, the overall accuracy, the per-label
-            PRFs, the model parameters, the grid search objective
+        EvaluateTaskResults
+            A 6-tuple containing the confusion matrix, the overall accuracy,
+            the per-label PRFs, the model parameters, the grid search objective
             function score, and the additional evaluation metrics, if any.
-            For regressors, the first two elements are ``None``.
+            For regressors, the first two elements in the tuple are ``None``.
         """
         # are we in a regressor or a classifier
         estimator_type = self.model_type._estimator_type
@@ -1200,21 +1238,22 @@ class Learner(object):
         # but account for any unseen labels in the test set that may not
         # have occurred in the training data at all; then get acceptable
         # metrics based on the type of labels we have
-        if estimator_type == "classifier":
-            sorted_unique_labels = np.unique(examples.labels)
-            test_label_list = sorted_unique_labels.tolist()
-            train_and_test_label_dict = add_unseen_labels(self.label_dict, test_label_list)
-            ytest = np.array([train_and_test_label_dict[label] for label in examples.labels])
-            acceptable_metrics = get_acceptable_classification_metrics(sorted_unique_labels)
-        # for regressors we do not need to do anything special to the labels
-        else:
-            train_and_test_label_dict = None
-            ytest = examples.labels
-            acceptable_metrics = get_acceptable_regression_metrics()
+        if examples.labels is not None:
+            if estimator_type == "classifier":
+                sorted_unique_labels = np.unique(examples.labels)
+                test_label_list = sorted_unique_labels.tolist()
+                train_and_test_label_dict = add_unseen_labels(self.label_dict, test_label_list)
+                ytest = np.array([train_and_test_label_dict[label] for label in examples.labels])
+                acceptable_metrics = get_acceptable_classification_metrics(sorted_unique_labels)
+            # for regressors we do not need to do anything special to the labels
+            else:
+                train_and_test_label_dict = None
+                ytest = examples.labels
+                acceptable_metrics = get_acceptable_regression_metrics()
 
         # check that all of the output metrics are acceptable
         unacceptable_metrics = set(output_metrics).difference(acceptable_metrics)
-        if unacceptable_metrics:
+        if unacceptable_metrics and examples.labels is not None:
             label_type = examples.labels.dtype.type
             raise ValueError(
                 "The following metrics are not valid "
@@ -1243,13 +1282,17 @@ class Learner(object):
         )
 
         # add in the model parameters and return
-        model_params = self.model.get_params()
+        model_params: Dict[str, Any] = self.model.get_params()
         res = (conf_matrix, accuracy, result_dict, model_params, objective_score, metric_scores)
         return res
 
     def predict(
-        self, examples, prediction_prefix=None, append=False, class_labels=True  # noqa: C901
-    ):
+        self,
+        examples: FeatureSet,
+        prediction_prefix: Optional[str] = None,
+        append: bool = False,
+        class_labels: bool = True,
+    ) -> np.ndarray:
         """
         Generate predictions for the given examples using the learner model.
 
@@ -1295,7 +1338,7 @@ class Learner(object):
 
         Returns
         -------
-        yhat : array-like
+        np.ndarray
             The predictions returned by the ``Learner`` instance.
 
         Raises
@@ -1335,18 +1378,11 @@ class Learner(object):
         # 4. The model vectorizer is a DictVectorizer but the prediction feature
         # set vectorizer is a FeatureHasher. Again, we should raise an error here
         # since there's no inverse available for the hasher.
-        model_is_dict = isinstance(self.feat_vectorizer, (DictVectorizer, OldDictVectorizer))
-        model_is_hasher = isinstance(self.feat_vectorizer, FeatureHasher)
-        data_is_dict = isinstance(examples.vectorizer, (DictVectorizer, OldDictVectorizer))
-        data_is_hasher = isinstance(examples.vectorizer, FeatureHasher)
-
-        both_dicts = model_is_dict and data_is_dict
-        both_hashers = model_is_hasher and data_is_hasher
-        model_hasher_and_data_dict = model_is_hasher and data_is_dict
-        model_dict_and_data_hasher = model_is_dict and data_is_hasher
 
         # 1. both are DictVectorizers
-        if both_dicts:
+        if isinstance(self.feat_vectorizer, DictVectorizer) and isinstance(
+            examples.vectorizer, DictVectorizer
+        ):
             if set(self.feat_vectorizer.feature_names_) != set(examples.vectorizer.feature_names_):
                 self.logger.warning(
                     "There is mismatch between the training model features "
@@ -1361,7 +1397,9 @@ class Learner(object):
                 )
 
         # 2. both are FeatureHashers
-        elif both_hashers:
+        elif isinstance(self.feat_vectorizer, FeatureHasher) and isinstance(
+            examples.vectorizer, FeatureHasher
+        ):
             self_feat_vec_tuple = (
                 self.feat_vectorizer.dtype,
                 self.feat_vectorizer.input_type,
@@ -1384,13 +1422,17 @@ class Learner(object):
                 raise RuntimeError("Mismatched hasher configurations")
 
         # 3. model is a FeatureHasher and test set is a DictVectorizer
-        elif model_hasher_and_data_dict:
+        elif isinstance(self.feat_vectorizer, FeatureHasher) and isinstance(
+            examples.vectorizer, DictVectorizer
+        ):
             xtest = self.feat_vectorizer.transform(
                 examples.vectorizer.inverse_transform(examples.features)
             )
 
         # 4. model is a DictVectorizer and test set is a FeatureHasher
-        elif model_dict_and_data_hasher:
+        elif isinstance(self.feat_vectorizer, DictVectorizer) and isinstance(
+            examples.vectorizer, FeatureHasher
+        ):
             self.logger.error(
                 "Cannot predict with a model using a "
                 "DictVectorizer on data that uses a "
@@ -1417,7 +1459,7 @@ class Learner(object):
                 )
 
         # Scale xtest if necessary
-        if not issubclass(self._model_type, MultinomialNB):
+        if not issubclass(self._model_type, MultinomialNB) and self.scaler:
             xtest = self.scaler.transform(xtest)
 
         # Sampler
@@ -1465,31 +1507,30 @@ class Learner(object):
                 to_write,
                 prediction_prefix,
                 self.model_type._estimator_type,
+                self.label_list,
                 append=append,
-                label_list=self.label_list,
-                probability=self.probability,
             )
 
         return to_return
 
     def cross_validate(
         self,
-        examples,
-        stratified=True,
-        cv_folds=10,
-        cv_seed=123456789,
-        grid_search=True,
-        grid_search_folds=5,
-        grid_jobs=None,
-        grid_objective=None,
-        output_metrics=[],
-        prediction_prefix=None,
-        param_grid=None,
-        shuffle=False,
-        save_cv_folds=True,
-        save_cv_models=False,
-        use_custom_folds_for_grid_search=True,
-    ):
+        examples: FeatureSet,
+        stratified: bool = True,
+        cv_folds: Union[int, FoldMapping] = 10,
+        cv_seed: int = 123456789,
+        grid_search: bool = True,
+        grid_search_folds: Union[int, FoldMapping] = 5,
+        grid_jobs: Optional[int] = None,
+        grid_objective: Optional[str] = None,
+        output_metrics: List[str] = [],
+        prediction_prefix: Optional[str] = None,
+        param_grid: Optional[Dict[str, Any]] = None,
+        shuffle: bool = False,
+        save_cv_folds: bool = True,
+        save_cv_models: bool = False,
+        use_custom_folds_for_grid_search: bool = True,
+    ) -> CrossValidateTaskResults:
         """
         Cross-validate the learner on the given training examples.
 
@@ -1562,23 +1603,25 @@ class Learner(object):
 
         Returns
         -------
-        results : list of 6-tuples
-            The confusion matrix, overall accuracy, per-label PRFs, model
-            parameters, objective function score, and evaluation metrics (if any)
-            for each fold.
-        grid_search_scores : list of floats
-            The grid search scores for each fold.
-        grid_search_cv_results_dicts : list of dicts
-            A list of dictionaries of grid search CV results, one per fold,
-            with keys such as "params", "mean_test_score", etc, that are
-            mapped to lists of values associated with each hyperparameter set
-            combination.
-        skll_fold_ids : dict
-            A dictionary containing the test-fold number for each id
-            if ``save_cv_folds`` is ``True``, otherwise ``None``.
-        models : list of skll.learner.Learner
-            A list of skll.learner.Learners, one for each fold if
-            ``save_cv_models`` is ``True``, otherwise ``None``.
+        CrossValidateTaskResults
+           A 5-tuple containing the following:
+
+            List[EvaluateTaskResults]: the confusion matrix, overall accuracy,
+            per-label PRFs, model parameters, objective function score, and
+            evaluation metrics (if any) for each fold.
+
+            List[float]: the grid search scores for each fold.
+
+            List[Dict[str, Any]]: list of dictionaries of grid search CV
+            results, one per fold, with keys such as "params", "mean_test_score",
+            etc, that are mapped to lists of values associated with each
+            hyperparameter set combination.
+
+            Optional[FoldMapping]: dictionary containing the test-fold number
+            for each id if ``save_cv_folds`` is ``True``, otherwise ``None``.
+
+            Optional[List[skll.learner.Learner]]: list of learners, one for
+            each fold if ``save_cv_models`` is ``True``, otherwise ``None``.
 
         Raises
         ------
@@ -1665,12 +1708,14 @@ class Learner(object):
         grid_search_scores = []
         grid_search_cv_results_dicts = []
         append_predictions = False
-        models = [] if save_cv_models else None
-        skll_fold_ids = {} if save_cv_folds else None
+        models: Optional[List["Learner"]] = [] if save_cv_models else None
+        skll_fold_ids: Optional[FoldMapping] = {} if save_cv_folds else None
+        assert examples.labels is not None
         for fold_num, (train_indices, test_indices) in enumerate(
             kfold.split(examples.features, examples.labels, cv_groups)
         ):
             # Train model
+            assert examples.labels is not None and examples.features is not None
             self._model = None  # prevent feature vectorizer from being reset.
             train_set = FeatureSet(
                 examples.name,
@@ -1690,7 +1735,7 @@ class Learner(object):
                 shuffle=grid_search,
             )
             grid_search_scores.append(grid_search_score)
-            if save_cv_models:
+            if save_cv_models and models is not None:
                 models.append(copy.deepcopy(self))
             grid_search_cv_results_dicts.append(grid_search_cv_results)
             # note: there is no need to shuffle again within each fold,
@@ -1716,7 +1761,7 @@ class Learner(object):
             append_predictions = True
 
             # save the fold number for each test ID if we were asked to
-            if save_cv_folds:
+            if save_cv_folds and skll_fold_ids is not None:
                 for index in test_indices:
                     skll_fold_ids[examples.ids[index]] = str(fold_num)
 
@@ -1725,12 +1770,12 @@ class Learner(object):
 
     def learning_curve(
         self,
-        examples,
-        metric,
-        cv_folds=10,
-        train_sizes=np.linspace(0.1, 1.0, 5),
-        override_minimum=False,
-    ):
+        examples: FeatureSet,
+        metric: str,
+        cv_folds: Union[int, FoldMapping] = 10,
+        train_sizes: LearningCurveSizes = np.linspace(0.1, 1.0, 5),
+        override_minimum: bool = False,
+    ) -> Tuple[List[float], List[float], List[int]]:
         """
         Generate learning curves for the learner using the examples.
 
@@ -1740,17 +1785,16 @@ class Learner(object):
 
         Parameters
         ----------
-        examples : skll.FeatureSet
+        examples : skll.data.FeatureSet
             The ``FeatureSet`` instance to generate the learning curve on.
-        cv_folds : int or dict, optional
-            The number of folds to use for cross-validation, or
-            a mapping from example IDs to folds.
+        cv_folds : Union[int, FoldMapping]
+            The number of folds to use for cross-validation, or a mapping from
+            example IDs to folds.
             Defaults to 10.
         metric : str
-            The name of the metric function to use
-            when computing the train and test scores
-            for the learning curve.
-        train_sizes : list of float or int, optional
+            The name of the metric function to use when computing the train
+            and test scores for the learning curve.
+        train_sizes : LearningCurveSizes
             Relative or absolute numbers of training examples
             that will be used to generate the learning curve.
             If the type is float, it is regarded as a fraction
@@ -1762,7 +1806,7 @@ class Learner(object):
             samples usually have to be big enough to contain
             at least one sample from each class.
             Defaults to  ``np.linspace(0.1, 1.0, 5)``.
-        override_minimum : bool, optional
+        override_minimum : bool
             Learning curves can be unreliable for very small sizes
             esp. for > 2 labels. If this option is set to ``True``, the
             learning curve would be generated even if the number
@@ -1772,13 +1816,12 @@ class Learner(object):
 
         Returns
         -------
-        train_scores : list of float
+        train_scores : List[float]
             The scores for the training set.
-        test_scores : list of float
+        test_scores : List[float]
             The scores on the test set.
-        num_examples : list of int
-            The numbers of training examples used to generate
-            the curve
+        num_examples : List[int]
+            The numbers of training examples used to generate the curve.
 
         Raises
         ------

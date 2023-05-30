@@ -10,6 +10,7 @@ import logging
 from importlib import import_module
 from itertools import zip_longest
 from multiprocessing import cpu_count
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import joblib
 import numpy as np
@@ -18,7 +19,16 @@ from sklearn.utils import shuffle as sk_shuffle
 from sklearn.utils.multiclass import type_of_target
 
 from skll.data import FeatureSet
+from skll.data.dict_vectorizer import DictVectorizer
 from skll.learner import Learner
+from skll.types import (
+    EvaluateTaskResults,
+    FoldMapping,
+    LabelType,
+    LearningCurveSizes,
+    PathOrStr,
+    VotingCrossValidateTaskResults,
+)
 from skll.utils.constants import MAX_CONCURRENT_PROCESSES
 
 from .utils import (
@@ -110,22 +120,22 @@ class VotingLearner(object):
 
     def __init__(
         self,
-        learner_names,
-        voting="hard",
-        custom_learner_path=None,
-        feature_scaling="none",
-        pos_label=None,
-        min_feature_count=1,
-        model_kwargs_list=None,
-        sampler_list=None,
-        sampler_kwargs_list=None,
+        learner_names: List[str],
+        voting: Optional[str] = "hard",
+        custom_learner_path: Optional[PathOrStr] = None,
+        feature_scaling: str = "none",
+        pos_label: Optional[LabelType] = None,
+        min_feature_count: int = 1,
+        model_kwargs_list: Optional[List[Dict[str, Any]]] = None,
+        sampler_list: Optional[List[str]] = None,
+        sampler_kwargs_list: Optional[List[Dict[str, Any]]] = None,
         logger=None,
     ):
         """Initialize a ``VotingLearner`` object with the specified settings."""
         # initialize various attributes
         self._model = None
         self.voting = voting
-        self.label_dict = None
+        self.label_dict: Dict[LabelType, int] = {}
         self.logger = logger if logger else logging.getLogger(__name__)
         self.model_kwargs_list = [] if model_kwargs_list is None else model_kwargs_list
         self.sampler_list = [] if sampler_list is None else sampler_list
@@ -195,7 +205,7 @@ class VotingLearner(object):
             self.voting = None
 
     @property
-    def learners(self):
+    def learners(self) -> List[Learner]:
         """Return the underlying list of learners."""
         return self._learners
 
@@ -209,13 +219,13 @@ class VotingLearner(object):
         """Return meta-estimator model type (i.e., the class)."""
         return self._model_type
 
-    def _setup_underlying_learners(self, examples):
+    def _setup_underlying_learners(self, examples: FeatureSet) -> None:
         """Complete pre-training set up for learners."""
         for learner in self.learners:
             learner._create_label_dict(examples)
             learner._train_setup(examples)
 
-    def __getstate__(self):
+    def __getstate__(self) -> Dict[str, Any]:
         """
         Return attributes that should be pickled.
 
@@ -226,27 +236,29 @@ class VotingLearner(object):
             del attribute_dict["logger"]
         return attribute_dict
 
-    def save(self, learner_path):
+    def save(self, learner_path: PathOrStr) -> None:
         """
         Save the ``VotingLearner`` instance to a file.
 
         Parameters
         ----------
-        learner_path : str
+        learner_path : PathOrStr
             The path to save the ``VotingLearner`` instance to.
         """
         _save_learner_to_disk(self, learner_path)
 
     @classmethod
-    def from_file(cls, learner_path, logger=None):
+    def from_file(
+        cls, learner_path: PathOrStr, logger: Optional[logging.Logger] = None
+    ) -> "VotingLearner":
         """
         Load a saved ``VotingLearner`` instance from a file.
 
         Parameters
         ----------
-        learner_path : str
+        learner_path : PathOrStr
             The path to a saved ``VotingLearner`` instance file.
-        logger : logging object, optional
+        logger : Optional[logging.Logger]
             A logging object. If ``None`` is passed, get logger from ``__name__``.
             Defaults to ``None``.
 
@@ -260,18 +272,20 @@ class VotingLearner(object):
         logger = logger if logger else logging.getLogger(__name__)
 
         # call the learner loding utility function
-        return _load_learner_from_disk(cls, learner_path, logger)
+        obj = _load_learner_from_disk(cls, learner_path, logger)
+        assert isinstance(obj, cls)
+        return obj
 
     def train(
         self,
-        examples,
-        param_grid_list=None,
-        grid_search_folds=5,
-        grid_search=True,
-        grid_objective=None,
-        grid_jobs=None,
-        shuffle=False,
-    ):
+        examples: FeatureSet,
+        param_grid_list: Optional[List[Dict[str, Any]]] = None,
+        grid_search_folds: Union[int, FoldMapping] = 5,
+        grid_search: bool = True,
+        grid_objective: Optional[str] = None,
+        grid_jobs: Optional[int] = None,
+        shuffle: bool = False,
+    ) -> None:
         """
         Train the voting meta-estimator.
 
@@ -292,9 +306,9 @@ class VotingLearner(object):
 
         Parameters
         ----------
-        examples : skll.FeatureSet
+        examples : skll.data.FeatureSet
             The ``FeatureSet`` instance to use for training.
-        param_grid_list : list, optional
+        param_grid_list : Optional[List[Dict[str, Any]]]
             The list of parameter grids to search through for grid
             search, one for each underlying learner. The order of
             the dictionaries should correspond to the order in
@@ -302,25 +316,25 @@ class VotingLearner(object):
             ``VotingLearner`` was instantiated. If ``None``, the default
             parameter grids will be used for the underlying estimators.
             Defaults to ``None``.
-        grid_search_folds : int or dict, optional
+        grid_search_folds : Union[int, FoldMapping]
             The number of folds to use when doing the grid search
             for each of the underlying learners, or a mapping from
             example IDs to folds.
-            Defaults to 3.
-        grid_search : bool, optional
+            Defaults to 5.
+        grid_search : bool
             Should we use grid search when training each underlying learner?
             Defaults to ``True``.
-        grid_objective : str, optional
+        grid_objective : Optional[str]
             The name of the objective function to use when
             doing the grid search for each underlying learner.
             Must be specified if ``grid_search`` is ``True``.
             Defaults to ``None``.
-        grid_jobs : int, optional
+        grid_jobs : Optional[int]
             The number of jobs to run in parallel when doing the
             grid search for each underlying learner. If ``None`` or 0,
             the number of grid search folds will be used.
             Defaults to ``None``.
-        shuffle : bool, optional
+        shuffle : bool
             Shuffle examples (e.g., for grid search CV.)
             Defaults to ``False``.
         """
@@ -361,7 +375,8 @@ class VotingLearner(object):
         meta_learner = self.model_type(estimators, **model_kwargs)
 
         # get the training features in the right dictionary format
-        X_train = examples.vectorizer.inverse_transform(examples.features)
+        if isinstance(examples.vectorizer, DictVectorizer):
+            X_train = examples.vectorizer.inverse_transform(examples.features)
 
         # since label dictionaries are identical for all underlying
         # learners, save it into a easier to access attribute
@@ -371,11 +386,13 @@ class VotingLearner(object):
         # NOTE: technically, we could also use a `LabelEncoder` here but
         # that may not account for passing `pos_label` above when
         # instantiating the learners so we stick with the label dict
-        if self.learner_type == "classifier":
-            y_train = [self.label_dict[label] for label in examples.labels]
-        else:
-            # for regressors, the labels are just the labels
-            y_train = examples.labels
+        y_train: np.ndarray
+        if examples.labels is not None:
+            if self.learner_type == "classifier":
+                y_train = np.array([self.label_dict[label] for label in examples.labels])
+            else:
+                # for regressors, the labels are just the labels
+                y_train = examples.labels
 
         # now we need to fit the actual meta learner which will also fit
         # clones of the underlying pipelines;
@@ -388,12 +405,12 @@ class VotingLearner(object):
 
     def predict(
         self,
-        examples,
-        prediction_prefix=None,
-        append=False,
-        class_labels=True,
-        individual_predictions=False,
-    ):
+        examples: FeatureSet,
+        prediction_prefix: Optional[str] = None,
+        append: bool = False,
+        class_labels: bool = True,
+        individual_predictions: bool = False,
+    ) -> Tuple[np.ndarray, Optional[Dict[str, np.ndarray]]]:
         """
         Generate predictions with meta-estimator.
 
@@ -418,28 +435,28 @@ class VotingLearner(object):
 
         Parameters
         ----------
-        examples : skll.FeatureSet
+        examples : skll.data.FeatureSet
             The ``FeatureSet`` instance to predict labels for.
-        prediction_prefix : str, optional
+        prediction_prefix : Optional[str]
             If saving the predictions, this is the prefix that will be used for
             the filename. It will be followed by ``"_predictions.tsv"``
             Defaults to ``None``.
-        append : bool, optional
+        append : bool
             Should we append the current predictions to the file if it exists?
             Defaults to ``False``.
-        class_labels : bool, optional
+        class_labels : bool
             For classifier, should we convert class indices to their (str) labels
             for the returned array? Note that class labels are always written out
             to disk.
             Defaults to ``True``.
-        individual_predictions : bool, optional
+        individual_predictions : bool
             Return (and, optionally, write out) the predictions from each
             underlying learner.
             Defaults to ``False``.
 
         Returns
         -------
-        res : a 2-tuple
+        Tuple[numpy.ndarray, Optional[Dict[str, numpy.ndarray]]]
             The first element is the array of predictions returned by the
             meta-estimator and the second is an optional dictionary with the
             name of each underlying learner as the key and the array of its
@@ -449,7 +466,8 @@ class VotingLearner(object):
         example_ids = examples.ids
 
         # get the test set features in the right format
-        xtest = examples.vectorizer.inverse_transform(examples.features)
+        if isinstance(examples.vectorizer, DictVectorizer):
+            xtest = examples.vectorizer.inverse_transform(examples.features)
 
         # get all possible kinds of predictions from the meta-learner
         prediction_dict = get_predictions(self, xtest)
@@ -484,8 +502,8 @@ class VotingLearner(object):
                 to_write,
                 prediction_prefix,
                 self.learner_type,
+                self.learners[0].label_list,
                 append=append,
-                label_list=self.learners[0].label_list,
             )
 
         # get and write each underlying learner's predictions if asked for
@@ -517,44 +535,43 @@ class VotingLearner(object):
 
     def evaluate(
         self,
-        examples,
-        prediction_prefix=None,
-        append=False,
-        grid_objective=None,
-        individual_predictions=False,
-        output_metrics=[],
-    ):
+        examples: FeatureSet,
+        prediction_prefix: Optional[str] = None,
+        append: bool = False,
+        grid_objective: Optional[str] = None,
+        individual_predictions: bool = False,
+        output_metrics: List[str] = [],
+    ) -> EvaluateTaskResults:
         """
         Evaluate the meta-estimator on a given ``FeatureSet``.
 
         Parameters
         ----------
-        examples : skll.FeatureSet
+        examples : skll.data.FeatureSet
             The ``FeatureSet`` instance to evaluate the performance of the model on.
-        prediction_prefix : str, optional
+        prediction_prefix : Optional[str]
             If saving the predictions, this is the
             prefix that will be used for the filename.
             It will be followed by ``"_predictions.tsv"``
             Defaults to ``None``.
-        append : bool, optional
+        append : bool
             Should we append the current predictions to the file if
             it exists?
             Defaults to ``False``.
-        grid_objective : function, optional
-            The objective function that was used when doing
-            the grid search.
+        grid_objective : Optional[str]
+            The objective function used when doing the grid search.
             Defaults to ``None``.
-        individual_predictions : bool, optional
+        individual_predictions : bool
             Optionally, write out the predictions from each underlying learner.
             Defaults to ``False``.
-        output_metrics : list of str, optional
+        output_metrics : List[str]
             List of additional metric names to compute in
             addition to grid objective. Empty by default.
             Defaults to an empty list.
 
         Returns
         -------
-        res : 6-tuple
+        EvaluateTaskResults
             The confusion matrix, the overall accuracy, the per-label
             PRFs, the model parameters, the grid search objective
             function score, and the additional evaluation metrics, if any.
@@ -573,21 +590,22 @@ class VotingLearner(object):
         # but account for any unseen labels in the test set that may not
         # have occurred in the training data for the underlying learners
         # at all; then get acceptable metrics based on the type of labels we have
-        if self.learner_type == "classifier":
-            sorted_unique_labels = np.unique(examples.labels)
-            test_label_list = sorted_unique_labels.tolist()
-            train_and_test_label_dict = add_unseen_labels(self.label_dict, test_label_list)
-            ytest = np.array([train_and_test_label_dict[label] for label in examples.labels])
-            acceptable_metrics = get_acceptable_classification_metrics(sorted_unique_labels)
-        # for regressors we do not need to do anything special to the labels
-        else:
-            train_and_test_label_dict = None
-            ytest = examples.labels
-            acceptable_metrics = get_acceptable_regression_metrics()
+        if examples.labels is not None:
+            if self.learner_type == "classifier":
+                sorted_unique_labels = np.unique(examples.labels)
+                test_label_list = sorted_unique_labels.tolist()
+                train_and_test_label_dict = add_unseen_labels(self.label_dict, test_label_list)
+                ytest = np.array([train_and_test_label_dict[label] for label in examples.labels])
+                acceptable_metrics = get_acceptable_classification_metrics(sorted_unique_labels)
+            # for regressors we do not need to do anything special to the labels
+            else:
+                train_and_test_label_dict = None
+                ytest = examples.labels
+                acceptable_metrics = get_acceptable_regression_metrics()
 
         # check that all of the output metrics are acceptable
         unacceptable_metrics = set(output_metrics).difference(acceptable_metrics)
-        if unacceptable_metrics:
+        if unacceptable_metrics and examples.labels is not None:
             label_type = examples.labels.dtype.type
             raise ValueError(
                 f"The following metrics are not valid "
@@ -622,23 +640,23 @@ class VotingLearner(object):
 
     def cross_validate(
         self,
-        examples,
-        stratified=True,
-        cv_folds=10,
-        cv_seed=123456789,
-        grid_search=True,
-        grid_search_folds=5,
-        grid_jobs=None,
-        grid_objective=None,
-        output_metrics=[],
-        prediction_prefix=None,
-        param_grid_list=None,
-        shuffle=False,
-        save_cv_folds=True,
-        save_cv_models=False,
-        individual_predictions=False,
-        use_custom_folds_for_grid_search=True,
-    ):
+        examples: FeatureSet,
+        stratified: bool = True,
+        cv_folds: Union[int, FoldMapping] = 10,
+        cv_seed: int = 123456789,
+        grid_search: bool = True,
+        grid_search_folds: Union[int, FoldMapping] = 5,
+        grid_jobs: Optional[int] = None,
+        grid_objective: Optional[str] = None,
+        output_metrics: List[str] = [],
+        prediction_prefix: Optional[str] = None,
+        param_grid_list: Optional[List[Dict[str, Any]]] = None,
+        shuffle: bool = False,
+        save_cv_folds: bool = True,
+        save_cv_models: bool = False,
+        individual_predictions: bool = False,
+        use_custom_folds_for_grid_search: bool = True,
+    ) -> VotingCrossValidateTaskResults:
         """
         Cross-validate the meta-estimator on the given examples.
 
@@ -652,91 +670,88 @@ class VotingLearner(object):
 
         Parameters
         ----------
-        examples : skll.FeatureSet
+        examples : skll.data.FeatureSet
             The ``FeatureSet`` instance to cross-validate learner performance on.
-        stratified : bool, optional
+        stratified : bool
             Should we stratify the folds to ensure an even
             distribution of labels for each fold?
             Defaults to ``True``.
-        cv_folds : int or dict, optional
+        cv_folds : Union[int, FoldMapping]
             The number of folds to use for cross-validation, or
             a mapping from example IDs to folds.
             Defaults to 10.
-        cv_seed: int, optional
+        cv_seed: int
             The value for seeding the random number generator
             used to create the random folds. Note that this
             seed is *only* used if either ``grid_search`` or
             ``shuffle`` are set to ``True``.
             Defaults to 123456789.
-        grid_search : bool, optional
+        grid_search : bool
             Should we do grid search when training each fold?
             Note: This will make this take *much* longer.
             Defaults to ``False``.
-        grid_search_folds : int or dict, optional
-            The number of folds to use when doing the
-            grid search, or a mapping from
-            example IDs to folds.
-            Defaults to 3.
-        grid_jobs : int, optional
-            The number of jobs to run in parallel when doing the
-            grid search. If ``None`` or 0, the number of
-            grid search folds will be used.
+        grid_search_folds : Union[int, FoldMapping]
+            The number of folds to use when doing the grid search, or a mapping
+            from example IDs to folds.
+            Defaults to 5.
+        grid_jobs : Optional[int]
+            The number of jobs to run in parallel when doing the grid search.
+            If ``None`` or 0, the number of grid search folds will be used.
             Defaults to ``None``.
-        grid_objective : str, optional
-            The name of the objective function to use when
-            doing the grid search. Must be specified if
-            ``grid_search`` is ``True``.
+        grid_objective : Optional[str]
+            The name of the objective function to use when doing the grid search.
+            Must be specified if ``grid_search`` is ``True``.
             Defaults to ``None``.
-        output_metrics : list of str, optional
-            List of additional metric names to compute in
-            addition to the metric used for grid search. Empty
-            by default.
+        output_metrics : Optional[List[str]]
+            List of additional metric names to compute in addition to the metric
+            used for grid search.
             Defaults to an empty list.
-        prediction_prefix : str, optional
-            If saving the predictions, this is the
-            prefix that will be used for the filename.
-            It will be followed by ``"_predictions.tsv"``
+        prediction_prefix : Optional[str]
+            If saving the predictions, this is the prefix that will be used for
+            the filename. It will be followed by ``"_predictions.tsv"``
             Defaults to ``None``.
-        param_grid_list : list, optional
+        param_grid_list : Optional[List[Dict[str, Any]]]
             The list of parameters grid to search through for grid
             search, one for each underlying learner. The order of
             the dictionaries should correspond to the order If ``None``,
             the default parameter grids will be used for the underlying
             estimators.
             Defaults to ``None``.
-        shuffle : bool, optional
+        shuffle : bool
             Shuffle examples before splitting into folds for CV.
             Defaults to ``False``.
-        save_cv_folds : bool, optional
+        save_cv_folds : bool
              Whether to save the cv fold ids or not?
              Defaults to ``True``.
-        save_cv_models : bool, optional
+        save_cv_models : bool
             Whether to save the cv models or not?
             Defaults to ``False``.
-        individual_predictions : bool, optional
-            Write out the cross-validated predictions from each
-            underlying learner as well.
+        individual_predictions : bool
+            Write out the cross-validated predictions from each underlying
+            learner as well.
             Defaults to ``False``.
-        use_custom_folds_for_grid_search : bool, optional
-            If ``cv_folds`` is a custom dictionary, but
-            ``grid_search_folds`` is not, perhaps due to user
-            oversight, should the same custom dictionary
-            automatically be used for the inner grid-search
+        use_custom_folds_for_grid_search : bool
+            If ``cv_folds`` is a custom dictionary, but ``grid_search_folds``
+            is not, perhaps due to user oversight, should the same custom
+            dictionary automatically be used for the inner grid-search
             cross-validation?
             Defaults to ``True``.
 
         Returns
         -------
-        results : list of 6-tuples
-            The confusion matrix, overall accuracy, per-label PRFs, model
-            parameters, objective function score, and evaluation metrics (if any)
-            for each fold.
-        skll_fold_ids : dict
-            A dictionary containing the test-fold number for each id
-            if ``save_cv_folds`` is ``True``, otherwise ``None``.
-        models : list of skll.learner.VotingLearner
-            A list of skll.learner.VotingLearner instances, one for each fold
-            if ``save_cv_models`` is ``True``, otherwise ``None``.
+        CrossValidateTaskResults
+           A 3-tuple containing the following:
+
+            List[EvaluateTaskResults]: the confusion matrix, overall accuracy,
+            per-label PRFs, model parameters, objective function score, and
+            evaluation metrics (if any) for each fold.
+
+            Optional[FoldMapping]: dictionary containing the test-fold number
+            for each id if ``save_cv_folds`` is ``True``, otherwise ``None``.
+
+            Optional[List[skll.learner.voting.VotingLearner]]: list of voting
+            learners, one for each fold if ``save_cv_models`` is ``True``,
+            otherwise ``None``.
 
         Raises
         ------
@@ -816,72 +831,75 @@ class VotingLearner(object):
         # handle each fold separately & accumulate the predictions and results
         results = []
         append_predictions = False
-        models = [] if save_cv_models else None
-        skll_fold_ids = {} if save_cv_folds else None
-        for fold_num, (train_indices, test_indices) in enumerate(
-            kfold.split(examples.features, examples.labels, cv_groups)
-        ):
-            # Train model
-            self._model = None  # prevent feature vectorizer from being reset.
-            train_set = FeatureSet(
-                examples.name,
-                examples.ids[train_indices],
-                labels=examples.labels[train_indices],
-                features=examples.features[train_indices],
-                vectorizer=examples.vectorizer,
-            )
-
-            self.train(
-                train_set,
-                param_grid_list=param_grid_list,
-                grid_search_folds=grid_search_folds,
-                grid_search=grid_search,
-                grid_objective=grid_objective,
-                grid_jobs=grid_jobs,
-                shuffle=grid_search,
-            )
-
-            if save_cv_models:
-                models.append(copy.deepcopy(self))
-
-            # evaluate the voting meta-estimator on the test fold
-            test_tuple = FeatureSet(
-                examples.name,
-                examples.ids[test_indices],
-                labels=examples.labels[test_indices],
-                features=examples.features[test_indices],
-                vectorizer=examples.vectorizer,
-            )
-
-            # save the results
-            results.append(
-                self.evaluate(
-                    test_tuple,
-                    prediction_prefix=prediction_prefix,
-                    append=append_predictions,
-                    grid_objective=grid_objective,
-                    output_metrics=output_metrics,
-                    individual_predictions=individual_predictions,
+        saved_models: List["VotingLearner"] = []
+        saved_skll_fold_ids: FoldMapping = {}
+        if examples.features is not None and examples.labels is not None:
+            for fold_num, (train_indices, test_indices) in enumerate(
+                kfold.split(examples.features, examples.labels, cv_groups)
+            ):
+                # Train model
+                self._model = None  # prevent feature vectorizer from being reset.
+                train_set = FeatureSet(
+                    examples.name,
+                    examples.ids[train_indices],
+                    labels=examples.labels[train_indices],
+                    features=examples.features[train_indices],
+                    vectorizer=examples.vectorizer,
                 )
-            )
-            append_predictions = True
 
-            # save the fold number for each test ID if we were asked to
-            if save_cv_folds:
-                for index in test_indices:
-                    skll_fold_ids[examples.ids[index]] = str(fold_num)
+                self.train(
+                    train_set,
+                    param_grid_list=param_grid_list,
+                    grid_search_folds=grid_search_folds,
+                    grid_search=grid_search,
+                    grid_objective=grid_objective,
+                    grid_jobs=grid_jobs,
+                    shuffle=grid_search,
+                )
+
+                if save_cv_models:
+                    saved_models.append(copy.deepcopy(self))
+
+                # evaluate the voting meta-estimator on the test fold
+                test_tuple = FeatureSet(
+                    examples.name,
+                    examples.ids[test_indices],
+                    labels=examples.labels[test_indices],
+                    features=examples.features[test_indices],
+                    vectorizer=examples.vectorizer,
+                )
+
+                # save the results
+                results.append(
+                    self.evaluate(
+                        test_tuple,
+                        prediction_prefix=prediction_prefix,
+                        append=append_predictions,
+                        grid_objective=grid_objective,
+                        output_metrics=output_metrics,
+                        individual_predictions=individual_predictions,
+                    )
+                )
+                append_predictions = True
+
+                # save the fold number for each test ID if we were asked to
+                if save_cv_folds:
+                    for index in test_indices:
+                        saved_skll_fold_ids[examples.ids[index]] = str(fold_num)
 
         # return list of results/outputs for all folds
+        models = saved_models if save_cv_models else None
+        skll_fold_ids = saved_skll_fold_ids if save_cv_folds else None
         return (results, skll_fold_ids, models)
 
     def learning_curve(
         self,
-        examples,
-        metric,
-        cv_folds=10,
-        train_sizes=np.linspace(0.1, 1.0, 5),
-        override_minimum=False,
-    ):
+        examples: FeatureSet,
+        metric: str,
+        cv_folds: Union[int, FoldMapping] = 10,
+        train_sizes: LearningCurveSizes = np.linspace(0.1, 1.0, 5),
+        override_minimum: bool = False,
+    ) -> Tuple[List[float], List[float], List[int]]:
         """
         Generate learning curves for the meta-estimator.
 
@@ -891,17 +909,17 @@ class VotingLearner(object):
 
         Parameters
         ----------
-        examples : skll.FeatureSet
+        examples : skll.data.FeatureSet
             The ``FeatureSet`` instance to generate the learning curve on.
-        cv_folds : int or dict, optional
-            The number of folds to use for cross-validation, or
-            a mapping from example IDs to folds.
-            Defaults to 10.
         metric : str
             The name of the metric function to use
             when computing the train and test scores
             for the learning curve.
-        train_sizes : list of float or int, optional
+        cv_folds : Union[int, FoldMapping]
+            The number of folds to use for cross-validation, or
+            a mapping from example IDs to folds.
+            Defaults to 10.
+        train_sizes : LearningCurveSizes
             Relative or absolute numbers of training examples
             that will be used to generate the learning curve.
             If the type is float, it is regarded as a fraction
@@ -913,7 +931,7 @@ class VotingLearner(object):
             samples usually have to be big enough to contain
             at least one sample from each class.
             Defaults to  ``np.linspace(0.1, 1.0, 5)``.
-        override_minimum : bool, optional
+        override_minimum : bool
             Learning curves can be unreliable for very small sizes
             esp. for > 2 labels. If this option is set to ``True``, the
             learning curve would be generated even if the number
