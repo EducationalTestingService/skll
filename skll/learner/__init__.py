@@ -67,9 +67,6 @@ from skll.data import FeatureSet
 from skll.data.dict_vectorizer import DictVectorizer
 from skll.data.readers import safe_float
 from skll.metrics import _SCORERS
-
-# import types when type checking but not otherwise to avoid circular imports
-# if TYPE_CHECKING:
 from skll.types import (
     CrossValidateTaskResults,
     EvaluateTaskResults,
@@ -1535,68 +1532,64 @@ class Learner(object):
 
         Parameters
         ----------
-        examples : skll.FeatureSet
+        examples : skll.data.FeatureSet
             The ``FeatureSet`` instance to cross-validate learner performance on.
-        stratified : bool, optional
+        stratified : bool
             Should we stratify the folds to ensure an even
             distribution of labels for each fold?
             Defaults to ``True``.
-        cv_folds : int or dict, optional
+        cv_folds : Union[int, FoldMapping]
             The number of folds to use for cross-validation, or
             a mapping from example IDs to folds.
             Defaults to 10.
-        cv_seed: int, optional
+        cv_seed: int
             The value for seeding the random number generator
             used to create the random folds. Note that this
             seed is *only* used if either ``grid_search`` or
             ``shuffle`` are set to ``True``.
             Defaults to 123456789.
-        grid_search : bool, optional
+        grid_search : bool
             Should we do grid search when training each fold?
             Note: This will make this take *much* longer.
             Defaults to ``False``.
-        grid_search_folds : int or dict, optional
+        grid_search_folds : Union[int, FoldMapping]
             The number of folds to use when doing the
-            grid search, or a mapping from
-            example IDs to folds.
+            grid search, or a mapping from example IDs to folds.
             Defaults to 3.
-        grid_jobs : int, optional
+        grid_jobs : Optional[int]
             The number of jobs to run in parallel when doing the
             grid search. If ``None`` or 0, the number of
             grid search folds will be used.
             Defaults to ``None``.
-        grid_objective : str, optional
+        grid_objective : Optional[str]
             The name of the objective function to use when
             doing the grid search. Must be specified if
             ``grid_search`` is ``True``.
             Defaults to ``None``.
-        output_metrics : list of str, optional
+        output_metrics : List[str]
             List of additional metric names to compute in
-            addition to the metric used for grid search. Empty
-            by default.
-            Defaults to an empty list.
-        prediction_prefix : str, optional
+            addition to the metric used for grid search. Empty by default.
+        prediction_prefix : Optional[str]
             If saving the predictions, this is the
             prefix that will be used for the filename.
             It will be followed by ``"_predictions.tsv"``
             Defaults to ``None``.
-        param_grid : dict, optional
+        param_grid : Optional[Dict[str, Any]]
             The parameter grid to search.
             Defaults to ``None``.
-        shuffle : bool, optional
+        shuffle : bool
             Shuffle examples before splitting into folds for CV.
             Defaults to ``False``.
-        save_cv_folds : bool, optional
+        save_cv_folds : bool
              Whether to save the cv fold ids or not?
              Defaults to ``True``.
-        save_cv_models : bool, optional
+        save_cv_models : bool
             Whether to save the cv models or not?
             Defaults to ``False``.
-        use_custom_folds_for_grid_search : bool, optional
-            If ``cv_folds`` is a custom dictionary, but
-            ``grid_search_folds`` is not, perhaps due to user
-            oversight, should the same custom dictionary
-            automatically be used for the inner grid-search
+        use_custom_folds_for_grid_search : bool
+            If ``cv_folds`` is a custom dictionary, but ``grid_search_folds``
+            is not, perhaps due to user oversight, should the same custom
+            dictionary automatically be used for the inner grid-search
             cross-validation?
             Defaults to ``True``.
 

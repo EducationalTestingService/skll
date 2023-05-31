@@ -52,6 +52,7 @@ from skll.data import FeatureSet
 from skll.metrics import _CUSTOM_METRICS, use_score_func
 from skll.types import (
     ComputeEvalMetricsResults,
+    ConfusionMatrix,
     FeaturesetIterator,
     FoldMapping,
     IdType,
@@ -426,7 +427,7 @@ def compute_evaluation_metrics(
         # note that we are using the class indices here
         # and not the actual class labels themselves
         num_labels = len(label_dict)
-        conf_mat: List[List[int]] = confusion_matrix(
+        conf_mat: ConfusionMatrix = confusion_matrix(
             labels, predictions, labels=list(range(num_labels))
         ).tolist()
         # Calculate metrics
@@ -889,12 +890,12 @@ def rescaled(cls):
 
         Returns
         -------
-        args : list
+        List[str]
             A list of parameter names for the class's init method.
 
         Raises
         ------
-        RunTimeError
+        RuntimeError
             If `varargs` exist in the scikit-learn estimator.
         """
         # initialize the empty list of parameter names
@@ -940,7 +941,7 @@ def rescaled(cls):
         return args
 
     @wraps(cls.__init__)
-    def init(self, constrain=True, rescale=True, **kwargs):  # noqa: D417
+    def init(self, constrain: bool = True, rescale: bool = True, **kwargs):  # noqa: D417
         """
         Initialize things in the right order.
 
