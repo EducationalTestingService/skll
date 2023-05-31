@@ -743,7 +743,7 @@ class Learner(object):
             for val in flattened_features:
                 if isinstance(val, str):
                     raise TypeError(
-                        "You have feature values that are strings.  " "Convert them to floats."
+                        "You have feature values that are strings. Convert them to floats."
                     )
 
     def _check_max_feature_value(self, feat_array: np.ndarray):
@@ -1215,7 +1215,6 @@ class Learner(object):
         output_metrics : List[str]
             List of additional metric names to compute in addition to grid
             objective. Empty by default.
-            Defaults to an empty list.
 
         Returns
         -------
