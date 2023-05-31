@@ -10,6 +10,7 @@ import re
 import warnings
 from functools import partial
 from os.path import sep
+from typing import Optional
 
 orig_showwarning = warnings.showwarning
 SKLEARN_WARNINGS_RE = re.compile(re.escape(f"{sep}sklearn{sep}"))
@@ -19,23 +20,26 @@ def send_sklearn_warnings_to_logger(
     logger, message, category, filename, lineno, file=None, line=None
 ):
     """
-    Return method that sends `sklearn`-specific warnings to a logger
-    that can be used to replace warnings.showwarning (via `partial`,
+    Return method that sends `sklearn`-specific warnings to a logger.
+
+    This method that can be used to replace warnings.showwarning (via `partial`,
     specifying a `logger` instance).
     """
-
     if SKLEARN_WARNINGS_RE.search(filename):
         logger.warning(f"{filename}:{lineno}: {category.__name__}:{message}")
     else:
         orig_showwarning(message, category, filename, lineno, file=file, line=line)
 
 
-def get_skll_logger(name, filepath=None, log_level=logging.INFO):
+def get_skll_logger(
+    name: str, filepath: Optional[str] = None, log_level: int = logging.INFO
+) -> logging.Logger:
     """
-    Create and return logger instances that are appropriate for use
-    in SKLL code, e.g., that they can log to both STDERR as well
-    as a file. This function will try to reuse any previously created
-    logger based on the given name and filepath.
+    Create and return logger instances appropriate for use in SKLL code.
+
+    These logger instances can log to both STDERR as well as a file. This
+    function will try to reuse any previously created logger based on the
+    given name and filepath.
 
     Parameters
     ----------
@@ -55,7 +59,6 @@ def get_skll_logger(name, filepath=None, log_level=logging.INFO):
     logger: logging.Logger
         A ``Logger`` instance.
     """
-
     # first get the logger instance associated with the
     # given name if one already exists
     logger = logging.getLogger(name)
@@ -95,7 +98,6 @@ def close_and_remove_logger_handlers(logger):
     -------
     NoneType
     """
-
     for handler in logger.handlers[:]:
         handler.close()
         logger.removeHandler(handler)
