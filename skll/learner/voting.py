@@ -689,7 +689,7 @@ class VotingLearner(object):
         grid_search : bool
             Should we do grid search when training each fold?
             Note: This will make this take *much* longer.
-            Defaults to ``False``.
+            Defaults to ``True``.
         grid_search_folds : Union[int, FoldMapping]
             The number of folds to use when doing the grid search, or a mapping
             from example IDs to folds.
@@ -941,13 +941,12 @@ class VotingLearner(object):
 
         Returns
         -------
-        train_scores : list of float
+        train_scores : List[float]
             The scores for the training set.
-        test_scores : list of float
+        test_scores : List[float]
             The scores on the test set.
-        num_examples : list of int
-            The numbers of training examples used to generate
-            the curve
+        num_examples : List[int]
+            The numbers of training examples used to generate the curve.
 
         Raises
         ------
