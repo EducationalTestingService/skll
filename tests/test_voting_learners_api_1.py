@@ -106,7 +106,7 @@ def check_initialize(
 
     # check that we have the right attribute values
     eq_(vl.learner_type, learner_type)
-    eq_(vl.label_dict, None)
+    eq_(vl.label_dict, {})
 
     # check that voting type is properly set
     if learner_type == "classifier":

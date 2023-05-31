@@ -1026,7 +1026,6 @@ and setting it to ``True`` will generate a warning and be ignored.
 .. _grid_search_folds:
 
 grid_search_folds *(Optional)*
-
 """"""""""""""""""""""""""""""
 
 The number of folds to use for grid search. Defaults to 5.

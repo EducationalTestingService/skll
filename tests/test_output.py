@@ -1267,3 +1267,12 @@ def check_get_feature_names_out(selection):
 def test_get_feature_names_out():
     yield check_get_feature_names_out, True
     yield check_get_feature_names_out, False
+
+
+@raises(ValueError)
+def test_get_feature_names_out_for_featurehasher():
+    """Test that `get_feature_names_out()` fails for FeatureHasher."""
+    fs, _, _ = make_regression_data(num_examples=20, num_features=4, use_feature_hashing=True)
+    learner = Learner("SVR")
+    learner.train(fs, grid_search=False)
+    learner.get_feature_names_out()

@@ -8,6 +8,8 @@ Utility classes and functions for SKLL learners.
 :organization: ETS
 """
 
+from __future__ import annotations
+
 import inspect
 import logging
 import sys
@@ -16,6 +18,18 @@ from csv import DictWriter, excel_tab
 from functools import wraps
 from importlib import import_module
 from pathlib import Path
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Set,
+    Tuple,
+    Type,
+    Union,
+)
 
 import joblib
 import numpy as np
@@ -36,6 +50,17 @@ from sklearn.model_selection import (
 
 from skll.data import FeatureSet
 from skll.metrics import _CUSTOM_METRICS, use_score_func
+from skll.types import (
+    ComputeEvalMetricsResults,
+    ConfusionMatrix,
+    FeaturesetIterator,
+    FoldMapping,
+    IdType,
+    IndexIterator,
+    LabelType,
+    PathOrStr,
+    SparseFeatureMatrix,
+)
 from skll.utils.constants import (
     CLASSIFICATION_ONLY_METRICS,
     CORRELATION_METRICS,
@@ -44,6 +69,12 @@ from skll.utils.constants import (
     WEIGHTED_KAPPA_METRICS,
 )
 from skll.version import VERSION
+
+# import classes that we only need for type checking and not
+# otherwise since they would cause circular import issues
+if TYPE_CHECKING:
+    import skll.learner
+    import skll.learner.voting
 
 
 class Densifier(BaseEstimator, TransformerMixin):
@@ -80,11 +111,16 @@ class FilteredLeaveOneGroupOut(LeaveOneGroupOut):
     ----------
     keep : set of str
         A set of IDs to keep.
-    example_ids : list of str, of length n_samples
+    example_ids : numpy.ndarray, of length n_samples
         A list of example IDs.
     """
 
-    def __init__(self, keep, example_ids, logger=None):
+    def __init__(
+        self,
+        keep: Iterable[IdType],
+        example_ids: np.ndarray,
+        logger: Optional[logging.Logger] = None,
+    ):
         """Initialize the model."""
         super(FilteredLeaveOneGroupOut, self).__init__()
         self.keep = keep
@@ -92,26 +128,28 @@ class FilteredLeaveOneGroupOut(LeaveOneGroupOut):
         self._warned = False
         self.logger = logger if logger else logging.getLogger(__name__)
 
-    def split(self, X, y, groups):
+    def split(
+        self, X: SparseFeatureMatrix, y: np.ndarray, groups: Optional[List[str]]
+    ) -> IndexIterator:
         """
         Generate indices to split data into training and test set.
 
         Parameters
         ----------
-        X : array-like, with shape (n_samples, n_features)
+        X : numpy.ndarray, with shape (n_samples, n_features)
             Training data, where n_samples is the number of samples
             and n_features is the number of features.
-        y : array-like, of length n_samples
+        y : numpy.ndarray, of length n_samples
             The target variable for supervised learning problems.
-        groups : array-like, with shape (n_samples,)
+        groups : List[str]
             Group labels for the samples used while splitting the dataset into
             train/test set.
 
         Yields
         ------
-        train_index : np.array
+        train_index : numpy.ndarray
             The training set indices for that split.
-        test_index : np.array
+        test_index : numpy.ndarray
             The testing set indices for that split.
         """
         for train_index, test_index in super(FilteredLeaveOneGroupOut, self).split(X, y, groups):
@@ -143,10 +181,10 @@ class SelectByMinCount(SelectKBest):
         Defaults to 1.
     """
 
-    def __init__(self, min_count=1):
+    def __init__(self, min_count: int = 1):
         """Initialize the model."""
         self.min_count = min_count
-        self.scores_ = None
+        self.scores_: Optional[np.ndarray] = None
 
     def fit(self, X, y=None):
         """
@@ -154,7 +192,7 @@ class SelectByMinCount(SelectKBest):
 
         Parameters
         ----------
-        X : array-like, with shape (n_samples, n_features)
+        X : numpy.ndarray, with shape (n_samples, n_features)
             The training data to fit.
         y : Ignored
             This is ignored.
@@ -187,7 +225,7 @@ class SelectByMinCount(SelectKBest):
 
         Returns
         -------
-        mask : np.array
+        mask : numpy.ndarray
             The mask with features to keep set to True.
         """
         mask = np.zeros(self.scores_.shape, dtype=bool)
@@ -195,20 +233,22 @@ class SelectByMinCount(SelectKBest):
         return mask
 
 
-def add_unseen_labels(train_label_dict, test_label_list):
+def add_unseen_labels(
+    train_label_dict: Dict[LabelType, int], test_label_list: List[LabelType]
+) -> Dict[LabelType, int]:
     """
     Merge test set labels that are not seen in the training data with seen ones.
 
     Parameters
     ----------
-    train_label_dict : dict
+    train_label_dict : Dict[LabelType, int]
         Dictionary mapping training set class labels to class indices.
-    test_label_list : list
+    test_label_list : List[LabelType]
         List containing labels in the test set.
 
     Returns
     -------
-    train_and_test_label_dict : dict
+    Dict[LabelType, int]
         Dictionary mapping merged labels from both the training and test sets
         to indices.
     """
@@ -231,15 +271,15 @@ def add_unseen_labels(train_label_dict, test_label_list):
 
 
 def compute_evaluation_metrics(
-    metrics,
-    labels,
-    predictions,
-    model_type,
-    label_dict=None,
-    grid_objective=None,
-    probability=False,
-    logger=None,
-):
+    metrics: List[str],
+    labels: np.ndarray,
+    predictions: np.ndarray,
+    model_type: str,
+    label_dict: Optional[Dict[LabelType, int]] = None,
+    grid_objective: Optional[str] = None,
+    probability: bool = False,
+    logger: Optional[logging.Logger] = None,
+) -> ComputeEvalMetricsResults:
     """
     Compute given evaluation metrics.
 
@@ -248,35 +288,35 @@ def compute_evaluation_metrics(
 
     Parameters
     ----------
-    metrics : list of str
+    metrics : List[str]
         List of metrics to compute.
-    labels : array-like
+    labels : numpy.ndarray
         True labels to be used for computing the metrics.
-    predictions : array-like
+    predictions : numpy.ndarray
         The predictions to be used for computing the metrics.
     model_type : str
         One of "classifier" or "regressor".
-    label_dict : dict, optional
+    label_dict : Optional[Dict[LabelType, int]]
         Dictionary mapping class labels to indices for classification.
         Defaults to ``None``.
-    grid_objective : str, optional
+    grid_objective : Optional[str]
         The objective used for tuning the hyper-parameters of the model
         that generated the predictions. If ``None``, it means that no
         grid search was done.
         Defaults to ``None``.
-    probability : bool, optional
+    probability : bool
         Does the model output class probabilities?
         Defaults to ``False``.
-    logger : logging.Logger, optional
+    logger : Optional[logging.Logger]
         A logger instance to use for logging messages and warnings.
         If ``None``, a new one is created.
         Defaults to ``None``.
 
     Returns
     -------
-    res : 5-tuple
-        The confusion matrix, the overall accuracy, the per-label
-        PRFs, the grid search objective function score, and the
+    ComputeEvalMetricsResults
+        5-tuple including the confusion matrix, the overall accuracy, the
+        per-label PRFs, the grid search objective function score, and the
         additional evaluation metrics, if any. For regressors, the
         first two elements are ``None``.
     """
@@ -295,7 +335,7 @@ def compute_evaluation_metrics(
         metrics = [metric for metric in metrics if metric != grid_objective]
 
     # initialize a dictionary that will hold all of the metric scores
-    metric_scores = {metric: None for metric in metrics}
+    metric_scores: Dict[str, Optional[float]] = {metric: None for metric in metrics}
 
     # if we are doing classification and are a probablistic
     # learner or a soft-voting meta learner, then `yhat` are
@@ -318,10 +358,13 @@ def compute_evaluation_metrics(
         if not metric:
             continue
 
+        # declare types
+        preds_for_metric: Optional[np.ndarray]
+
         # CASE 1: in probability mode for classification which means we
         # need to either use the probabilities directly or infer the labels
         # from them depending on the metric
-        if probability:
+        if probability and label_dict and class_probs is not None:
             # there are three possible cases here:
             # (a) if we are using a correlation metric or
             #     `average_precision` or `roc_auc` in a binary
@@ -366,42 +409,58 @@ def compute_evaluation_metrics(
         objective_score = metric_scores[grid_objective]
         del additional_scores[grid_objective]
 
+    # declare the type for the results
+    res: ComputeEvalMetricsResults
+
     # compute some basic statistics for regressors
     if model_type == "regressor":
-        result_dict = {"descriptive": defaultdict(dict)}
+        regressor_result_dict: Dict[LabelType, Any] = {"descriptive": defaultdict(dict)}
         for table_label, y in zip(["actual", "predicted"], [labels, predictions]):
-            result_dict["descriptive"][table_label]["min"] = min(y)
-            result_dict["descriptive"][table_label]["max"] = max(y)
-            result_dict["descriptive"][table_label]["avg"] = np.mean(y)
-            result_dict["descriptive"][table_label]["std"] = np.std(y)
-        result_dict["pearson"] = use_score_func("pearson", labels, predictions)
-        res = (None, None, result_dict, objective_score, additional_scores)
-    else:
+            regressor_result_dict["descriptive"][table_label]["min"] = min(y)
+            regressor_result_dict["descriptive"][table_label]["max"] = max(y)
+            regressor_result_dict["descriptive"][table_label]["avg"] = np.mean(y)
+            regressor_result_dict["descriptive"][table_label]["std"] = np.std(y)
+        regressor_result_dict["pearson"] = use_score_func("pearson", labels, predictions)
+        res = (None, None, regressor_result_dict, objective_score, additional_scores)
+    elif label_dict:
         # compute the confusion matrix and precision/recall/f1
         # note that we are using the class indices here
         # and not the actual class labels themselves
         num_labels = len(label_dict)
-        conf_mat = confusion_matrix(labels, predictions, labels=list(range(num_labels)))
+        conf_mat: ConfusionMatrix = confusion_matrix(
+            labels, predictions, labels=list(range(num_labels))
+        ).tolist()
         # Calculate metrics
-        overall_accuracy = accuracy_score(labels, predictions)
+        overall_accuracy: float = accuracy_score(labels, predictions)
         result_matrix = precision_recall_fscore_support(
             labels, predictions, labels=list(range(num_labels)), average=None
         )
 
         # Store results
-        result_dict = defaultdict(dict)
+        classifier_result_dict: Dict[LabelType, Any] = defaultdict(dict)
         for actual_label in sorted(label_dict):
             col = label_dict[actual_label]
-            result_dict[actual_label]["Precision"] = result_matrix[0][col]
-            result_dict[actual_label]["Recall"] = result_matrix[1][col]
-            result_dict[actual_label]["F-measure"] = result_matrix[2][col]
+            classifier_result_dict[actual_label]["Precision"] = result_matrix[0][col]
+            classifier_result_dict[actual_label]["Recall"] = result_matrix[1][col]
+            classifier_result_dict[actual_label]["F-measure"] = result_matrix[2][col]
 
-        res = (conf_mat.tolist(), overall_accuracy, result_dict, objective_score, additional_scores)
+        res = (
+            conf_mat,
+            overall_accuracy,
+            classifier_result_dict,
+            objective_score,
+            additional_scores,
+        )
 
     return res
 
 
-def compute_num_folds_from_example_counts(cv_folds, labels, model_type, logger=None):
+def compute_num_folds_from_example_counts(
+    cv_folds: int,
+    labels: Optional[np.ndarray],
+    model_type: str,
+    logger: Optional[logging.Logger] = None,
+) -> int:
     """
     Calculate number of cross-validation folds, based on number of examples per label.
 
@@ -409,18 +468,18 @@ def compute_num_folds_from_example_counts(cv_folds, labels, model_type, logger=N
     ----------
     cv_folds : int
         The number of cross-validation folds.
-    labels : list
+    labels : numpy.ndarray
         The example labels.
     model_type : str
         One of "classifier" or "regressor".
-    logger : logging.Logger, optional
+    logger : Optional[logging.Logger]
         A logger instance to use for logging messages and warnings.
         If ``None``, a new one is created.
         Defaults to ``None``.
 
     Returns
     -------
-    cv_folds : int
+    int
         The number of folds to use, based on the number of examples
         for each label.
 
@@ -430,6 +489,9 @@ def compute_num_folds_from_example_counts(cv_folds, labels, model_type, logger=N
         If ``cv_folds`` is not an integer or if the training set has
         fewer than 2 examples associated with a label (for classification).
     """
+    # get a logger if not provided
+    logger = logger if logger else logging.getLogger(__name__)
+
     try:
         assert isinstance(cv_folds, int)
     except AssertionError:
@@ -454,7 +516,7 @@ def compute_num_folds_from_example_counts(cv_folds, labels, model_type, logger=N
     return cv_folds
 
 
-def contiguous_ints_or_floats(numbers):
+def contiguous_ints_or_floats(numbers: np.ndarray) -> bool:
     """
     Check for continuity in the given list of numbers.
 
@@ -465,20 +527,20 @@ def contiguous_ints_or_floats(numbers):
 
     Parameters
     ----------
-    numbers : array-like of ints or floats
+    numbers : numpy.ndarray
         The numbers we want to check.
 
     Returns
     -------
-    answer : bool
-        True if the numbers are contiguous integers
-        or contiguous integer-like floats (1.0, 2.0, etc.)
+    bool
+        ``True`` if the numbers are contiguous integers
+        or contiguous integer-like floats (1.0, 2.0, etc.),
+        ``False`` otherwise.
 
     Raises
     ------
     TypeError
-        If ``numbers`` does not contain integers or floating
-        point values.
+        If ``numbers`` does not contain integers or floating point values.
     ValueError
         If ``numbers`` is empty.
     """
@@ -500,11 +562,12 @@ def contiguous_ints_or_floats(numbers):
     except TypeError:
         raise TypeError("Input should only contain numbers.")
 
-    # we need both conditions to be true
-    return ints_or_int_like_floats and contiguous
+    # we need both conditions to be true and we want to return
+    # a regular Python `bool`, not a `numpy.bool_`
+    return bool(ints_or_int_like_floats and contiguous)
 
 
-def get_acceptable_classification_metrics(label_array):
+def get_acceptable_classification_metrics(label_array: np.ndarray) -> Set[str]:
     """
     Return acceptable metrics given the unique set of labels being classified.
 
@@ -517,7 +580,7 @@ def get_acceptable_classification_metrics(label_array):
 
     Returns
     -------
-    acceptable_metrics : set
+    acceptable_metrics : Set[str]
         A set of metric names that are acceptable
         for the given classification scenario.
     """
@@ -566,7 +629,7 @@ def get_acceptable_classification_metrics(label_array):
     return acceptable_metrics
 
 
-def get_acceptable_regression_metrics():
+def get_acceptable_regression_metrics() -> Set[str]:
     """Return the set of metrics that are acceptable for regression."""
     # it's fairly straightforward for regression since
     # we do not have to check the labels
@@ -584,26 +647,28 @@ def get_acceptable_regression_metrics():
     return acceptable_metrics
 
 
-def load_custom_learner(custom_learner_path, custom_learner_name):
+def load_custom_learner(
+    custom_learner_path: Optional[PathOrStr], custom_learner_name: str
+) -> "skll.learner.Learner":
     """
     Import and load the custom learner object from the given path.
 
     Parameters
     ----------
-    custom_learner_path : Union[str, Path]
+    custom_learner_path : PathOrStr
         The path to a custom learner.
     custom_learner_name : str
         The name of a custom learner.
+
+    Returns
+    -------
+    skll.learner.Learner
+        The SKLL learner object loaded from the given path.
 
     Raises
     ------
     ValueError
         If the custom learner path does not end in '.py'.
-
-    Returns
-    -------
-    custom_learner_obj : skll.Learner object
-        The SKLL learner object loaded from the given path.
     """
     if not custom_learner_path:
         raise ValueError(
@@ -622,7 +687,9 @@ def load_custom_learner(custom_learner_path, custom_learner_name):
     return getattr(sys.modules[custom_learner_module_name], custom_learner_name)
 
 
-def get_predictions(learner, xtest):
+def get_predictions(
+    learner: Union["skll.learner.Learner", "skll.learner.voting.VotingLearner"], xtest: np.ndarray
+) -> Dict[str, Any]:
     """
     Get predictions from the given learner (or meta-learner) for given features.
 
@@ -642,7 +709,7 @@ def get_predictions(learner, xtest):
     learner : skll.Learner
         The already-trained ``Learner`` or ``VotingLearner`` instance that is
         used to generate the predictions.
-    xtest : array-like
+    xtest : numpy.ndarray
         Numpy array of features on which the predictions are to be made.
 
     Returns
@@ -661,7 +728,7 @@ def get_predictions(learner, xtest):
     from skll.learner.voting import VotingLearner
 
     # initialize the prediction dictionary
-    prediction_dict = {"raw": None, "labels": None, "probabilities": None}
+    prediction_dict: Dict[str, Any] = {"raw": None, "labels": None, "probabilities": None}
 
     # first get the raw predictions from the underlying scikit-learn model
     # this works for both classifiers and regressors
@@ -736,7 +803,7 @@ def rescaled(cls):
 
     # Define all new versions of functions
     @wraps(cls.fit)
-    def fit(self, X, y=None):  # noqa: D417
+    def fit(self, X: np.ndarray, y=None):  # noqa: D417
         """
         Fit a model.
 
@@ -745,7 +812,7 @@ def rescaled(cls):
 
         Parameters
         ----------
-        X : array-like, with shape (n_samples, n_features)
+        X : numpy.ndarray, with shape (n_samples, n_features)
             The data to fit.
         y : Ignored
             This is ignored.
@@ -759,8 +826,8 @@ def rescaled(cls):
 
         if self.constrain:
             # also record the training data min and max
-            self.y_min = min(y)
-            self.y_max = max(y)
+            self.y_min = np.min(y)
+            self.y_max = np.max(y)
 
         if self.rescale:
             # also record the means and SDs for the training set
@@ -773,7 +840,7 @@ def rescaled(cls):
         return self
 
     @wraps(cls.predict)
-    def predict(self, X):  # noqa: D417
+    def predict(self, X: np.ndarray) -> np.ndarray:
         """
         Predict with regressor and rescale.
 
@@ -782,12 +849,14 @@ def rescaled(cls):
 
         Parameters
         ----------
-        X : array-like, with shape (n_samples,)
+        self
+            The instance itself
+        X : numpy.ndarray, with shape (n_samples,)
             The data to predict.
 
         Returns
         -------
-        res : array-like
+        numpy.ndarray
             The prediction results.
         """
         # get the unconstrained predictions
@@ -821,12 +890,12 @@ def rescaled(cls):
 
         Returns
         -------
-        args : list
+        List[str]
             A list of parameter names for the class's init method.
 
         Raises
         ------
-        RunTimeError
+        RuntimeError
             If `varargs` exist in the scikit-learn estimator.
         """
         # initialize the empty list of parameter names
@@ -872,19 +941,19 @@ def rescaled(cls):
         return args
 
     @wraps(cls.__init__)
-    def init(self, constrain=True, rescale=True, **kwargs):  # noqa: D417
+    def init(self, constrain: bool = True, rescale: bool = True, **kwargs):  # noqa: D417
         """
         Initialize things in the right order.
 
         Parameters
         ----------
-        constrain : bool, optional
+        constrain : bool
             Whether to constrain predictions within min and max values.
             Defaults to True.
-        rescale : bool, optional
+        rescale : bool
             Whether to rescale prediction values using z-scores.
             Defaults to True.
-        kwargs : dict, optional
+        kwargs : dict
             Arguments for base class.
         """
         # pylint: disable=W0201
@@ -909,35 +978,44 @@ def rescaled(cls):
     return cls
 
 
-def setup_cv_fold_iterator(cv_folds, examples, model_type, stratified=False, logger=None):
+def setup_cv_fold_iterator(
+    cv_folds: Union[int, FoldMapping],
+    examples: FeatureSet,
+    model_type: str,
+    stratified: bool = False,
+    logger: Optional[logging.Logger] = None,
+) -> Tuple[Union[FilteredLeaveOneGroupOut, KFold, StratifiedKFold], Optional[List[str]]]:
     """
     Set up a cross-validation fold iterator for the given ``FeatureSet``.
 
     Parameters
     ----------
-    cv_folds : int or dict
+    cv_folds : Union[int, FoldMapping]
         The number of folds to use for cross-validation, or
         a mapping from example IDs to folds.
-    examples : skll.FeatureSet
+    examples : skll.data.FeatureSet
         The ``FeatureSet`` instance for which the CV iterator is to be computed.
     model_type : str
         One of "classifier" or "regressor".
-    stratified : bool, optional
-        Should the cross-validation iterator be set up in a stratified
-        fashion?
+    stratified : bool
+        Should the cross-validation iterator be set up in a stratified fashion?
         Defaults to ``False``.
-    logger : logging.Logger, optional
+    logger : Optional[logging.Logger]
         A logger instance to use for logging messages and warnings.
         If ``None``, a new one is created.
         Defaults to ``None``.
 
     Returns
     -------
-    res : a 2-tuple
-        The first element is the the kfold iterator and the second
-        is the list of cross-validation groups.
+    StratifiedKFold
+        k-fold iterator
+    Optional[List[str]]
+        List of cross-validation groups
     """
-    # Set up the cross-validation iterator.
+    # explicitly declare the return types
+    kfold: Union[FilteredLeaveOneGroupOut, KFold, StratifiedKFold]
+
+    # Set up the cross-validation iterator.=
     if isinstance(cv_folds, int):
         cv_folds = compute_num_folds_from_example_counts(
             cv_folds, examples.labels, model_type, logger=logger
@@ -966,23 +1044,26 @@ def setup_cv_fold_iterator(cv_folds, examples, model_type, stratified=False, log
     return kfold, cv_groups
 
 
-def setup_cv_split_iterator(cv_folds, examples):
+def setup_cv_split_iterator(
+    cv_folds: Union[int, FoldMapping], examples: FeatureSet
+) -> Tuple[FeaturesetIterator, int]:
     """
     Set up a cross-validation split iterator over the given ``FeatureSet``.
 
     Parameters
     ----------
-    cv_folds : int or dict
+    cv_folds : Union[int, FoldMapping]
         The number of folds to use for cross-validation, or
         a mapping from example IDs to folds.
-    examples : skll.FeatureSet
+    examples : skll.data.FeatureSet
         The given featureset which is to be split.
 
     Returns
     -------
-    res : a 2-tuple
-        The first element is an iterator over the train/test featuresets
-        and the second is the maximum number of training samples available.
+    FeaturesetIterator
+        Iterator over the train/test featuresets
+    int
+        The maximum number of training samples available.
     """
     # seed the random number generator for replicability
     random_state = np.random.RandomState(123456789)
@@ -1000,7 +1081,12 @@ def setup_cv_split_iterator(cv_folds, examples):
     return featureset_iter, n_max_training_samples
 
 
-def train_and_score(learner, train_examples, test_examples, metric):
+def train_and_score(
+    learner: "skll.learner.Learner",
+    train_examples: FeatureSet,
+    test_examples: FeatureSet,
+    metric: str,
+) -> Tuple[float, float]:
     """
     Train learner, generate predictions, and evaluate predictions.
 
@@ -1021,21 +1107,21 @@ def train_and_score(learner, train_examples, test_examples, metric):
 
     Parameters
     ----------
-    learner : skll.Learner
+    learner : skll.learner.Learner
         A SKLL ``Learner`` instance.
-    train_examples : array-like, with shape (n_samples, n_features)
+    train_examples : skll.data.FeatureSet
         The training examples.
-    test_examples : array-like, of length n_samples
+    test_examples : skll.data.FeatureSet
         The test examples.
     metric : str
         The scoring function passed to ``use_score_func()``.
 
     Returns
     -------
-    train_score : float
+    float
         Output of the score function applied to predictions of
         ``learner`` on ``train_examples``.
-    test_score : float
+    float
         Output of the score function applied to predictions of
         ``learner`` on ``test_examples``.
     """
@@ -1062,16 +1148,19 @@ def train_and_score(learner, train_examples, test_examples, metric):
 
     # now get the training and test labels and convert them to indices
     # but make sure to include any unseen labels in the test data
-    if learner.model_type._estimator_type == "classifier":
-        test_label_list = np.unique(test_examples.labels).tolist()
-        train_and_test_label_dict = add_unseen_labels(learner.label_dict, test_label_list)
-        train_labels = np.array(
-            [train_and_test_label_dict[label] for label in train_examples.labels]
-        )
-        test_labels = np.array([train_and_test_label_dict[label] for label in test_examples.labels])
-    else:
-        train_labels = train_examples.labels
-        test_labels = test_examples.labels
+    if train_examples.labels is not None and test_examples.labels is not None:
+        if learner.model_type._estimator_type == "classifier":
+            test_label_list = np.unique(test_examples.labels).tolist()
+            train_and_test_label_dict = add_unseen_labels(learner.label_dict, test_label_list)
+            train_labels = np.array(
+                [train_and_test_label_dict[label] for label in train_examples.labels]
+            )
+            test_labels = np.array(
+                [train_and_test_label_dict[label] for label in test_examples.labels]
+            )
+        else:
+            train_labels = train_examples.labels
+            test_labels = test_examples.labels
 
     # now compute and return the scores
     train_score = use_score_func(metric, train_labels, train_predictions)
@@ -1080,44 +1169,38 @@ def train_and_score(learner, train_examples, test_examples, metric):
 
 
 def write_predictions(
-    example_ids,
-    predictions_to_write,
-    file_prefix,
-    model_type,
-    append=False,
-    label_list=None,
-    probability=False,
+    example_ids: np.ndarray,
+    predictions_to_write: np.ndarray,
+    file_prefix: str,
+    model_type: str,
+    label_list: List[LabelType],
+    append: bool = False,
 ):
     """
     Write example IDs and predictions to a tab-separated file with given prefix.
 
     Parameters
     ----------
-    example_ids : array-like
+    example_ids : numpy.ndarray
         The IDs of the examples for which the predictions have been generated.
-    predictions_to_write : array-like
+    predictions_to_write : numpy.ndarray
         The predictions to write out to the file.
     file_prefix : str
         The prefix for the output file. The output file will be named
         "<file_prefix>_predictions.tsv".
     model_type : str
         One of "classifier" or "regressor".
-    append : bool, optional
-        Should we append the current predictions to the file if it exists?
-        Defaults to ``False``.
-    label_list : list of str, optional
+    label_list : List[LabelType]
         List of class labels, required if ``probability`` is ``True``.
-        Defaults to ``None``.
-    probability : bool, optional
-        Are the predictions class probabilities? If ``True``, requires
-        ``label_list`` to be specified.
+    append : bool
+        Should we append the current predictions to the file if it exists?
         Defaults to ``False``.
     """
     # create a new file starting with the given prefix
     prediction_file = f"{file_prefix}_predictions.tsv"
     with open(prediction_file, mode="w" if not append else "a", newline="") as predictionfh:
         # create a DictWriter with the appropriate field names
-        if predictions_to_write.ndim > 1:
+        if predictions_to_write.ndim > 1 and label_list:
             fieldnames = ["id"] + [label for label in label_list]
         else:
             fieldnames = ["id", "prediction"]
@@ -1126,6 +1209,9 @@ def write_predictions(
         # write out the header unless we are appending
         if not append:
             writer.writeheader()
+
+        # explicitly declare some types
+        row: Dict[LabelType, Any]
 
         for example_id, pred in zip(example_ids, predictions_to_write):
             # for regressors, we just write out the prediction as-is
@@ -1138,7 +1224,7 @@ def write_predictions(
             else:
                 if isinstance(pred, np.ndarray):
                     row = {"id": example_id}
-                    row.update(dict(zip(label_list, pred)))
+                    row.update(dict(zip(label_list, pred)))  # type: ignore
                 else:
                     row = {"id": example_id, "prediction": pred}
 
@@ -1146,7 +1232,9 @@ def write_predictions(
             writer.writerow(row)
 
 
-def _save_learner_to_disk(learner, filepath):
+def _save_learner_to_disk(
+    learner: Union["skll.learner.Learner", "skll.learner.voting.VotingLearner"], filepath: PathOrStr
+) -> None:
     """
     Save the given SKLL learner instance to disk.
 
@@ -1155,9 +1243,9 @@ def _save_learner_to_disk(learner, filepath):
 
     Parameters
     ----------
-    learner : skll.learner.Learner or skll.learner.voting.VotingLearner
+    learner : Union[skll.learner.Learner, skll.learner.voting.VotingLearner]
         A ``Learner`` or ``VotingLearner`` instance to save to disk.
-    filepath : Union[str, Path]
+    filepath : PathOrStr
         The path to save the learner instance to.
     """
     # create the directory if it doesn't exist
@@ -1168,7 +1256,11 @@ def _save_learner_to_disk(learner, filepath):
     joblib.dump((VERSION, learner), filepath)
 
 
-def _load_learner_from_disk(learner_type, filepath, logger):
+def _load_learner_from_disk(
+    learner_type: Union[Type["skll.learner.Learner"], Type["skll.learner.voting.VotingLearner"]],
+    filepath: PathOrStr,
+    logger: logging.Logger,
+) -> Union["skll.learner.Learner", "skll.learner.voting.VotingLearner"]:
     """
     Load a saved instance of the given type from disk.
 
@@ -1177,9 +1269,9 @@ def _load_learner_from_disk(learner_type, filepath, logger):
 
     Parameters
     ----------
-    learner_type : skll.learner.Learner or skll.learner.voting.VotingLearner
+    learner_type : Union[Type[skll.learner.Learner], Type[skll.learner.voting.VotingLearner]]
         The type of learner instance to load from disk.
-    filepath : Union[str, Path]
+    filepath : PathOrStr
         The path to a saved ``Learner`` or ``VotingLearner`` file.
     logger : logging object
         A logging object.

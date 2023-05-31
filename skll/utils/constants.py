@@ -8,7 +8,10 @@ Constants useful for SKLL learners.
 :organization: ETS
 """
 
+from __future__ import annotations
+
 import os
+from typing import Any, Tuple
 
 from sklearn.dummy import DummyClassifier, DummyRegressor
 from sklearn.ensemble import (
@@ -103,7 +106,7 @@ KNOWN_DEFAULT_PARAM_GRIDS = {
     TheilSenRegressor: {},
 }
 
-KNOWN_REQUIRES_DENSE = (BayesianRidge, Lars, TheilSenRegressor)
+KNOWN_REQUIRES_DENSE: Tuple[Any, ...] = (BayesianRidge, Lars, TheilSenRegressor)
 
 MAX_CONCURRENT_PROCESSES = int(os.getenv("SKLL_MAX_CONCURRENT_PROCESSES", "5"))
 

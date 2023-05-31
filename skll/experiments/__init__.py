@@ -25,7 +25,12 @@ from skll.config.utils import _munge_featureset_name
 from skll.learner import MAX_CONCURRENT_PROCESSES, Learner, load_custom_learner
 from skll.learner.voting import VotingLearner
 from skll.metrics import _CUSTOM_METRICS, register_custom_metric
-from skll.types import EvaluateTaskResults, PathOrStr
+from skll.types import (
+    CrossValidateTaskResults,
+    EvaluateTaskResults,
+    PathOrStr,
+    VotingCrossValidateTaskResults,
+)
 from skll.utils.logging import close_and_remove_logger_handlers, get_skll_logger
 from skll.version import __version__
 
@@ -368,6 +373,9 @@ def _classify_featureset(args: Dict[str, Any]) -> List[Dict[str, Any]]:
         # check if we're doing cross-validation, because we only load/save
         # models when we're not.
         task_results: List[EvaluateTaskResults]
+        grid_scores: Union[List[None], List[float]] = [None]
+        grid_search_cv_results_dicts: Union[List[None], List[Dict[str, Any]]] = [None]
+
         if task == "cross_validate":
             logger.info("Cross-validating")
 
@@ -400,27 +408,33 @@ def _classify_featureset(args: Dict[str, Any]) -> List[Dict[str, Any]]:
                 xval_kwargs["param_grid"] = param_grid
 
             # cross-validate the learner
-            results = learner.cross_validate(train_examples, **xval_kwargs)
-
             # voting learners return only a subset of the results
             # for cross-validation (no grid search results)
+            models: Union[Optional[List[Learner]], Optional[List[VotingLearner]]]
             if isinstance(learner, Learner):
+                learner_cv_results: CrossValidateTaskResults = learner.cross_validate(
+                    train_examples, **xval_kwargs
+                )
                 (
                     task_results,
                     grid_scores,
                     grid_search_cv_results_dicts,
                     skll_fold_ids,
                     models,
-                ) = results
+                ) = learner_cv_results
             else:
-                (task_results, skll_fold_ids, models) = results
+                voting_learner_cv_results: VotingCrossValidateTaskResults = learner.cross_validate(
+                    train_examples, **xval_kwargs
+                )
+                (task_results, skll_fold_ids, models) = voting_learner_cv_results
                 grid_scores = [None] * cv_folds
                 grid_search_cv_results_dicts = [None] * cv_folds
 
-            if models:
-                for index, m in enumerate(models, start=1):
+            if models and len(models) > 0:
+                for index, model in enumerate(models, start=1):
+                    assert isinstance(model, (Learner, VotingLearner))
                     modelfile = Path(model_path) / f"{job_name}_fold{index}.model"
-                    m.save(modelfile)
+                    model.save(modelfile)
 
         elif task == "learning_curve":
             logger.info("Generating learning curve(s)")
@@ -436,8 +450,6 @@ def _classify_featureset(args: Dict[str, Any]) -> List[Dict[str, Any]]:
             )
         else:
             # if we do not have a saved model, we need to train one
-            grid_scores = [None]
-            grid_search_cv_results_dicts = [None]
             if not modelfile.exists() or overwrite:
                 logger.info(f"Featurizing and training new {learner_name} " "model")
 
@@ -461,16 +473,18 @@ def _classify_featureset(args: Dict[str, Any]) -> List[Dict[str, Any]]:
                     train_kwargs["param_grid"] = param_grid
 
                 # train the model
-                results = learner.train(train_examples, **train_kwargs)
 
                 # regular learners return a grid score and results
                 if isinstance(learner, Learner):
+                    results = learner.train(train_examples, **train_kwargs)
                     grid_scores = [results[0]]
                     grid_search_cv_results_dicts = [results[1]]
                     if grid_search:
                         logger.info(
                             f"Best {grid_objective} grid search score: " f"{round(results[0], 3)}"
                         )
+                else:
+                    learner.train(train_examples, **train_kwargs)
 
                 # save model, if asked
                 if model_path:
@@ -567,7 +581,7 @@ def _classify_featureset(args: Dict[str, Any]) -> List[Dict[str, Any]]:
 
                 assert len(grid_scores) == 1
                 assert len(grid_search_cv_results_dicts) == 1
-                grid_search_cv_results_dict = {"grid_score": grid_scores[0]}
+                grid_search_cv_results_dict: Dict[str, Any] = {"grid_score": grid_scores[0]}
                 grid_search_cv_results_dict[
                     "grid_search_cv_results"
                 ] = grid_search_cv_results_dicts[0]
@@ -578,7 +592,7 @@ def _classify_featureset(args: Dict[str, Any]) -> List[Dict[str, Any]]:
             res = [learner_result_dict_base]
 
         # write out the cv folds if required
-        if task == "cross_validate" and save_cv_folds:
+        if task == "cross_validate" and save_cv_folds and skll_fold_ids is not None:
             skll_fold_ids_file = f"{experiment_name}_skll_fold_ids.csv"
             with open(Path(results_path) / skll_fold_ids_file, "w") as output_file:
                 _write_skll_folds(skll_fold_ids, output_file)
