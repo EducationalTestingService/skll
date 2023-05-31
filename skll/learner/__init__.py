@@ -1551,11 +1551,11 @@ class Learner(object):
         grid_search : bool
             Should we do grid search when training each fold?
             Note: This will make this take *much* longer.
-            Defaults to ``False``.
+            Defaults to ``True``.
         grid_search_folds : Union[int, FoldMapping]
             The number of folds to use when doing the
             grid search, or a mapping from example IDs to folds.
-            Defaults to 3.
+            Defaults to 5.
         grid_jobs : Optional[int]
             The number of jobs to run in parallel when doing the
             grid search. If ``None`` or 0, the number of
