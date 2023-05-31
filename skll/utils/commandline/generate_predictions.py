@@ -13,23 +13,26 @@ import argparse
 import logging
 import sys
 from pathlib import Path
+from typing import List, Optional, Union
 
 import numpy as np
 
 from skll.data.readers import EXT_TO_READER
 from skll.learner import Learner
+from skll.types import LabelType
 from skll.version import __version__
 
 
-def main(argv=None):
+def main(argv: Optional[List[str]] = None):
     """
     Handle command line arguments and gets things started.
 
     Parameters
     ----------
-    argv : list of str
+    argv : Optional[List[str]]
         List of arguments, as if specified on the command-line.
-        If None, ``sys.argv[1:]`` is used instead.
+        If ``None``, ``sys.argv[1:]`` is used instead.
+        Defaults to ``None``.
     """
     # Get command line arguments
     parser = argparse.ArgumentParser(
@@ -199,9 +202,10 @@ def main(argv=None):
             # on the predictions we have so far
 
             # Threshold the positive class label probability
+            predictions: Union[np.ndarray, List[LabelType]]
             if args.threshold is not None:
                 predictions = []
-                for neg_label_prob, pos_label_prob in original_predictions:
+                for _, pos_label_prob in original_predictions:
                     chosen_label = pos_label if pos_label_prob >= args.threshold else neg_label
                     predictions.append(chosen_label)
 
@@ -210,7 +214,6 @@ def main(argv=None):
                 predictions = original_predictions
 
             # now initialize the output file
-            outputfh = None
             try:
                 outputfh = open(args.output_file, "a") if args.output_file else sys.stdout
 

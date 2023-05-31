@@ -1,31 +1,32 @@
 #!/usr/bin/env python
 # License: BSD 3 clause
 """
-Little helper script to create a summary file out of a list of JSON results
-files.
+Create a summary file from a list of JSON results files.
 
 :author: Dan Blanchard (dblanchard@ets.org)
+:author: Nitin Madnani (nmadnani@ets.org)
 :organization: ETS
 """
 
 import argparse
 import logging
+from typing import List, Optional
 
 from skll.experiments.output import _write_summary_file
 from skll.version import __version__
 
 
-def main(argv=None):
+def main(argv: Optional[List[str]] = None) -> None:
     """
-    Handles command line arguments and gets things started.
+    Handle command line arguments and get things started.
 
     Parameters
     ----------
-    argv : list of str
+    argv : Optional[List[str]]
         List of arguments, as if specified on the command-line.
-        If None, ``sys.argv[1:]`` is used instead.
+        If ``None``, ``sys.argv[1:]`` is used instead.
+        Defaults to ``None``.
     """
-
     # Get command line arguments
     parser = argparse.ArgumentParser(
         description="Creates an experiment summary TSV file from a list of "

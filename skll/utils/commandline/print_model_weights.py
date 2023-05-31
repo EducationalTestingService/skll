@@ -12,6 +12,7 @@ import argparse
 import logging
 import sys
 from collections import defaultdict
+from typing import DefaultDict, Dict, List, Optional
 
 import numpy as np
 from sklearn.linear_model import LogisticRegression
@@ -21,17 +22,17 @@ from skll.learner import Learner
 from skll.version import __version__
 
 
-def main(argv=None):
+def main(argv: Optional[List[str]] = None) -> None:
     """
-    Handles command line arguments and gets things started.
+    Handle command line arguments and get things started.
 
     Parameters
     ----------
-    argv : list of str
+    argv : Optional[List[str]]
         List of arguments, as if specified on the command-line.
-        If None, ``sys.argv[1:]`` is used instead.
+        If ``None``, ``sys.argv[1:]`` is used instead.
+        Defaults to ``None``.
     """
-
     parser = argparse.ArgumentParser(
         description="Prints out the weights of a" " given model.",
         conflict_handler="resolve",
@@ -75,7 +76,7 @@ def main(argv=None):
         or (isinstance(model, SVC) and model.kernel == "linear")
     ):
         multiclass = True
-    weight_items = weights.items()
+    weight_items = iter(weights.items())
     if args.sign == "positive":
         weight_items = (x for x in weight_items if x[1] > 0)
     elif args.sign == "negative":
@@ -103,7 +104,7 @@ def main(argv=None):
         print()
 
     print("Number of nonzero features:", len(weights), file=sys.stderr)
-    weight_by_class = defaultdict(dict)
+    weight_by_class: DefaultDict[str, Dict[str, float]] = defaultdict(dict)
     if multiclass and args.sort_by_labels:
         for label_feature, weight in weight_items:
             label, feature = label_feature.split()

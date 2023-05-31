@@ -19,20 +19,22 @@ import argparse
 import logging
 import sys
 from pathlib import Path
+from typing import List, Optional
 
 from skll.experiments import generate_learning_curve_plots
 from skll.version import __version__
 
 
-def main(argv=None):
+def main(argv: Optional[List[str]] = None) -> None:
     """
     Handle command line arguments and gets things started.
 
     Parameters
     ----------
-    argv : list of str
+    argv : Optional[List[str]]
         List of arguments, as if specified on the command-line.
-        If None, ``sys.argv[1:]`` is used instead.
+        If ``None``, ``sys.argv[1:]`` is used instead.
+        Defaults to ``None``.
     """
     # Get command line arguments
     parser = argparse.ArgumentParser(
