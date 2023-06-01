@@ -29,11 +29,11 @@ class FeatureSet(object):
     name : str
         The name of this feature set.
 
-    ids :list or  np.array of shape (n_ids,)
+    ids : Union[List[str], numpy.ndarray]
         Example IDs for this set.
 
-    labels : np.array of shape (n_labels,), default=None
-        labels for this set.
+    labels : Optional[Union[List[str], numpy.ndarray], default=None
+        Labels for this set.
 
     features : Optional[Union[FeatureDictList, np.ndarray]], default=None
         The features for each instance represented as either a
