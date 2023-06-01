@@ -81,7 +81,7 @@ class Reader(object):
         Convert IDs to float to save memory. Will raise error
         if we encounter an a non-numeric ID.
 
-    label_col : str, default='y'
+    label_col : Optional[str], default='y'
         Name of the column which contains the class labels
         for ARFF/CSV/TSV files. If no column with that name
         exists, or ``None`` is specified, the data is
@@ -108,13 +108,13 @@ class Reader(object):
         Whether or not a FeatureHasher should be used to
         vectorize the features.
 
-    num_features : int, default=None
+    num_features : Optional[int], default=None
         If using a FeatureHasher, how many features should the
         resulting matrix have?  You should set this to a power
         of 2 greater than the actual number of features to
         avoid collisions.
 
-    logger : logging.Logger, default=None
+    logger : Optional[logging.Logger], default=None
         A logger instance to use to log messages instead of creating
         a new one by default.
     """
@@ -122,15 +122,15 @@ class Reader(object):
     def __init__(
         self,
         path_or_list: Union[PathOrStr, FeatureDictList],
-        quiet=True,
-        ids_to_floats=False,
-        label_col="y",
-        id_col="id",
+        quiet: bool = True,
+        ids_to_floats: bool = False,
+        label_col: Optional[str] = "y",
+        id_col: str = "id",
         class_map: Optional[ClassMap] = None,
-        sparse=True,
-        feature_hasher=False,
-        num_features=None,
-        logger=None,
+        sparse: bool = True,
+        feature_hasher: bool = False,
+        num_features: Optional[int] = None,
+        logger: Optional[logging.Logger] = None,
     ):
         """Initialize the base class."""
         super(Reader, self).__init__()
@@ -322,7 +322,7 @@ class Reader(object):
         id_col: Optional[str],
         label_col: Optional[str],
         replace_blanks_with: Optional[Union[Number, Dict[str, Number]]] = None,
-        drop_blanks: Optional[bool] = False,
+        drop_blanks: bool = False,
     ) -> Tuple[np.ndarray, np.ndarray, FeatureDictList]:
         """
         Parse the data frame into ids, labels, and features.
@@ -354,8 +354,7 @@ class Reader(object):
                 - ``None`` : Blank values will be left as blanks, and not replaced.
 
         drop_blanks : bool, default=False
-            If ``True``, remove lines/rows that have any blank
-            values.
+            If ``True``, remove lines/rows that have any blank values.
 
         Returns
         -------
@@ -575,13 +574,13 @@ class NDJReader(Reader):
     must be specified as the  "id" key in each JSON dictionary.
     """
 
-    def _sub_read(self, file) -> FeatGenerator:
+    def _sub_read(self, file: IO[str]) -> FeatGenerator:
         """
         Iterate through the rows of the file buffer.
 
         Parameters
         ----------
-        file : file buffer
+        file : IO[str]
             A file buffer for an NDJ file.
 
         Yields
@@ -662,7 +661,7 @@ class LibSVMReader(Reader):
     }
 
     @staticmethod
-    def _pair_to_tuple(pair, feat_map):
+    def _pair_to_tuple(pair: str, feat_map: Dict[str, str]) -> Tuple[str, Union[float, int, str]]:
         """
         Split feature-value pair separated by a colon into tuple.
 
@@ -685,9 +684,9 @@ class LibSVMReader(Reader):
         """
         name, value = pair.split(":")
         if feat_map is not None:
-            name = feat_map[name]
-        value = safe_float(value)
-        return (name, value)
+            ret_name = feat_map[name]
+        ret_value = safe_float(value)
+        return (ret_name, ret_value)
 
     def _sub_read(self, file: IO[str]) -> FeatGenerator:
         """
@@ -715,6 +714,7 @@ class LibSVMReader(Reader):
         ValueError
             If line does not look like valid libsvm format.
         """
+        feat_map: Optional[Dict[str, str]]
         for example_num, line in enumerate(file):
             curr_id = ""
             # Decode line if it's not already str
@@ -761,10 +761,13 @@ class LibSVMReader(Reader):
                 class_ = class_num
             class_ = safe_float(class_, replace_dict=self.class_map)
 
-            curr_info_dict = dict(
-                self._pair_to_tuple(pair, feat_map)
-                for pair in match.group("features").strip().split()
-            )
+            if feat_map:
+                curr_info_dict = dict(
+                    self._pair_to_tuple(pair, feat_map)
+                    for pair in match.group("features").strip().split()
+                )
+            else:
+                curr_info_dict = {}
 
             yield curr_id, class_, curr_info_dict
 
@@ -780,10 +783,10 @@ class CSVReader(Reader):
 
     Parameters
     ----------
-    path_or_list : str
+    path_or_list : Union[PathOrStr, List[Dict[str, Any]]]
         The path to a comma-delimited file.
 
-    replace_blanks_with : Number, dict, or None, default=None
+    replace_blanks_with : Optional[Union[Number, Dict[str, Number]]]
         Specifies a new value with which to replace blank values.
         Options are:
 
@@ -792,26 +795,26 @@ class CSVReader(Reader):
         - ``None`` : Blank values will be left as blanks, and not replaced.
 
         The replacement occurs after the data set is read into a ``pd.DataFrame``.
+        Defaults to ``None``.
 
     drop_blanks : bool, default=False
         If ``True``, remove lines/rows that have any blank
         values. These lines/rows are removed after the
         the data set is read into a ``pd.DataFrame``.
 
-    pandas_kwargs : dict or None, default=None
-        Arguments that will be passed directly
-        to the ``pandas`` I/O reader.
+    pandas_kwargs : Optional[Dict[str, Any]]
+        Arguments that will be passed directly to the ``pandas`` I/O reader.
 
-    kwargs : dict, optional
+    kwargs : Dict[str, Any], optional
         Other arguments to the Reader object.
     """
 
     def __init__(
         self,
-        path_or_list,
-        replace_blanks_with=None,
-        drop_blanks=False,
-        pandas_kwargs=None,
+        path_or_list: Union[PathOrStr, List[Dict[str, Any]]],
+        replace_blanks_with: Optional[Union[Number, Dict[str, Number]]] = None,
+        drop_blanks: bool = False,
+        pandas_kwargs: Optional[Dict[str, Any]] = None,
         **kwargs,
     ):
         """Initialize CSVReader class."""
@@ -867,7 +870,7 @@ class TSVReader(CSVReader):
     path_or_list : str
         The path to a comma-delimited file.
 
-    replace_blanks_with : Number, dict, or None, default=None
+    replace_blanks_with : Optional[Union[Number, Dict[str, Number]]]
         Specifies a new value with which to replace blank values.
         Options are:
 
@@ -876,26 +879,27 @@ class TSVReader(CSVReader):
             - ``None`` : Blank values will be left as blanks, and not replaced.
 
         The replacement occurs after the data set is read into a ``pd.DataFrame``.
+        Defaults to ``None``.
 
     drop_blanks : bool, default=False
-        If ``True``, remove lines/rows that have any blank
-        values. These lines/rows are removed after the
-        the data set is read into a ``pd.DataFrame``.
+        If ``True``, remove lines/rows that have any blank values. These
+        lines/rows are removed after the the data set is read into a
+        ``pd.DataFrame``.
 
-    pandas_kwargs : dict or None, default=None
-        Arguments that will be passed directly
-        to the ``pandas`` I/O reader.
+    pandas_kwargs : Optional[Dict[str, Any]]
+        Arguments that will be passed directly to the ``pandas`` I/O reader.
+        Defaults to ``None``.
 
-    kwargs : dict, optional
+    kwargs : Dict[str, Any], optional
         Other arguments to the Reader object.
     """
 
     def __init__(
         self,
-        path_or_list,
-        replace_blanks_with=None,
-        drop_blanks=False,
-        pandas_kwargs=None,
+        path_or_list: Union[PathOrStr, List[Dict[str, Any]]],
+        replace_blanks_with: Optional[Union[Number, Dict[str, Number]]] = None,
+        drop_blanks: bool = False,
+        pandas_kwargs: Optional[Dict[str, Any]] = None,
         **kwargs,
     ):
         """Initialize TSVReader class."""
@@ -920,14 +924,14 @@ class ARFFReader(Reader):
 
     Parameters
     ----------
-    path_or_list : str
+    path_or_list : Union[PathOrStr, List[Dict[str, Any]]]
         The path to the ARFF file.
 
-    kwargs : dict, optional
+    kwargs : Dict[str, Any], optional
         Other arguments to the Reader object.
     """
 
-    def __init__(self, path_or_list, **kwargs):
+    def __init__(self, path_or_list: Union[PathOrStr, List[Dict[str, Any]]], **kwargs):
         """Initialize ARFFReader class."""
         super(ARFFReader, self).__init__(path_or_list, **kwargs)
         self.dialect = "arff"
@@ -936,7 +940,7 @@ class ARFFReader(Reader):
 
     @staticmethod
     def split_with_quotes(
-        string: str, delimiter=" ", quote_char="'", escape_char="\\"
+        string: str, delimiter: str = " ", quote_char: str = "'", escape_char: str = "\\"
     ) -> List[str]:
         r"""
         Split strings but not on split delimiters enclosed in quotes.

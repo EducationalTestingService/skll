@@ -1,19 +1,23 @@
 #!/usr/bin/env python
 # License: BSD 3 clause
 """
-script for computing additional evaluation metrics
+Compute additional evaluation metrics from predictions.
 
 :author: Michael Heilman (mheilman@ets.org)
+:author: Nitin Madnani (nmadnani@ets.org)
 """
 
 import argparse
 import csv
 import logging
+from pathlib import Path
+from typing import Dict, List, Optional, Union
 
-from numpy.random import RandomState
+import numpy as np
 
 from skll.data import Reader, safe_float
 from skll.metrics import use_score_func
+from skll.types import PathOrStr
 from skll.version import __version__
 
 # Make warnings from built-in warnings module get formatted more nicely
@@ -23,86 +27,106 @@ logger = logging.getLogger(__name__)
 
 
 def get_prediction_from_probabilities(
-    classes, probabilities, prediction_method, random_state=1234567890
-):
+    classes: Union[List[int], List[str]],
+    probabilities: List[float],
+    prediction_method: str,
+    random_state: int = 1234567890,
+) -> Union[int, str]:
     """
-    Convert a list of class-probabilities into a class prediction. This function assumes
-    that, if the prediction method is 'expected_value', the class labels are integers.
+    Convert a list of class-probabilities into a class prediction.
+
+    If the prediction method is ``"expected_value"``, the class labels must be integers.
 
     Parameters
     ----------
-    classes: list of str or int
+    classes: Union[List[int], List[str]]
         List of string or integer class names.
-    probabilities: list of float
+    probabilities: List[float]
         List of probabilities for the respective classes.
     prediction_method: str
         Indicates how to get a single class prediction from the probabilities.
         Must be one of:
-            1. "highest": Selects the class with the highest probability. If
+            1. ``"highest"``: Selects the class with the highest probability. If
                multiple classes have the same probability, a class is selected randomly.
-            2. "expected_value": Calculates an expected value over integer classes and
+            2. ``"expected_value"``: Calculates an expected value over integer classes and
                rounds to the nearest int.
-
     random_state: int
-        Seed for `RandomState`, used for randomly selecting a class when necessary.
+        Seed for ``np.random.RandomState``, used for randomly selecting a class when necessary.
 
     Returns
     -------
-    predicted_class: str or int
-        Predicted class.
-
-    """
-    prng = RandomState(random_state)
-    if prediction_method == "highest":
-        highest_p = max(probabilities)
-        best_classes = [classes[i] for i, p in enumerate(probabilities) if p == highest_p]
-        if len(best_classes) > 1:
-            return prng.choice(best_classes)
-        else:
-            return best_classes[0]
-
-    elif prediction_method == "expected_value":
-        exp_val = sum([classes[i] * prob for i, prob in enumerate(probabilities)])
-        return int(round(exp_val))
-
-
-def compute_eval_from_predictions(
-    examples_file, predictions_file, metric_names, prediction_method=None
-):
-    """
-    Compute evaluation metrics from prediction files after you have run an
-    experiment.
-
-    Parameters
-    ----------
-    examples_file: str
-        Path to a SKLL examples file (in .jsonlines or other format).
-    predictions_file: str
-        Path to a SKLL predictions output TSV file with id and prediction column names.
-    metric_names: list of str
-        A list of SKLL metric names (e.g., [pearson, unweighted_kappa]).
-    prediction_method: str or None
-        Indicates how to get a single class prediction from the probabilities. Currently
-        supported options are  "highest", which selects the class with the highest
-        probability, and "expected_value", which calculates an expected value over
-        integer classes and rounds to the nearest int. If predictions file does not
-        contain probabilities, this should be set to None.
-
-    Returns
-    -------
-    dict
-        Maps metrics names to corresponding values.
+    Union[int, str]
+        The predicted class.
 
     Raises
     ------
     ValueError
-        If the requested prediction method is 'expected_value' but the class names can't
-        be converted to ints.
+        If ``classes`` does not contain integers and ``prediction_method`` is
+        ``"expected_value"``.
+
     """
+    prng = np.random.RandomState(random_state)
+    if prediction_method == "highest":
+        highest_p = max(probabilities)
+        best_classes = [classes[i] for i, p in enumerate(probabilities) if p == highest_p]
+        if len(best_classes) > 1:
+            ans = prng.choice(best_classes)
+        else:
+            ans = best_classes[0]
+    elif prediction_method == "expected_value":
+        exp_val = 0.0
+        for class_, probability in zip(classes, probabilities):
+            exp_val += class_ * probability  # type: ignore
+        ans = int(round(exp_val))
+
+    return ans
+
+
+def compute_eval_from_predictions(
+    examples_file: PathOrStr,
+    predictions_file: PathOrStr,
+    metric_names: List[str],
+    prediction_method: Optional[str] = None,
+) -> Dict[str, float]:
+    """
+    Compute evaluation metrics from prediction files after running an experiment.
+
+    Parameters
+    ----------
+    examples_file: PathOrStr
+        Path to a SKLL examples file (in .jsonlines or other format).
+    predictions_file: PathOrStr
+        Path to a SKLL predictions output TSV file with id and prediction column names.
+    metric_names: List[str]
+        A list of SKLL metric names (e.g., ``["pearson", "unweighted_kappa"]``).
+    prediction_method: Optional[str]
+        Indicates how to get a single class prediction from the probabilities.
+        Currently supported options are ``"highest"``, which selects the class
+        with the highest probability, and ``"expected_value"``, which calculates
+        an expected value over integer classes and rounds to the nearest int.
+        If predictions file does not contain probabilities, this should be set
+        to ``None``.
+        Defaults to ``None``.
+
+    Returns
+    -------
+    Dict[str, float]
+        Mapping of metrics names to corresponding values.
+
+    Raises
+    ------
+    ValueError
+        If the requested prediction method is ``"expected_value"`` but
+        the class names can't be converted to ints.
+    """
+    # convert the examples file and predictions file to a Path
+    examples_file = Path(examples_file)
+    predictions_file = Path(predictions_file)
 
     # read gold standard labels
     data = Reader.for_path(examples_file).read()
-    gold = dict(zip(data.ids, data.labels))
+    if data.labels is not None:
+        gold = dict(zip(data.ids, data.labels))
 
     # read predictions
     pred = {}
@@ -113,6 +137,7 @@ def compute_eval_from_predictions(
         # If there are more than two columns, assume column 0 contains the ids, and
         # columns 1-n contain class probabilities. Convert them to a class prediction
         # using the specified `method`.
+        classes: Union[List[int], List[str]]
         if len(header) > 2:
             classes = [c for c in header[1:] if c]
             if prediction_method is None:
@@ -126,7 +151,7 @@ def compute_eval_from_predictions(
             for row in reader:
                 probabilities = [safe_float(p) for p in row[1:]]
                 prediction = get_prediction_from_probabilities(
-                    classes, probabilities, prediction_method
+                    classes, probabilities, prediction_method  # type: ignore
                 )
                 pred[row[0]] = safe_float(prediction)
         else:
@@ -151,22 +176,23 @@ def compute_eval_from_predictions(
     for metric_name in metric_names:
         score = use_score_func(
             metric_name,
-            [gold[ex_id] for ex_id in example_ids],
-            [pred[ex_id] for ex_id in example_ids],
+            np.array([gold[ex_id] for ex_id in example_ids]),
+            np.array([pred[ex_id] for ex_id in example_ids]),
         )
         res[metric_name] = score
     return res
 
 
-def main(argv=None):
+def main(argv: Optional[List[str]] = None) -> None:
     """
-    Handles command line arguments and gets things started.
+    Handle command line arguments and get things started.
 
     Parameters
     ----------
-    argv: list of str
-        List of arguments, as if specified on the command-line. If None, `sys.argv[1:]`
-        is used instead.
+    argv: Optional[List[str]]
+        List of arguments, as if specified on the command-line. If ``None``,
+        then ``sys.argv[1:]`` is used instead.
+        Defaults to ``None``.
     """
     # Get command line arguments
     parser = argparse.ArgumentParser(

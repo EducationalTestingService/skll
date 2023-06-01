@@ -11,6 +11,7 @@ import argparse
 import logging
 import sys
 from pathlib import Path
+from typing import Dict, List, Optional, Tuple
 
 from bs4 import UnicodeDammit
 
@@ -26,22 +27,23 @@ from skll.data.writers import (
 from skll.version import __version__
 
 
-def _pair_to_dict_tuple(pair):
-    """Consturct mappings from feature/class names to numbers."""
-    number, name = pair.split("=")
-    number = int(number)
+def _pair_to_dict_tuple(pair: str) -> Tuple[str, int]:
+    """Construct mappings from feature/class names to numbers."""
+    number_str, name = pair.split("=")
+    number = int(number_str)
     return (name, number)
 
 
-def main(argv=None):
+def main(argv: Optional[List[str]] = None) -> None:
     """
     Handle command line arguments and gets things started.
 
     Parameters
     ----------
-    argv : list of str
+    argv : Optional[List[str]]
         List of arguments, as if specified on the command-line.
-        If None, ``sys.argv[1:]`` is used instead.
+        If ``None``, ``sys.argv[1:]`` is used instead.
+        Defaults to ``None``.
     """
     # Get command line arguments
     parser = argparse.ArgumentParser(
@@ -121,6 +123,8 @@ def main(argv=None):
         sys.exit(1)
 
     # Build feature and label vectorizers from existing libsvm file if asked
+    feat_map: Dict[str, int]
+    label_map: Optional[Dict[str, int]]
     if args.reuse_libsvm_map and output_extension == ".libsvm":
         feat_map = {}
         label_map = {}

@@ -565,7 +565,9 @@ class ARFFWriter(Writer):
         super(ARFFWriter, self).__init__(path, feature_set, **kwargs)
         self._dict_writer: Optional[DictWriter[str]] = None
 
-    def _write_header(self, feature_set: FeatureSet, output_file: IO[str], filter_features) -> None:
+    def _write_header(
+        self, feature_set: FeatureSet, output_file: IO[str], filter_features: Set[str]
+    ) -> None:
         """
         Write headers to ARFF file.
 
@@ -577,10 +579,10 @@ class ARFFWriter(Writer):
         feature_set : skll.data.FeatureSet
             The FeatureSet being written to a file.
 
-        output_file : file buffer
+        output_file : IO[str]
             The file being written to.
 
-        filter_features : set of str
+        filter_features : Set[str]
             If only writing a subset of the features in the
             FeatureSet to ``output_file``, these are the
             features to include in this file.

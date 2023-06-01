@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 # License: BSD 3 clause
 """
-Runs a bunch of scikit-learn jobs in parallel on the cluster given a
-config file.
+Runs scikit-learn jobs given a config file.
 
 :author: Dan Blanchard (dblanchard@ets.org)
 :author: Michael Heilman (mheilman@ets.org)
@@ -12,22 +11,23 @@ config file.
 
 import logging
 from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser
+from typing import List, Optional
 
 from skll.experiments import run_configuration
 from skll.version import __version__
 
 
-def main(argv=None):
+def main(argv: Optional[List[str]] = None) -> None:
     """
-    Handles command line arguments and gets things started.
+    Handle command line arguments and get things started.
 
     Parameters
     ----------
-    argv : list of str
+    argv : Optional[List[str]]
         List of arguments, as if specified on the command-line.
-        If None, ``sys.argv[1:]`` is used instead.
+        If ``None``, ``sys.argv[1:]`` is used instead.
+        Defaults to ``None``.
     """
-
     # Get command line arguments
     parser = ArgumentParser(
         description="Runs the scikit-learn experiments "

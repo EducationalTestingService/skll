@@ -12,18 +12,26 @@ import sys
 from importlib import import_module
 from inspect import signature
 from pathlib import Path
+from typing import Optional, Union
 
 import numpy as np
 from scipy.stats import kendalltau, pearsonr, spearmanr
 from sklearn.metrics import confusion_matrix, f1_score, make_scorer
 from sklearn.metrics._scorer import _SCORERS
 
+from skll.types import PathOrStr
+
 # a set that will hold the names of any custom metrics;
 # this is a private variable only meant for internal use
 _CUSTOM_METRICS = set()
 
 
-def kappa(y_true, y_pred, weights=None, allow_off_by_one=False):
+def kappa(
+    y_true: np.ndarray,
+    y_pred: np.ndarray,
+    weights: Optional[Union[str, np.ndarray]] = None,
+    allow_off_by_one: bool = False,
+) -> float:
     """
     Calculate the kappa inter-rater agreement.
 
@@ -43,35 +51,30 @@ def kappa(y_true, y_pred, weights=None, allow_off_by_one=False):
 
     Parameters
     ----------
-    y_true : array-like of float
+    y_true : numpy.ndarray
         The true/actual/gold labels for the data.
-    y_pred : array-like of float
+    y_pred : numpy.ndarray
         The predicted/observed labels for the data.
-    weights : str or np.array, optional
+    weights : Optional[Union[str, numpy.ndarray]]
         Specifies the weight matrix for the calculation.
-        Options are ::
-
-            -  None = unweighted-kappa
-            -  'quadratic' = quadratic-weighted kappa
-            -  'linear' = linear-weighted kappa
-            -  two-dimensional numpy array = a custom matrix of
-
-        weights. Each weight corresponds to the
-        :math:`w_{ij}` values in the wikipedia description
-        of how to calculate weighted Cohen's kappa.
-        Defaults to None.
-    allow_off_by_one : bool, optional
+        Possible values are: ``None`` (unweighted-kappa), ``"quadratic"``
+        (quadratically weighted kappa), ``"linear"`` (linearly weighted kappa),
+        and a two-dimensional numpy array (a custom matrix of weights). Each
+        weight in this array corresponds to the :math:`w_{ij}` values in the
+        Wikipedia description of how to calculate weighted Cohen's kappa.
+        Defaults to ``None``.
+    allow_off_by_one : bool
         If true, ratings that are off by one are counted as
         equal, and all other differences are reduced by
         one. For example, 1 and 2 will be considered to be
         equal, whereas 1 and 3 will have a difference of 1
         for when building the weights matrix.
-        Defaults to False.
+        Defaults to ``False``.
 
     Returns
     -------
-    k : float
-        The kappa score, or weighted kappa score.
+    float
+        The weighted or unweighted kappa score.
 
     Raises
     ------
@@ -93,8 +96,8 @@ def kappa(y_true, y_pred, weights=None, allow_off_by_one=False):
     # If it is a str that can't be typecast, then the user is
     # given a hopefully useful error message.
     try:
-        y_true = [int(np.round(float(y))) for y in y_true]
-        y_pred = [int(np.round(float(y))) for y in y_pred]
+        y_true = np.array([int(np.round(float(y))) for y in y_true])
+        y_pred = np.array([int(np.round(float(y))) for y in y_pred])
     except ValueError:
         raise ValueError(
             "For kappa, the labels should be integers or strings"
@@ -108,8 +111,8 @@ def kappa(y_true, y_pred, weights=None, allow_off_by_one=False):
 
     # shift the values so that the lowest value is 0
     # (to support scales that include negative values)
-    y_true = [y - min_rating for y in y_true]
-    y_pred = [y - min_rating for y in y_pred]
+    y_true = y_true - min_rating
+    y_pred = y_pred - min_rating
 
     # Build the observed/confusion matrix
     num_ratings = max_rating - min_rating + 1
@@ -122,25 +125,28 @@ def kappa(y_true, y_pred, weights=None, allow_off_by_one=False):
         weights = None
     else:
         wt_scheme = ""
+
     if weights is None:
-        weights = np.empty((num_ratings, num_ratings))
+        kappa_weights = np.empty((num_ratings, num_ratings))
         for i in range(num_ratings):
             for j in range(num_ratings):
                 diff = abs(i - j)
                 if allow_off_by_one and diff:
                     diff -= 1
                 if wt_scheme == "linear":
-                    weights[i, j] = diff
+                    kappa_weights[i, j] = diff
                 elif wt_scheme == "quadratic":
-                    weights[i, j] = diff**2
+                    kappa_weights[i, j] = diff**2
                 elif not wt_scheme:  # unweighted
-                    weights[i, j] = bool(diff)
+                    kappa_weights[i, j] = bool(diff)
                 else:
                     raise ValueError("Invalid weight scheme specified for " f"kappa: {wt_scheme}")
+    else:
+        kappa_weights = weights
 
-    hist_true = np.bincount(y_true, minlength=num_ratings)
+    hist_true: np.ndarray = np.bincount(y_true, minlength=num_ratings)
     hist_true = hist_true[:num_ratings] / num_scored_items
-    hist_pred = np.bincount(y_pred, minlength=num_ratings)
+    hist_pred: np.ndarray = np.bincount(y_pred, minlength=num_ratings)
     hist_pred = hist_pred[:num_ratings] / num_scored_items
     expected = np.outer(hist_true, hist_pred)
 
@@ -149,13 +155,15 @@ def kappa(y_true, y_pred, weights=None, allow_off_by_one=False):
 
     # If all weights are zero, that means no disagreements matter.
     k = 1.0
-    if np.count_nonzero(weights):
-        k -= sum(sum(weights * observed)) / sum(sum(weights * expected))
+    if np.count_nonzero(kappa_weights):
+        observed_sum = np.sum(kappa_weights * observed)
+        expected_sum = np.sum(kappa_weights * expected)
+        k -= np.sum(observed_sum) / np.sum(expected_sum)
 
     return k
 
 
-def correlation(y_true, y_pred, corr_type="pearson"):
+def correlation(y_true: np.ndarray, y_pred: np.ndarray, corr_type: str = "pearson") -> float:
     """
     Calculate given correlation type between ``y_true`` and ``y_pred``.
 
@@ -169,19 +177,18 @@ def correlation(y_true, y_pred, corr_type="pearson"):
 
     Parameters
     ----------
-    y_true : array-like of float
+    y_true : numpy.ndarray
         The true/actual/gold labels for the data.
-    y_pred : array-like of float
+    y_pred : numpy.ndarray
         The predicted/observed labels for the data.
-    corr_type : str, optional
+    corr_type : str
         Which type of correlation to compute. Possible
-        choices are ``pearson``, ``spearman``,
-        and ``kendall_tau``.
-        Defaults to ``pearson``.
+        choices are "pearson", "spearman", and "kendall_tau".
+        Defaults to "pearson".
 
     Returns
     -------
-    ret_score : float
+    float
         correlation value if well-defined, else 0.0
     """
     # get the correlation function to use based on the given type
@@ -204,38 +211,37 @@ def correlation(y_true, y_pred, corr_type="pearson"):
     return ret_score
 
 
-def f1_score_least_frequent(y_true, y_pred):
+def f1_score_least_frequent(y_true: np.ndarray, y_pred: np.ndarray) -> float:
     """
     Calculate F1 score of the least frequent label/class.
 
     Parameters
     ----------
-    y_true : array-like of float
+    y_true : numpy.ndarray
         The true/actual/gold labels for the data.
-    y_pred : array-like of float
+    y_pred : numpy.ndarray
         The predicted/observed labels for the data.
 
     Returns
     -------
-    ret_score : float
+    float
         F1 score of the least frequent label.
     """
     least_frequent = np.bincount(y_true).argmin()
     return f1_score(y_true, y_pred, average=None)[least_frequent]
 
 
-def register_custom_metric(custom_metric_path, custom_metric_name):
+def register_custom_metric(custom_metric_path: PathOrStr, custom_metric_name: str):
     """
     Import, load, and register the custom metric function from the given path.
 
     Parameters
     ----------
-    custom_metric_path : Union[str, Path]
+    custom_metric_path : PathOrStr
         The path to a custom metric.
     custom_metric_name : str
-        The name of the custom metric function to load.
-        This function must take only two array-like
-        arguments: the true labels and the predictions,
+        The name of the custom metric function to load. This function must take
+        only two array-like arguments: the true labels and the predictions,
         in that order.
 
     Raises
@@ -294,8 +300,10 @@ def register_custom_metric(custom_metric_path, custom_metric_name):
     make_scorer_kwargs = {}
     for make_scorer_kwarg in ["greater_is_better", "needs_proba", "needs_threshold"]:
         if make_scorer_kwarg in metric_func_parameters:
-            parameter_value = metric_func_parameters.get(make_scorer_kwarg).default
-            make_scorer_kwargs.update({make_scorer_kwarg: parameter_value})
+            parameter = metric_func_parameters.get(make_scorer_kwarg)
+            if parameter is not None:
+                parameter_value = parameter.default
+                make_scorer_kwargs.update({make_scorer_kwarg: parameter_value})
 
     # make the scorer function with the extracted keyword arguments
     # and add it to the `CUSTOM_METRICS` set
@@ -305,7 +313,7 @@ def register_custom_metric(custom_metric_path, custom_metric_name):
     return metric_func
 
 
-def use_score_func(func_name, y_true, y_pred):
+def use_score_func(func_name: str, y_true: np.ndarray, y_pred: np.ndarray) -> float:
     """
     Call the given scoring function.
 
@@ -317,14 +325,14 @@ def use_score_func(func_name, y_true, y_pred):
     ----------
     func_name : str
         The name of the objective function to use.
-    y_true : array-like of float
+    y_true : numpy.ndarray
         The true/actual/gold labels for the data.
-    y_pred : array-like of float
+    y_pred : numpy.ndarray
         The predicted/observed labels for the data.
 
     Returns
     -------
-    ret_score : float
+    float
         The scored result from the given scorer.
     """
     scorer = _SCORERS[func_name]
