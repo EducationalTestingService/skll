@@ -57,14 +57,11 @@ def kappa(
         The predicted/observed labels for the data.
     weights : Optional[Union[str, numpy.ndarray]]
         Specifies the weight matrix for the calculation.
-        Options are ::
-            -  None = unweighted-kappa
-            -  "quadratic" = quadratic-weighted kappa
-            -  "linear" = linear-weighted kappa
-            -  two-dimensional numpy array = a custom matrix of
-               weights. Each weight corresponds to the
-               :math:`w_{ij}` values in the wikipedia description
-               of how to calculate weighted Cohen's kappa.
+        Possible values are: ``None`` (unweighted-kappa), ``"quadratic"``
+        (quadratically weighted kappa), ``"linear"`` (linearly weighted kappa),
+        and a two-dimensional numpy array (a custom matrix of weights). Each
+        weight in this array corresponds to the :math:`w_{ij}` values in the
+        Wikipedia description of how to calculate weighted Cohen's kappa.
         Defaults to ``None``.
     allow_off_by_one : bool
         If true, ratings that are off by one are counted as
