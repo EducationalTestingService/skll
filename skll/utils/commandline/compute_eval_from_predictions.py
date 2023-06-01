@@ -35,7 +35,7 @@ def get_prediction_from_probabilities(
     """
     Convert a list of class-probabilities into a class prediction.
 
-    If the prediction method is 'expected_value', the class labels must be integers.
+    If the prediction method is ``"expected_value"``, the class labels must be integers.
 
     Parameters
     ----------
@@ -46,12 +46,12 @@ def get_prediction_from_probabilities(
     prediction_method: str
         Indicates how to get a single class prediction from the probabilities.
         Must be one of:
-            1. "highest": Selects the class with the highest probability. If
+            1. ``"highest"``: Selects the class with the highest probability. If
                multiple classes have the same probability, a class is selected randomly.
-            2. "expected_value": Calculates an expected value over integer classes and
+            2. ``"expected_value"``: Calculates an expected value over integer classes and
                rounds to the nearest int.
     random_state: int
-        Seed for `np.random.RandomState`, used for randomly selecting a class when necessary.
+        Seed for ``np.random.RandomState``, used for randomly selecting a class when necessary.
 
     Returns
     -------
@@ -62,7 +62,7 @@ def get_prediction_from_probabilities(
     ------
     ValueError
         If ``classes`` does not contain integers and ``prediction_method`` is
-        "expected_value".
+        ``"expected_value"``.
 
     """
     prng = np.random.RandomState(random_state)
@@ -98,11 +98,11 @@ def compute_eval_from_predictions(
     predictions_file: PathOrStr
         Path to a SKLL predictions output TSV file with id and prediction column names.
     metric_names: List[str]
-        A list of SKLL metric names (e.g., ["pearson", "unweighted_kappa"]).
+        A list of SKLL metric names (e.g., ``["pearson", "unweighted_kappa"]``).
     prediction_method: Optional[str]
         Indicates how to get a single class prediction from the probabilities.
-        Currently supported options are  "highest", which selects the class
-        with the highest probability, and "expected_value", which calculates
+        Currently supported options are ``"highest"``, which selects the class
+        with the highest probability, and ``"expected_value"``, which calculates
         an expected value over integer classes and rounds to the nearest int.
         If predictions file does not contain probabilities, this should be set
         to ``None``.
@@ -116,8 +116,8 @@ def compute_eval_from_predictions(
     Raises
     ------
     ValueError
-        If the requested prediction method is 'expected_value' but the class names can't
-        be converted to ints.
+        If the requested prediction method is ``"expected_value"`` but
+        the class names can't be converted to ints.
     """
     # convert the examples file and predictions file to a Path
     examples_file = Path(examples_file)
