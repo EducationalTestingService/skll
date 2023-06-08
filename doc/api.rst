@@ -13,3 +13,4 @@ API Documentation
    api/learner
    api/metrics
    api/utils
+   api/types
