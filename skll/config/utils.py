@@ -46,7 +46,7 @@ def load_cv_folds(folds_file: PathOrStr, ids_to_floats=False) -> FoldMapping:
 
     Parameters
     ----------
-    folds_file : PathOrStr
+    folds_file : :class:`skll.types.PathOrStr`
         The path to a folds file to read.
 
     ids_to_floats : bool, default=False
@@ -54,7 +54,7 @@ def load_cv_folds(folds_file: PathOrStr, ids_to_floats=False) -> FoldMapping:
 
     Returns
     -------
-    res : FoldMapping
+    :class:`skll.types.FoldMapping`
         Dictionary with example IDs as the keys and fold IDs as the values.
         If `ids_to_floats` is set to `True`, the example IDs are floats but
         otherwise they are strings.
@@ -91,10 +91,10 @@ def locate_file(file_path: PathOrStr, config_dir: PathOrStr) -> str:
 
     Parameters
     ----------
-    file_path : PathOrStr
+    file_path : :class:`skll.types.PathOrStr`
         The file to locate. Path may be absolute or relative.
 
-    config_dir : PathOrStr
+    config_dir : :class:`skll.types.PathOrStr`
         The path to the configuration file directory.
 
     Returns
@@ -164,12 +164,12 @@ def _parse_and_validate_metrics(metrics: str, option_name: str, logger=None) -> 
     option_name : str
         The name of the option with which the metrics are associated.
 
-    logger : logging.Logger, default=None
+    logger : Optional[logging.Logger], default=None
         A logging object.
 
     Returns
     -------
-    metrics : list of str
+    metrics : List[str]
         A list of metrics for the given option.
 
     Raises
