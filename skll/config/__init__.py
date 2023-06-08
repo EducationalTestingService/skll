@@ -332,7 +332,7 @@ def parse_config_file(
 
     Parameters
     ----------
-    config_path : PathOrStr
+    config_path : :class:`skll.types.PathOrStr`
         The path to the configuration file.
 
     log_level : int, default=logging.INFO
@@ -1078,7 +1078,7 @@ def _setup_config_parser(config_path: PathOrStr, validate=True) -> SKLLConfigPar
 
     Parameters
     ----------
-    config_path : PathOrStr
+    config_path : :class:`skll.types.PathOrStr`
         The path to the configuration file.
 
     validate : bool, default=True
