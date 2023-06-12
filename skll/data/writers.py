@@ -1023,7 +1023,7 @@ class LibSVMWriter(Writer):
         if self.label_map:
             if label_ in self.label_map:
                 print(
-                    f"{self._sanitize(self.label_map[label_])}=" f"{self._sanitize(label_)}",
+                    f"{self._sanitize(self.label_map[label_])}={self._sanitize(label_)}",
                     end=" | ",
                     file=output_file,
                 )
@@ -1032,7 +1032,7 @@ class LibSVMWriter(Writer):
 
         line = (
             " ".join(
-                f"{self.feat_set.vectorizer.vocabulary_[field] + 1}=" f"{self._sanitize(field)}"
+                f"{self.feat_set.vectorizer.vocabulary_[field] + 1}={self._sanitize(field)}"
                 for field, value in feat_dict.items()
                 if Decimal(value) != 0
             )

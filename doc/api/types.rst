@@ -40,7 +40,8 @@ data.
 
 .. autoclass:: skll.types.LabelType
 
-A float, integer, or a string; this is useful for SKLL labels that can be both.
+A float, integer, or a string; this is useful for SKLL labels that can be any
+of them.
 
 .. autoclass:: skll.types.LearningCurveSizes
 
