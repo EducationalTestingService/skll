@@ -155,6 +155,6 @@ README file in the doc/ directory for more information.
 
 For building the documentation, you will need [sphinx](http://sphinx.pocoo.org/) as well as the readthedocs sphinx theme. To install both, just run:
 
-      $ conda install 'sphinx>=6,<7' sphinx_rtd_theme==1.2.0
+      $ conda install 'sphinx<6' sphinx_rtd_theme==1.2.0
 
 in your existing conda environment.
