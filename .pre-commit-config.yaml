@@ -31,7 +31,7 @@ repos:
     rev: 'v0.0.264'
     hooks:
       - id: ruff
-        args: [--line-length=100, --select, "D,E,F,I", --ignore, "D212", --per-file-ignores, "tests/test*.py:D103"]
+        args: [--line-length=100, --select, "D,E,F,I", --ignore, "D212", --per-file-ignores, "tests/test*.py:D103,skll/data/featureset.py:E501"]
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: 'v1.2.0'
     hooks:
