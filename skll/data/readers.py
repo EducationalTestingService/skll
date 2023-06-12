@@ -62,16 +62,17 @@ from skll.data import FeatureSet
 from skll.data.dict_vectorizer import DictVectorizer
 from skll.types import ClassMap, FeatGenerator, FeatureDictList, IdType, LabelType, PathOrStr
 
-# define some custom types for readability
-
 
 class Reader(object):
     """
-    Make picklable iterators out of example dictionary generators.
+    Load FeatureSets from files on disk.
+
+    This is the base class used to create featureset readers for different
+    file types.
 
     Parameters
     ----------
-    path_or_list : Union[PathOrStr, List[Dict[str, Any]]
+    path_or_list : Union[:class:`skll.types.PathOrStr`, List[Dict[str, Any]]
         Path or a list of example dictionaries.
 
     quiet : bool, default=True
@@ -92,7 +93,7 @@ class Reader(object):
         If no column with that name exists, or ``None`` is
         specified, example IDs will be automatically generated.
 
-    class_map : Optional[ClassMap], default=None
+    class_map : Optional[:class:`skll.types.ClassMap`], default=None
         Mapping from original class labels to new ones. This is
         mainly used for collapsing multiple labels into a single
         class. Anything not in the mapping will be kept the same.
@@ -160,15 +161,15 @@ class Reader(object):
 
         Parameters
         ----------
-        path_or_list : Union[PathOrStr, FeatureDictList]
+        path_or_list : Union[:class:`skll.types.PathOrStr`, :class:`skll.types.FeatureDictList`]
             A path or list of example dictionaries.
 
-        kwargs : Dict[str, Any], optional
+        kwargs : Optional[Dict[str, Any]]
             The arguments to the Reader object being instantiated.
 
         Returns
         -------
-        reader : skll.data.Reader
+        reader : :class:`skll.data.readers.Reader`
             A new instance of the Reader sub-class that is
             appropriate for the given path.
 
@@ -204,10 +205,8 @@ class Reader(object):
 
         Parameters
         ----------
-        file : file buffer or str
-            Either a file buffer, if ``_sub_read_rows()``
-            is calling this method, or a path to a file,
-            if it is being read with ``pandas``.
+        file
+            Not used.
 
         Raises
         ------
@@ -223,7 +222,7 @@ class Reader(object):
 
         Parameters
         ----------
-        progress_num: int
+        progress_num: Union[int, str]
             Progress indicator value. Usually either a line
             number or a percentage. Must be able to convert to string.
 
@@ -247,19 +246,19 @@ class Reader(object):
 
         Parameters
         ----------
-        file : PathOrStr
+        file : :class:`skll.types.PathOrStr`
             The path to the input file.
 
         Returns
         -------
-        ids : np.array of shape (n_ids,)
+        ids : numpy.ndarray of shape (n_ids,)
             The ids array.
 
-        labels : np.array of shape (n_labels,)
+        labels : numpy.ndarray of shape (n_labels,)
             The labels array.
 
-        features : FeatureDictList
-            The features dictionary.
+        features : :class:`skll.types.FeatureDictList`
+            List containing feature dictionaries.
 
         Raises
         ------
@@ -358,14 +357,14 @@ class Reader(object):
 
         Returns
         -------
-        ids : np.array of shape (n_ids,)
+        ids : numpy.ndarray of shape (n_ids,)
             The ids for the feature set.
 
-        labels : np.array of shape (n_labels,)
+        labels : numpy.ndarray of shape (n_labels,)
             The labels for the feature set.
 
-        features : FeatureDictList
-            The features for the feature set.
+        features : :class:`skll.types.FeatureDictList`
+            List of feature dictionaries.
         """
         if df.empty:
             raise ValueError("No features found in possibly empty file " f"'{self.path_or_list}'.")
@@ -447,8 +446,8 @@ class Reader(object):
 
         Returns
         -------
-        skll.data.FeatureSet
-            ``FeatureSet`` instance representing the input file.
+        :class:`skll.data.featureset.FeatureSet`
+            A ``FeatureSet`` instance representing the input file.
 
         Raises
         ------
@@ -502,6 +501,55 @@ class DictListReader(Reader):
     objects as input. It iterates over examples in the same way as other
     ``Reader`` classes, but uses a list of example dictionaries instead of
     a path to a file.
+
+    Parameters
+    ----------
+    path_or_list : Union[:class:`skll.types.PathOrStr`, List[Dict[str, Any]]
+        Path or a list of example dictionaries.
+
+    quiet : bool, default=True
+        Do not print "Loading..." status message to stderr.
+
+    ids_to_floats : bool, default=False
+        Convert IDs to float to save memory. Will raise error
+        if we encounter an a non-numeric ID.
+
+    label_col : Optional[str], default='y'
+        Name of the column which contains the class labels
+        for ARFF/CSV/TSV files. If no column with that name
+        exists, or ``None`` is specified, the data is
+        considered to be unlabelled.
+
+    id_col : str, default='id'
+        Name of the column which contains the instance IDs.
+        If no column with that name exists, or ``None`` is
+        specified, example IDs will be automatically generated.
+
+    class_map : Optional[:class:`skll.types.ClassMap`], default=None
+        Mapping from original class labels to new ones. This is
+        mainly used for collapsing multiple labels into a single
+        class. Anything not in the mapping will be kept the same.
+        The keys are the new labels and the list of values for each
+        key is the labels to be collapsed to said new label.
+
+    sparse : bool, default=True
+        Whether or not to store the features in a numpy CSR
+        matrix when using a DictVectorizer to vectorize the
+        features.
+
+    feature_hasher : bool, default=False
+        Whether or not a FeatureHasher should be used to
+        vectorize the features.
+
+    num_features : Optional[int], default=None
+        If using a FeatureHasher, how many features should the
+        resulting matrix have?  You should set this to a power
+        of 2 greater than the actual number of features to
+        avoid collisions.
+
+    logger : Optional[logging.Logger], default=None
+        A logger instance to use to log messages instead of creating
+        a new one by default.
     """
 
     def read(self) -> FeatureSet:
@@ -510,8 +558,8 @@ class DictListReader(Reader):
 
         Returns
         -------
-        feature_set : skll.data.FeatureSet
-            FeatureSet representing the list of dictionaries we read in.
+        :class:`skll.data.FeatureSet`
+            A ``FeatureSet`` representing the list of dictionaries we read in.
         """
         # if we are in this method, `self.path_or_list` must be a
         # list of dictionaries
@@ -572,6 +620,56 @@ class NDJReader(Reader):
 
     If example/instance IDs are included in the files, they
     must be specified as the  "id" key in each JSON dictionary.
+
+    Parameters
+    ----------
+    path_or_list : Union[:class:`skll.types.PathOrStr`, List[Dict[str, Any]]
+        Path or a list of example dictionaries.
+
+    quiet : bool, default=True
+        Do not print "Loading..." status message to stderr.
+
+    ids_to_floats : bool, default=False
+        Convert IDs to float to save memory. Will raise error
+        if we encounter an a non-numeric ID.
+
+    label_col : Optional[str], default='y'
+        Name of the column which contains the class labels
+        for ARFF/CSV/TSV files. If no column with that name
+        exists, or ``None`` is specified, the data is
+        considered to be unlabelled.
+
+    id_col : str, default='id'
+        Name of the column which contains the instance IDs.
+        If no column with that name exists, or ``None`` is
+        specified, example IDs will be automatically generated.
+
+    class_map : Optional[:class:`skll.types.ClassMap`], default=None
+        Mapping from original class labels to new ones. This is
+        mainly used for collapsing multiple labels into a single
+        class. Anything not in the mapping will be kept the same.
+        The keys are the new labels and the list of values for each
+        key is the labels to be collapsed to said new label.
+
+    sparse : bool, default=True
+        Whether or not to store the features in a numpy CSR
+        matrix when using a DictVectorizer to vectorize the
+        features.
+
+    feature_hasher : bool, default=False
+        Whether or not a FeatureHasher should be used to
+        vectorize the features.
+
+    num_features : Optional[int], default=None
+        If using a FeatureHasher, how many features should the
+        resulting matrix have?  You should set this to a power
+        of 2 greater than the actual number of features to
+        avoid collisions.
+
+    logger : Optional[logging.Logger], default=None
+        A logger instance to use to log messages instead of creating
+        a new one by default.
+
     """
 
     def _sub_read(self, file: IO[str]) -> FeatGenerator:
@@ -585,13 +683,13 @@ class NDJReader(Reader):
 
         Yields
         ------
-        curr_id : IdType
+        curr_id : :class:`skll.types.IdType`
             The current ID for the example.
 
-        class_name : Optional[LabelType]
+        class_name : Optional[:class:`skll.types.LabelType`]
             The name of the class label for the example.
 
-        example : FeatureDict
+        example : :class:`skll.types.FeatureDict`
             The example value in dictionary format, with 'x'
             as list of features.
 
@@ -642,6 +740,55 @@ class LibSVMReader(Reader):
     not have names.  The comment is structured as follows::
 
         ExampleID | 1=FirstClass | 1=FirstFeature 2=SecondFeature
+
+    Parameters
+    ----------
+    path_or_list : Union[:class:`skll.types.PathOrStr`, List[Dict[str, Any]]
+        Path or a list of example dictionaries.
+
+    quiet : bool, default=True
+        Do not print "Loading..." status message to stderr.
+
+    ids_to_floats : bool, default=False
+        Convert IDs to float to save memory. Will raise error
+        if we encounter an a non-numeric ID.
+
+    label_col : Optional[str], default='y'
+        Name of the column which contains the class labels
+        for ARFF/CSV/TSV files. If no column with that name
+        exists, or ``None`` is specified, the data is
+        considered to be unlabelled.
+
+    id_col : str, default='id'
+        Name of the column which contains the instance IDs.
+        If no column with that name exists, or ``None`` is
+        specified, example IDs will be automatically generated.
+
+    class_map : Optional[:class:`skll.types.ClassMap`], default=None
+        Mapping from original class labels to new ones. This is
+        mainly used for collapsing multiple labels into a single
+        class. Anything not in the mapping will be kept the same.
+        The keys are the new labels and the list of values for each
+        key is the labels to be collapsed to said new label.
+
+    sparse : bool, default=True
+        Whether or not to store the features in a numpy CSR
+        matrix when using a DictVectorizer to vectorize the
+        features.
+
+    feature_hasher : bool, default=False
+        Whether or not a FeatureHasher should be used to
+        vectorize the features.
+
+    num_features : Optional[int], default=None
+        If using a FeatureHasher, how many features should the
+        resulting matrix have?  You should set this to a power
+        of 2 greater than the actual number of features to
+        avoid collisions.
+
+    logger : Optional[logging.Logger], default=None
+        A logger instance to use to log messages instead of creating
+        a new one by default.
     """
 
     line_regex = re.compile(
@@ -678,8 +825,7 @@ class LibSVMReader(Reader):
         -------
         name : str
             The name of the feature.
-
-        value
+        value : Union[float, int, str]
             The value of the example.
         """
         name, value = pair.split(":")
@@ -694,18 +840,18 @@ class LibSVMReader(Reader):
 
         Parameters
         ----------
-        file : file buffer
+        file : IO[str]
             A file buffer for an LibSVM file.
 
         Yields
         ------
-        curr_id : IdType
+        curr_id : :class:`skll.types.IdType`
             The current ID for the example.
 
-        class_ : LabelType
+        class_ : :class:`skll.types.LabelType`
             The name of the class label for the example.
 
-        example : FeatureDict
+        example : :class:`skll.types.FeatureDict`
             The example valued in dictionary format, with 'x'
             as list of features.
 
@@ -783,10 +929,10 @@ class CSVReader(Reader):
 
     Parameters
     ----------
-    path_or_list : Union[PathOrStr, List[Dict[str, Any]]]
+    path_or_list : Union[:class:`skll.types.PathOrStr`, List[Dict[str, Any]]]
         The path to a comma-delimited file.
 
-    replace_blanks_with : Optional[Union[Number, Dict[str, Number]]]
+    replace_blanks_with : Optional[Union[Number, Dict[str, Number]]], default=None
         Specifies a new value with which to replace blank values.
         Options are:
 
@@ -795,17 +941,16 @@ class CSVReader(Reader):
         - ``None`` : Blank values will be left as blanks, and not replaced.
 
         The replacement occurs after the data set is read into a ``pd.DataFrame``.
-        Defaults to ``None``.
 
     drop_blanks : bool, default=False
         If ``True``, remove lines/rows that have any blank
         values. These lines/rows are removed after the
         the data set is read into a ``pd.DataFrame``.
 
-    pandas_kwargs : Optional[Dict[str, Any]]
+    pandas_kwargs : Optional[Dict[str, Any]], default=None
         Arguments that will be passed directly to the ``pandas`` I/O reader.
 
-    kwargs : Dict[str, Any], optional
+    kwargs : Optional[Dict[str, Any]]
         Other arguments to the Reader object.
     """
 
@@ -832,18 +977,18 @@ class CSVReader(Reader):
 
         Parameters
         ----------
-        file : PathOrStr
+        file : :class:`skll.types.PathOrStr`
             The path to the CSV file.
 
         Returns
         -------
-        ids : np.array of shape (n_ids,)
+        ids : numpy.ndarray of shape (n_ids,)
             The ids for the feature set.
 
-        labels : np.array of shape (n_labels,)
+        labels : numpy.ndarray of shape (n_labels,)
             The labels for the feature set.
 
-        features : FeatureDictList
+        features : :class:`skll.types.FeatureDictList`
             The list of feature dictionaries for the feature set.
         """
         df = pd.read_csv(file, sep=self._sep, engine=self._engine, **self._pandas_kwargs)
@@ -870,7 +1015,7 @@ class TSVReader(CSVReader):
     path_or_list : str
         The path to a comma-delimited file.
 
-    replace_blanks_with : Optional[Union[Number, Dict[str, Number]]]
+    replace_blanks_with : Optional[Union[Number, Dict[str, Number]]], default=None
         Specifies a new value with which to replace blank values.
         Options are:
 
@@ -879,18 +1024,16 @@ class TSVReader(CSVReader):
             - ``None`` : Blank values will be left as blanks, and not replaced.
 
         The replacement occurs after the data set is read into a ``pd.DataFrame``.
-        Defaults to ``None``.
 
     drop_blanks : bool, default=False
         If ``True``, remove lines/rows that have any blank values. These
         lines/rows are removed after the the data set is read into a
         ``pd.DataFrame``.
 
-    pandas_kwargs : Optional[Dict[str, Any]]
+    pandas_kwargs : Optional[Dict[str, Any]], default=None
         Arguments that will be passed directly to the ``pandas`` I/O reader.
-        Defaults to ``None``.
 
-    kwargs : Dict[str, Any], optional
+    kwargs : Optional[Dict[str, Any]]
         Other arguments to the Reader object.
     """
 
@@ -924,10 +1067,10 @@ class ARFFReader(Reader):
 
     Parameters
     ----------
-    path_or_list : Union[PathOrStr, List[Dict[str, Any]]]
+    path_or_list : Union[:class:`skll.types.PathOrStr`, List[Dict[str, Any]]]
         The path to the ARFF file.
 
-    kwargs : Dict[str, Any], optional
+    kwargs : Optional[Dict[str, Any]]
         Other arguments to the Reader object.
     """
 
@@ -974,15 +1117,14 @@ class ARFFReader(Reader):
 
         Yields
         ------
-        curr_id : IdType
+        curr_id : :class:`skll.types.IdType`
             The current ID for the example.
 
-        class_name : LabelType
+        class_name : :class:`skll.types.LabelType`
             The name of the class label for the example.
 
-        example : FeatureDict
-            The example valued in dictionary format, with 'x'
-            as list of features.
+        example : :class:`skll.types.FeatureDict`
+            The example features in dictionary format.
         """
         field_names = []
         # Process ARFF header
