@@ -8,6 +8,8 @@ Functions related to running experiments and parsing configuration files.
 :author: Chee Wee Leong (cleong@ets.org)
 """
 
+from __future__ import annotations
+
 import csv
 import json
 import math
@@ -91,9 +93,9 @@ def generate_learning_curve_plots(
     ----------
     experiment_name : str
         The name of the experiment.
-    output_dir : PathOrStr
+    output_dir : :class:`skll.types.PathOrStr`
         Path to the output directory for the plots.
-    learning_curve_tsv_file : PathOrStr
+    learning_curve_tsv_file : :class:`skll.types.PathOrStr`
         The path to the learning curve TSV file.
     """
     # convert output_dir to Path object

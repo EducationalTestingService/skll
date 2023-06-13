@@ -8,6 +8,8 @@ Functions for running and interacting with SKLL experiments.
 :author: Chee Wee Leong (cleong@ets.org)
 """
 
+from __future__ import annotations
+
 import datetime
 import json
 import logging
@@ -61,19 +63,17 @@ __all__ = ["generate_learning_curve_plots", "load_featureset", "run_configuratio
 
 def _classify_featureset(args: Dict[str, Any]) -> List[Dict[str, Any]]:
     """
-    Classification job to be submitted to grid.
+    Run classification job.
 
     Parameters
     ----------
     args : Dict[str, Any]
-        A dictionary with arguments for classifying the
-        ``FeatureSet`` instance.
+        A dictionary with arguments for classifying the ``FeatureSet`` instance.
 
     Returns
     -------
     res : List[Dict[str, Any]]
-        The results of the classification, in the format
-        of a list of dictionaries.
+        The results of the classification, in the format of a list of dictionaries.
 
     Raises
     ------
@@ -620,28 +620,22 @@ def run_configuration(
 
     Parameters
     ----------
-    config_file : PathOrStr
+    config_file : :class:`skll.types.PathOrStr`
         Path to the configuration file we would like to use.
-    local : bool
+    local : bool, default=False
         Should this be run locally instead of on the cluster?
-        Defaults to ``False``.
-    overwrite : bool
+    overwrite : bool, default=True
         If the model files already exist, should we overwrite
         them instead of re-using them?
-        Defaults to ``True``.
-    queue : str
+    queue : str, default="all.q"
         The DRMAA queue to use if we're running on the cluster.
-        Defaults to ``'all.q'``.
-    hosts : Optional[List[str]]
+    hosts : Optional[List[str]], default=None
         If running on the cluster, these are the machines we should use.
-        Defaults to ``None``.
-    write_summary : bool
+    write_summary : bool, default=True
         Write a TSV file with a summary of the results.
-        Defaults to ``True``.
-    quiet : bool
+    quiet : bool, default=False
         Suppress printing of "Loading..." messages.
-        Defaults to ``False``.
-    ablation : int
+    ablation : int, default=0
         Number of features to remove when doing an ablation
         experiment. If positive, we will perform repeated ablation
         runs for all combinations of features removing the
@@ -649,15 +643,12 @@ def run_configuration(
         combinations of all lengths. If 0, the default, no
         ablation is performed. If negative, a ``ValueError`` is
         raised.
-        Defaults to 0.
-    resume : bool
+    resume : bool, default=False
         If result files already exist for an experiment, do not
         overwrite them. This is very useful when doing a large
         ablation experiment and part of it crashes.
-        Defaults to ``False``.
-    log_level : int
+    log_level : int, default=logging.INFO
         The level for logging messages.
-        Defaults to ``logging.INFO``.
 
     Returns
     -------

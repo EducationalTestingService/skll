@@ -34,50 +34,42 @@ def load_featureset(
 
     Parameters
     ----------
-    dir_path : PathOrStr
+    dir_path : :class:`skll.types.PathOrStr`
         Path to the directory that contains the feature files.
     feat_files : List[str]
         A list of feature file prefixes.
     suffix : str
         The suffix to add to feature file prefixes to get the full filenames.
-    id_col : str
+    id_col : str, default="id"
         Name of the column which contains the instance IDs.
         If no column with that name exists, or `None` is
         specified, example IDs will be automatically generated.
-        Defaults to ``'id'``.
-    label_col : str
+    label_col : str, default="y"
         Name of the column which contains the class labels.
         If no column with that name exists, or `None` is
         specified, the data is considered to be unlabeled.
-        Defaults to ``'y'``.
-    ids_to_floats : bool
+    ids_to_floats : bool, default=False
         Whether to convert the IDs to floats to save memory. Will raise error
         if we encounter non-numeric IDs.
-        Defaults to ``False``.
-    quiet : bool
+    quiet : bool, default=False
         Do not print "Loading..." status message to stderr.
-        Defaults to ``False``.
-    class_map : Optional[ClassMap]
+    class_map : Optional[:class:`skll.types.ClassMap`], default=None
         Mapping from original class labels to new ones. This is
         mainly used for collapsing multiple labels into a single
         class. Anything not in the mapping will be kept the same.
-        Defaults to ``None``.
-    feature_hasher : bool
+    feature_hasher : bool, default=False
         Should we use a FeatureHasher when vectorizing features?
-        Defaults to ``False``.
-    num_features : Optional[int]
+    num_features : Optional[int], default=None
         The number of features to use with the ``FeatureHasher``.
         This should always be set to the power of 2 greater
         than the actual number of features you're using.
-        Defaults to ``None``.
-    logger : Optional[logging.Logger]
+    logger : Optional[logging.Logger], default=None
         A logger instance to use to log messages instead of creating
         a new one by default.
-        Defaults to ``None``.
 
     Returns
     -------
-    merged_set : skll.data.FeatureSet
+    merged_set : :class:`skll.data.featureset.FeatureSet`
         A ``FeatureSet`` instance containing the specified labels, IDs, features,
         and feature vectorizer.
     """
