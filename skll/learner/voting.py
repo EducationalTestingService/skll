@@ -55,30 +55,28 @@ class VotingLearner(object):
 
     Parameters
     ----------
-    learner_names : list of str
+    learner_names : List[str]
         List of the learner names that will participate in the voting process.
-    voting : str, optional
+    voting : Optional[str], default="hard"
         One of "hard" or "soft". If "hard", the predicted class labels
         are used for majority rule voting. If "soft", the predicted class
         label is based on the argmax of the sums of the predicted
         probabilities from each of the underlying learnrs. This parameter
         is only relevant for classification.
-        Defaults to "hard".
-    custom_learner_path : Union[str, Path], optional
+    custom_learner_path : Optional[:class:`skll.types.PathOrStr`], default=None
         Path to a Python file containing the definitions of any custom
         learners. Any and all custom learners in ``estimator_names`` must
         be defined in this file. If the custom learner does not inherit
         from an already existing scikit-learn estimator, it must explicitly
         define an `_estimator_type` attribute indicating whether it's a
         "classifier" or a "regressor".
-    feature_scaling : str, optional
+    feature_scaling : str, default="none"
         How to scale the features, if at all for each estimator. Options are
         -  "with_std": scale features using the standard deviation
         -  "with_mean": center features using the mean
         -  "both": do both scaling as well as centering
         -  "none": do neither scaling nor centering
-        Defaults to 'none'.
-    pos_label : str, optional
+    pos_label : Optional[:class:`skll.types.LabelType`], default=None
         A string denoting the label of the class to be
         treated as the positive class in a binary classification
         setting, for each estimator. If ``None``, the class represented
@@ -86,18 +84,15 @@ class VotingLearner(object):
         positive class. For example, if the two labels in data are "A"
         and "B" and ``pos_label`` is not specified, "B" will
         be chosen as the positive class.
-        Defaults to ``None``.
-    min_feature_count : int, optional
+    min_feature_count : int, default=1
         The minimum number of examples a feature must have a nonzero
         value in to be included, for each estimator.
-        Defaults to 1.
-    model_kwargs_list : list of dicts, optional
+    model_kwargs_list : Optional[List[Dict[str, Any]]], default=None
         A list of dictionaries of keyword arguments to pass to the
         initializer for each of the estimators. There's a one-to-one
         correspondence between the order of this list and the order
         of the ``learner_names`` list.
-        Defaults to ``None``.
-    sampler_list : list of str, optional
+    sampler_list : Optional[List[str]], default=None
         The samplers to use for kernel approximation, if desired, for each
         estimator. Valid values are:
         -  "AdditiveChi2Sampler"
@@ -106,16 +101,13 @@ class VotingLearner(object):
         -  "SkewedChi2Sampler"
         There's a one-to-one correspondence between the order of this list
         and the order of the ``learner_names`` list.
-        Defaults to ``None``.
-    sampler_kwargs_list : dict, optional
+    sampler_kwargs_list : Optional[List[Dict[str, Any]]], default=None
         A list of dictionaries of keyword arguments to pass to the
         initializer for the specified sampler, one per estimator.
         There's a one-to-one correspondence between the order of this
         list and the order of the ``learner_names`` list.
-        Defaults to ``None``.
-    logger : logging object, optional
+    logger : Optional[logging.Logger], default=None
         A logging object. If ``None`` is passed, get logger from ``__name__``.
-        Defaults to ``None``.
     """
 
     def __init__(
@@ -242,7 +234,7 @@ class VotingLearner(object):
 
         Parameters
         ----------
-        learner_path : PathOrStr
+        learner_path : :class:`skll.types.PathOrStr`
             The path to save the ``VotingLearner`` instance to.
         """
         _save_learner_to_disk(self, learner_path)
@@ -256,11 +248,10 @@ class VotingLearner(object):
 
         Parameters
         ----------
-        learner_path : PathOrStr
+        learner_path : :class:`skll.types.PathOrStr`
             The path to a saved ``VotingLearner`` instance file.
-        logger : Optional[logging.Logger]
+        logger : Optional[logging.Logger], default=None
             A logging object. If ``None`` is passed, get logger from ``__name__``.
-            Defaults to ``None``.
 
         Returns
         -------
@@ -306,37 +297,31 @@ class VotingLearner(object):
 
         Parameters
         ----------
-        examples : skll.data.FeatureSet
+        examples : :class:`skll.data.featureset.FeatureSet`
             The ``FeatureSet`` instance to use for training.
-        param_grid_list : Optional[List[Dict[str, Any]]]
+        param_grid_list : Optional[List[Dict[str, Any]]], default=None
             The list of parameter grids to search through for grid
             search, one for each underlying learner. The order of
             the dictionaries should correspond to the order in
             which the underlying estimators were specified when the
             ``VotingLearner`` was instantiated. If ``None``, the default
             parameter grids will be used for the underlying estimators.
-            Defaults to ``None``.
-        grid_search_folds : Union[int, FoldMapping]
+        grid_search_folds : Union[int, :class:`skll.types.FoldMapping`], default=5
             The number of folds to use when doing the grid search
             for each of the underlying learners, or a mapping from
             example IDs to folds.
-            Defaults to 5.
-        grid_search : bool
+        grid_search : bool, default=True
             Should we use grid search when training each underlying learner?
-            Defaults to ``True``.
-        grid_objective : Optional[str]
+        grid_objective : Optional[str], default=None
             The name of the objective function to use when
             doing the grid search for each underlying learner.
             Must be specified if ``grid_search`` is ``True``.
-            Defaults to ``None``.
-        grid_jobs : Optional[int]
+        grid_jobs : Optional[int], default=None
             The number of jobs to run in parallel when doing the
             grid search for each underlying learner. If ``None`` or 0,
             the number of grid search folds will be used.
-            Defaults to ``None``.
-        shuffle : bool
+        shuffle : bool, default=False
             Shuffle examples (e.g., for grid search CV.)
-            Defaults to ``False``.
         """
         if param_grid_list is None:
             self._param_grids = []
@@ -435,24 +420,20 @@ class VotingLearner(object):
 
         Parameters
         ----------
-        examples : skll.data.FeatureSet
+        examples : :class:`skll.data.featureset.FeatureSet`
             The ``FeatureSet`` instance to predict labels for.
-        prediction_prefix : Optional[str]
+        prediction_prefix : Optional[str], default=None
             If saving the predictions, this is the prefix that will be used for
             the filename. It will be followed by ``"_predictions.tsv"``
-            Defaults to ``None``.
-        append : bool
+        append : bool, default=False
             Should we append the current predictions to the file if it exists?
-            Defaults to ``False``.
-        class_labels : bool
+        class_labels : bool, default=True
             For classifier, should we convert class indices to their (str) labels
             for the returned array? Note that class labels are always written out
             to disk.
-            Defaults to ``True``.
-        individual_predictions : bool
+        individual_predictions : bool, default=False
             Return (and, optionally, write out) the predictions from each
             underlying learner.
-            Defaults to ``False``.
 
         Returns
         -------
@@ -547,31 +528,26 @@ class VotingLearner(object):
 
         Parameters
         ----------
-        examples : skll.data.FeatureSet
+        examples : :class:`skll.data.featureset.FeatureSet`
             The ``FeatureSet`` instance to evaluate the performance of the model on.
-        prediction_prefix : Optional[str]
+        prediction_prefix : Optional[str], default=None
             If saving the predictions, this is the
             prefix that will be used for the filename.
             It will be followed by ``"_predictions.tsv"``
-            Defaults to ``None``.
-        append : bool
+        append : bool, default=False
             Should we append the current predictions to the file if
             it exists?
-            Defaults to ``False``.
-        grid_objective : Optional[str]
+        grid_objective : Optional[str], default=None
             The objective function used when doing the grid search.
-            Defaults to ``None``.
-        individual_predictions : bool
+        individual_predictions : bool, default=False
             Optionally, write out the predictions from each underlying learner.
-            Defaults to ``False``.
-        output_metrics : List[str]
+        output_metrics : List[str], default=[]
             List of additional metric names to compute in
-            addition to grid objective. Empty by default.
-            Defaults to an empty list.
+            addition to grid objective.
 
         Returns
         -------
-        EvaluateTaskResults
+        :class:`skll.types.EvaluateTaskResults`
             The confusion matrix, the overall accuracy, the per-label
             PRFs, the model parameters, the grid search objective
             function score, and the additional evaluation metrics, if any.
@@ -670,86 +646,71 @@ class VotingLearner(object):
 
         Parameters
         ----------
-        examples : skll.data.FeatureSet
+        examples : :class:`skll.data.featureset.FeatureSet`
             The ``FeatureSet`` instance to cross-validate learner performance on.
-        stratified : bool
+        stratified : bool, default=True
             Should we stratify the folds to ensure an even
             distribution of labels for each fold?
-            Defaults to ``True``.
-        cv_folds : Union[int, FoldMapping]
+        cv_folds : Union[int, :class:`skll.types.FoldMapping`], default=10
             The number of folds to use for cross-validation, or
             a mapping from example IDs to folds.
-            Defaults to 10.
-        cv_seed: int
+        cv_seed: int, default=123456789
             The value for seeding the random number generator
             used to create the random folds. Note that this
             seed is *only* used if either ``grid_search`` or
             ``shuffle`` are set to ``True``.
-            Defaults to 123456789.
-        grid_search : bool
+        grid_search : bool, default=True
             Should we do grid search when training each fold?
             Note: This will make this take *much* longer.
-            Defaults to ``True``.
-        grid_search_folds : Union[int, FoldMapping]
+        grid_search_folds : Union[int, :class:`skll.types.FoldMapping`], default=5
             The number of folds to use when doing the grid search, or a mapping
             from example IDs to folds.
-            Defaults to 5.
-        grid_jobs : Optional[int]
+        grid_jobs : Optional[int], default=None
             The number of jobs to run in parallel when doing the grid search.
             If ``None`` or 0, the number of grid search folds will be used.
-            Defaults to ``None``.
-        grid_objective : Optional[str]
+        grid_objective : Optional[str], default=None
             The name of the objective function to use when doing the grid search.
             Must be specified if ``grid_search`` is ``True``.
-            Defaults to ``None``.
-        output_metrics : Optional[List[str]]
+        output_metrics : Optional[List[str]], default=[]
             List of additional metric names to compute in addition to the metric
             used for grid search.
-            Defaults to an empty list.
-        prediction_prefix : Optional[str]
+        prediction_prefix : Optional[str], default=None
             If saving the predictions, this is the prefix that will be used for
             the filename. It will be followed by ``"_predictions.tsv"``
-            Defaults to ``None``.
-        param_grid_list : Optional[List[Dict[str, Any]]]
+        param_grid_list : Optional[List[Dict[str, Any]]], default=None
             The list of parameters grid to search through for grid
             search, one for each underlying learner. The order of
             the dictionaries should correspond to the order If ``None``,
             the default parameter grids will be used for the underlying
             estimators.
-            Defaults to ``None``.
-        shuffle : bool
+        shuffle : bool, default=False
             Shuffle examples before splitting into folds for CV.
-            Defaults to ``False``.
-        save_cv_folds : bool
+        save_cv_folds : bool, default=True
              Whether to save the cv fold ids or not?
-             Defaults to ``True``.
-        save_cv_models : bool
+        save_cv_models : bool, default=False
             Whether to save the cv models or not?
-            Defaults to ``False``.
-        individual_predictions : bool
+        individual_predictions : bool, default=False
             Write out the cross-validated predictions from each underlying
             learner as well.
-            Defaults to ``False``.
-        use_custom_folds_for_grid_search : bool
+        use_custom_folds_for_grid_search : bool, default=True
             If ``cv_folds`` is a custom dictionary, but ``grid_search_folds``
             is not, perhaps due to user oversight, should the same custom
             dictionary automatically be used for the inner grid-search
             cross-validation?
-            Defaults to ``True``.
 
         Returns
         -------
-        CrossValidateTaskResults
+        :class:`skll.types.CrossValidateTaskResults`
            A 3-tuple containing the following:
 
-            List[EvaluateTaskResults]: the confusion matrix, overall accuracy,
+            List[:class:`skll.types.EvaluateTaskResults`]: the confusion matrix, overall accuracy,
             per-label PRFs, model parameters, objective function score, and
             evaluation metrics (if any) for each fold.
 
-            Optional[FoldMapping]: dictionary containing the test-fold number
+            Optional[:class:`skll.types.FoldMapping`]: dictionary containing the test-fold number
             for each id if ``save_cv_folds`` is ``True``, otherwise ``None``.
 
-            Optional[List[skll.learner.voting.VotingLearner]]: list of voting
+            Optional[List[:class:`skll.learner.voting.VotingLearner`]]: list of voting
             learners, one for each fold if ``save_cv_models`` is ``True``,
             otherwise ``None``.
 
@@ -909,17 +870,16 @@ class VotingLearner(object):
 
         Parameters
         ----------
-        examples : skll.data.FeatureSet
+        examples : :class:`skll.data.featureset.FeatureSet`
             The ``FeatureSet`` instance to generate the learning curve on.
         metric : str
             The name of the metric function to use
             when computing the train and test scores
             for the learning curve.
-        cv_folds : Union[int, FoldMapping]
+        cv_folds : Union[int, :class:`skll.types.FoldMapping`], default=10
             The number of folds to use for cross-validation, or
             a mapping from example IDs to folds.
-            Defaults to 10.
-        train_sizes : LearningCurveSizes
+        train_sizes : :class:`skll.types.LearningCurveSizes`, default= :func:`numpy.linspace` with start=0.1, stop=1.0, num=5
             Relative or absolute numbers of training examples
             that will be used to generate the learning curve.
             If the type is float, it is regarded as a fraction
@@ -930,14 +890,12 @@ class VotingLearner(object):
             sets. Note that for classification the number of
             samples usually have to be big enough to contain
             at least one sample from each class.
-            Defaults to  ``np.linspace(0.1, 1.0, 5)``.
-        override_minimum : bool
+        override_minimum : bool, default=False
             Learning curves can be unreliable for very small sizes
             esp. for > 2 labels. If this option is set to ``True``, the
             learning curve would be generated even if the number
             of example is less 500 along with a warning. If ``False``,
             the curve is not generated and an exception is raised instead.
-            Defaults to ``False``.
 
         Returns
         -------
