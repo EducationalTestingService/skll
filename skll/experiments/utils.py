@@ -82,7 +82,7 @@ def _create_learner_result_dicts(
 
     Parameters
     ----------
-    task_results : List[EvaluateTaskResults]
+    task_results : List[:class:`skll.types.EvaluateTaskResults`]
         The task results list.
     grid_scores : Union[List[None], List[float]]
         List of grid scores or a list of ``None`` instances for tasks that do not
@@ -99,8 +99,7 @@ def _create_learner_result_dicts(
     Returns
     -------
     res : List[Dict[str, Any]]
-        The results of the learners, as a list of
-        dictionaries.
+        The results of the learners, as a list of dictionaries.
     """
     res = []
 
@@ -233,16 +232,14 @@ def _get_stat_float(label_result_dict: Dict[str, float], stat: str) -> float:
     Parameters
     ----------
     label_result_dict : Dict[str, float]
-        Dictionary containing the stat we'd like
-        to retrieve for a particular label.
+        Dictionary containing the stats to retrieve for a particular label.
     stat : str
         The statistic we're looking for in the dictionary.
 
     Returns
     -------
     float
-        The value of the stat if it's in the dictionary, and NaN
-        otherwise.
+        The value of the stat if it's in the dictionary, and NaN otherwise.
     """
     if stat in label_result_dict and label_result_dict[stat] is not None:
         return label_result_dict[stat]
