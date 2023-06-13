@@ -218,13 +218,13 @@ class Writer(object):
 
         Parameters
         ----------
-        feature_set
+        feature_set : Ignored
             Not used.
 
-        output_file
+        output_file : Ignored
             Not used.
 
-        filter_features
+        filter_features : Ignored
            Not used.
         """
         pass
@@ -235,16 +235,16 @@ class Writer(object):
 
         Parameters
         ----------
-        id_ :
+        id_ : Ignored
             Not used.
 
-        label_
+        label_ : Ignored
             Not used.
 
-        feat_dict
+        feat_dict : Ignored
             Not used.
 
-        output_file
+        output_file : Ignored
              Not used.
 
         Raises
@@ -260,13 +260,13 @@ class Writer(object):
 
         Parameters
         ----------
-        feature_set
+        feature_set : Ignored
             Not used.
 
-        output_file
+        output_file : Ignored
             Not used.
 
-        filter_features
+        filter_features : Ignored
             Not used.
 
         Raises
@@ -679,7 +679,7 @@ class ARFFWriter(Writer):
 
         Parameters
         ----------
-        feature_set
+        feature_set : Ignored
             Not used.
 
         output_file : IO[str]
@@ -739,7 +739,7 @@ class ARFFWriter(Writer):
         feat_dict : :class:`skll.types.FeatureDict`
             The feature dictionary for the current instance.
 
-        output_file
+        output_file : Ignored.
             Not used.
 
         Raises

@@ -205,7 +205,7 @@ class Reader(object):
 
         Parameters
         ----------
-        file
+        file : Ignored
             Not used.
 
         Raises
