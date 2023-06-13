@@ -109,10 +109,12 @@ class FilteredLeaveOneGroupOut(LeaveOneGroupOut):
 
     Parameters
     ----------
-    keep : set of str
+    keep : Iterable[IdType]
         A set of IDs to keep.
     example_ids : numpy.ndarray, of length n_samples
         A list of example IDs.
+    logger : Optional[logging.Logger], default=None
+        A logger instance.
     """
 
     def __init__(
@@ -176,9 +178,8 @@ class SelectByMinCount(SelectKBest):
 
     Parameters
     ----------
-    min_count : int, optional
+    min_count : int, default=1
         The minimum feature count to select.
-        Defaults to 1.
     """
 
     def __init__(self, min_count: int = 1):
@@ -195,7 +196,7 @@ class SelectByMinCount(SelectKBest):
         X : numpy.ndarray, with shape (n_samples, n_features)
             The training data to fit.
         y : Ignored
-            This is ignored.
+            Not used.
 
         Returns
         -------
@@ -241,14 +242,14 @@ def add_unseen_labels(
 
     Parameters
     ----------
-    train_label_dict : Dict[LabelType, int]
+    train_label_dict : Dict[:class:`skll.types.LabelType`, int]
         Dictionary mapping training set class labels to class indices.
-    test_label_list : List[LabelType]
+    test_label_list : List[:class:`skll.types.LabelType`]
         List containing labels in the test set.
 
     Returns
     -------
-    Dict[LabelType, int]
+    Dict[:class:`skll.types.LabelType`, int]
         Dictionary mapping merged labels from both the training and test sets
         to indices.
     """
@@ -296,25 +297,21 @@ def compute_evaluation_metrics(
         The predictions to be used for computing the metrics.
     model_type : str
         One of "classifier" or "regressor".
-    label_dict : Optional[Dict[LabelType, int]]
+    label_dict : Optional[Dict[LabelType, int]], default=None
         Dictionary mapping class labels to indices for classification.
-        Defaults to ``None``.
-    grid_objective : Optional[str]
+    grid_objective : Optional[str], default=None
         The objective used for tuning the hyper-parameters of the model
         that generated the predictions. If ``None``, it means that no
         grid search was done.
-        Defaults to ``None``.
-    probability : bool
+    probability : bool, default=False
         Does the model output class probabilities?
-        Defaults to ``False``.
-    logger : Optional[logging.Logger]
+    logger : Optional[logging.Logger], default=None
         A logger instance to use for logging messages and warnings.
         If ``None``, a new one is created.
-        Defaults to ``None``.
 
     Returns
     -------
-    ComputeEvalMetricsResults
+    :class:`skll.types.ComputeEvalMetricsResults`
         5-tuple including the confusion matrix, the overall accuracy, the
         per-label PRFs, the grid search objective function score, and the
         additional evaluation metrics, if any. For regressors, the
@@ -472,10 +469,9 @@ def compute_num_folds_from_example_counts(
         The example labels.
     model_type : str
         One of "classifier" or "regressor".
-    logger : Optional[logging.Logger]
+    logger : Optional[logging.Logger], default=None
         A logger instance to use for logging messages and warnings.
         If ``None``, a new one is created.
-        Defaults to ``None``.
 
     Returns
     -------
@@ -655,14 +651,14 @@ def load_custom_learner(
 
     Parameters
     ----------
-    custom_learner_path : PathOrStr
+    custom_learner_path : :class:`skll.types.PathOrStr`
         The path to a custom learner.
     custom_learner_name : str
         The name of a custom learner.
 
     Returns
     -------
-    skll.learner.Learner
+    :class:`skll.learner.Learner`
         The SKLL learner object loaded from the given path.
 
     Raises
@@ -706,7 +702,7 @@ def get_predictions(
 
     Parameters
     ----------
-    learner : skll.Learner
+    learner : Union[:class:`skll.learner.Learner`, :class:`skll.learner.voting.VotingLearner`]
         The already-trained ``Learner`` or ``VotingLearner`` instance that is
         used to generate the predictions.
     xtest : numpy.ndarray
@@ -714,7 +710,7 @@ def get_predictions(
 
     Returns
     -------
-    prediction_dict : dict
+    prediction_dict : Dict[str, Any]
         Dictionary containing the three types of predictions as the keys
         and either ``None`` or a numpy array as the value.
 
@@ -947,14 +943,12 @@ def rescaled(cls):
 
         Parameters
         ----------
-        constrain : bool
+        constrain : bool, default=True
             Whether to constrain predictions within min and max values.
-            Defaults to True.
-        rescale : bool
+        rescale : bool, default=True
             Whether to rescale prediction values using z-scores.
-            Defaults to True.
-        kwargs : dict
-            Arguments for base class.
+        kwargs : Dict[str, Any]
+            Keyword arguments for base class.
         """
         # pylint: disable=W0201
         self.constrain = constrain
@@ -990,24 +984,22 @@ def setup_cv_fold_iterator(
 
     Parameters
     ----------
-    cv_folds : Union[int, FoldMapping]
+    cv_folds : Union[int, :class:`skll.types.FoldMapping`]
         The number of folds to use for cross-validation, or
         a mapping from example IDs to folds.
-    examples : skll.data.FeatureSet
+    examples : :class:`skll.data.featureset.FeatureSet`
         The ``FeatureSet`` instance for which the CV iterator is to be computed.
     model_type : str
         One of "classifier" or "regressor".
-    stratified : bool
+    stratified : bool, default=False
         Should the cross-validation iterator be set up in a stratified fashion?
-        Defaults to ``False``.
-    logger : Optional[logging.Logger]
+    logger : Optional[logging.Logger], default=None
         A logger instance to use for logging messages and warnings.
         If ``None``, a new one is created.
-        Defaults to ``None``.
 
     Returns
     -------
-    StratifiedKFold
+    :class:`skll.types.StratifiedKFold`
         k-fold iterator
     Optional[List[str]]
         List of cross-validation groups
@@ -1052,15 +1044,15 @@ def setup_cv_split_iterator(
 
     Parameters
     ----------
-    cv_folds : Union[int, FoldMapping]
+    cv_folds : Union[int, :class:`skll.types.FoldMapping`]
         The number of folds to use for cross-validation, or
         a mapping from example IDs to folds.
-    examples : skll.data.FeatureSet
+    examples : :class:`skll.data.featureset.FeatureSet`
         The given featureset which is to be split.
 
     Returns
     -------
-    FeaturesetIterator
+    :class:`skll.types.FeaturesetIterator`
         Iterator over the train/test featuresets
     int
         The maximum number of training samples available.
@@ -1107,11 +1099,11 @@ def train_and_score(
 
     Parameters
     ----------
-    learner : skll.learner.Learner
+    learner : :class:`skll.learner.Learner`
         A SKLL ``Learner`` instance.
-    train_examples : skll.data.FeatureSet
+    train_examples : :class:`skll.data.featureset.FeatureSet`
         The training examples.
-    test_examples : skll.data.FeatureSet
+    test_examples : :class:`skll.data.featureset.FeatureSet`
         The test examples.
     metric : str
         The scoring function passed to ``use_score_func()``.
@@ -1190,11 +1182,10 @@ def write_predictions(
         "<file_prefix>_predictions.tsv".
     model_type : str
         One of "classifier" or "regressor".
-    label_list : List[LabelType]
+    label_list : List[:class:`skll.types.LabelType`]
         List of class labels, required if ``probability`` is ``True``.
-    append : bool
+    append : bool, default=False
         Should we append the current predictions to the file if it exists?
-        Defaults to ``False``.
     """
     # create a new file starting with the given prefix
     prediction_file = f"{file_prefix}_predictions.tsv"
@@ -1243,9 +1234,9 @@ def _save_learner_to_disk(
 
     Parameters
     ----------
-    learner : Union[skll.learner.Learner, skll.learner.voting.VotingLearner]
+    learner : Union[:class:`skll.learner.Learner`, :class:`skll.learner.voting.VotingLearner`]
         A ``Learner`` or ``VotingLearner`` instance to save to disk.
-    filepath : PathOrStr
+    filepath : :class:`skll.types.PathOrStr`
         The path to save the learner instance to.
     """
     # create the directory if it doesn't exist
@@ -1269,16 +1260,16 @@ def _load_learner_from_disk(
 
     Parameters
     ----------
-    learner_type : Union[Type[skll.learner.Learner], Type[skll.learner.voting.VotingLearner]]
+    learner_type : Union[Type[:class:`skll.learner.Learner`], Type[:class:`skll.learner.voting.VotingLearner`]]
         The type of learner instance to load from disk.
-    filepath : PathOrStr
+    filepath : :class:`skll.types.PathOrStr`
         The path to a saved ``Learner`` or ``VotingLearner`` file.
-    logger : logging object
+    logger : logging.Logger
         A logging object.
 
     Returns
     -------
-    learner : skll.learner.Learner or skll.learner.voting.VotingLearner
+    learner : Union[:class:`skll.learner.Learner`, :class:`skll.learner.voting.VotingLearner`]
         The ``Learner`` or ``VotingLearner`` instance loaded from the file.
 
     Raises
