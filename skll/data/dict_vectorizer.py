@@ -1,4 +1,6 @@
 """
+Enhance scikit-learn's ``DictVectorizer`` to add equality checking.
+
 This module is here because the scikit-learn version of `DictVectorizer`
 does not contain an `__eq__` method for vectorizer equality which we need
 for SKLL.
@@ -13,7 +15,7 @@ from sklearn.feature_extraction import DictVectorizer as OldDictVectorizer
 
 class DictVectorizer(OldDictVectorizer):
     """
-    Transforms lists of feature-value mappings to vectors.
+    Transform lists of feature-value mappings to vectors.
 
     This transformer turns lists of mappings (dict-like objects) of feature
     names to feature values into Numpy arrays or scipy.sparse matrices for use
@@ -37,26 +39,26 @@ class DictVectorizer(OldDictVectorizer):
 
     Parameters
     ----------
-    dtype : callable, optional
+    dtype : Optional[Callable]
         The type of feature values. Passed to Numpy array/scipy.sparse matrix
         constructors as the dtype argument.
 
-    separator : string, optional
+    separator : Optional[str]
         Separator string used when constructing new features for one-hot
         coding.
 
-    sparse : boolean, default=True
+    sparse : bool, default=True
         Whether transform should produce scipy.sparse matrices.
 
-    sort : boolean, default=True
+    sort : bool, default=True
         Whether `feature_names_` and `vocabulary_` should be sorted when fitting.
 
     Attributes
     ----------
-    vocabulary_ : dict
+    vocabulary_ : Dict[str, Any]
         A dictionary mapping feature names to feature indices.
 
-    feature_names_ : list
+    feature_names_ : List[str]
         A list of length n_features containing the feature names (e.g., "f=ham"
         and "f=spam").
 
@@ -75,18 +77,15 @@ class DictVectorizer(OldDictVectorizer):
     >>> v.transform({'foo': 4, 'unseen_feature': 3})
     array([[ 0.,  0.,  4.]])
 
-    See also
-    --------
+    Notes
+    -----
     FeatureHasher : performs vectorization using only a hash function.
     sklearn.preprocessing.OneHotEncoder : handles nominal/categorical features
       encoded as columns of integers.
     """
 
     def __eq__(self, other):
-        """
-        Check whether two vectorizers are the same, assuming
-        we are actually comparing to a vectorizer
-        """
+        """Check whether two vectorizers are the same."""
         return (
             isinstance(other, OldDictVectorizer)
             and self.dtype == other.dtype

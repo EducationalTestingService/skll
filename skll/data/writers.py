@@ -28,11 +28,14 @@ from skll.types import FeatGenerator, FeatureDict, IdType, LabelType, PathOrStr
 
 class Writer(object):
     """
-    Helper class for writing out FeatureSets to files on disk.
+    Write out FeatureSets to files on disk.
+
+    This is the base class used to create featureset writers for different
+    file types.
 
     Parameters
     ----------
-    path : PathOrStr
+    path : :class:`skll.types.PathOrStr`
         A path to the feature file we would like to create. The suffix
         to this filename must be ``.arff``, ``.csv``, ``.jsonlines``,
         ``.libsvm``, ``.ndj``, or ``.tsv``. If ``subsets``
@@ -41,7 +44,7 @@ class Writer(object):
         write the feature files with an additional file extension
         specifying the file type. For example ``/foo/.csv``.
 
-    feature_set : skll.data.FeatureSet
+    feature_set : :class:`skll.data.featureset.FeatureSet`
         The ``FeatureSet`` instance to dump to the file.
 
     quiet : bool, default=True
@@ -60,20 +63,26 @@ class Writer(object):
         enumerate all of these boolean feature names in your
         mapping.
 
-    logger : logging.Logger, default=None
+    logger : Optional[logging.Logger], default=None
         A logger instance to use to log messages instead of creating
         a new one by default.
     """
 
-    def __init__(self, path: PathOrStr, feature_set: FeatureSet, **kwargs):
+    def __init__(
+        self,
+        path: PathOrStr,
+        feature_set: FeatureSet,
+        quiet: bool = True,
+        subsets: Optional[Dict[str, List[str]]] = None,
+        logger: Optional[logging.Logger] = None,
+    ):
         """Initialize base Writer class."""
         super(Writer, self).__init__()
 
-        self.quiet = kwargs.pop("quiet", True)
+        self.quiet = quiet
         self.path = Path(path)
         self.feat_set = feature_set
-        self.subsets = kwargs.pop("subsets", None)
-        logger = kwargs.pop("logger", None)
+        self.subsets = subsets
         self.logger = logger if logger else logging.getLogger(__name__)
 
         # Get prefix & extension for checking file types & writing subset files;
@@ -89,8 +98,6 @@ class Writer(object):
             self.ext = suffix.lower()
         self._progress_msg = ""
         self._use_pandas = False
-        if kwargs:
-            raise ValueError("Passed extra keyword arguments to Writer " f"constructor: {kwargs}")
 
     @classmethod
     def for_path(cls, path: PathOrStr, feature_set: FeatureSet, **kwargs) -> "Writer":
@@ -99,7 +106,7 @@ class Writer(object):
 
         Parameters
         ----------
-        path : PathOrStr
+        path : :class:`skll.types.PathOrStr`
             A path to the feature file we would like to create. The
             suffix to this filename must be ``.arff``, ``.csv``,
             ``.jsonlines``, ``.libsvm``, ``.ndj``, or
@@ -109,16 +116,16 @@ class Writer(object):
             files with an additional file extension specifying the
             file type. For example ``/foo/.csv``.
 
-        feature_set : skll.data.FeatureSet
+        feature_set : :class:`skll.data.featureset.FeatureSet`
             The ``FeatureSet`` instance to dump to the output file.
 
-        kwargs : Dict[str, Any], optional
+        kwargs : Optional[Dict[str, Any]]
             The keyword arguments for ``for_path`` are the same as
             the initializer for the desired ``Writer`` subclass.
 
         Returns
         -------
-        writer : skll.data.Writer
+        writer : :class:`skll.data.Writer`
             New instance of the Writer sub-class that is
             appropriate for the given path.
         """
@@ -161,7 +168,7 @@ class Writer(object):
 
         Parameters
         ----------
-        sub_path : PathOrStr
+        sub_path : :class:`skll.types.PathOrStr`
             The path to the file we want to create for this subset
             of our data.
 
@@ -211,16 +218,14 @@ class Writer(object):
 
         Parameters
         ----------
-        feature_set : skll.data.FeatureSet
-            The ``FeatureSet`` instance being written to a file.
+        feature_set
+            Not used.
 
-        output_file : IO[str]
-            The file being written to.
+        output_file
+            Not used.
 
-        filter_features : Set[str]
-            If only writing a subset of the features in the
-            FeatureSet to ``output_file``, these are the
-            features to include in this file.
+        filter_features
+           Not used.
         """
         pass
 
@@ -230,22 +235,23 @@ class Writer(object):
 
         Parameters
         ----------
-        id_ : IdType
-            The ID for the current instance.
+        id_ :
+            Not used.
 
-        label_ : str
-            The label for the current instance.
+        label_
+            Not used.
 
-        feat_dict : FeatureDict
-            The feature dictionary for the current instance.
+        feat_dict
+            Not used.
 
-        output_file : IO[str]
-             The file being written to.
+        output_file
+             Not used.
 
         Raises
         ------
         NotImplementedError
         """
+        __import__("ipdb").sset_trace()
         raise NotImplementedError
 
     def _write_data(self, feature_set, output_file, filter_features):
@@ -254,21 +260,20 @@ class Writer(object):
 
         Parameters
         ----------
-        feature_set : skll.data.FeatureSet
-            The ``FeatureSet`` instance being written to a file.
+        feature_set
+            Not used.
 
-        output_file : IO[str]
-            The file being written to.
+        output_file
+            Not used.
 
-        filter_features : Set[str]
-            If only writing a subset of the features in the
-            FeatureSet to ``output_file``, these are the
-            features to include in this file.
+        filter_features
+            Not used.
 
         Raises
         ------
         NotImplementedError
         """
+        __import__("ipdb").sset_trace()
         raise NotImplementedError
 
     def _get_column_names_and_indexes(
@@ -279,7 +284,7 @@ class Writer(object):
 
         Parameters
         ----------
-        feature_set : skll.data.FeatureSet
+        feature_set : :class:`skll.data.featureset.FeatureSet`
             The ``FeatureSet`` instance being written to a file.
 
         filter_features : Optional[Set[str]], default=None
@@ -326,37 +331,66 @@ class CSVWriter(Writer):
 
     Parameters
     ----------
-    path : PathOrStr
+    path : :class:`skll.types.PathOrStr`
         A path to the feature file we would like to create.
         If ``subsets`` is not ``None``, this is assumed to be a string
         containing the path to the directory to write the feature
         files with an additional file extension specifying the file
         type. For example ``/foo/.csv``.
 
-    feature_set : skll.data.FeatureSet
+    feature_set : :class:`skll.data.featureset.FeatureSet`
         The ``FeatureSet`` instance to dump to the output file.
+
+    quiet : bool, default=True
+        Do not print "Writing..." status message to stderr.
+
+    subsets : Optional[Dict[str, List[str]]], default=None
+        A mapping from subset names to lists of feature names
+        that are included in those sets. If given, a feature
+        file will be written for every subset (with the name
+        containing the subset name as suffix to ``path``).
+        Note, since string- valued features are automatically
+        converted into boolean features with names of the form
+        ``FEATURE_NAME=STRING_VALUE``, when doing the
+        filtering, the portion before the ``=`` is all that's
+        used for matching. Therefore, you do not need to
+        enumerate all of these boolean feature names in your
+        mapping.
+
+    logger : Optional[logging.Logger], default=None
+        A logger instance to use to log messages instead of creating
+        a new one by default.
+
+    label_col : str, default="y"
+        The column name containing the label.
+
+    id_col : str, default="id"
+        The column name containing the ID.
 
     pandas_kwargs : Optional[Dict[str], Any], default=None
         Arguments that will be passed directly to the `pandas` I/O reader.
-
-    kwargs : Optional[Dict[str, Any]], optional
-        The arguments to the ``Writer`` object being instantiated.
     """
 
     def __init__(
         self,
         path: PathOrStr,
         feature_set: FeatureSet,
+        quiet: bool = True,
+        subsets: Optional[Dict[str, List[str]]] = None,
+        logger: Optional[logging.Logger] = None,
+        label_col: str = "y",
+        id_col: str = "id",
         pandas_kwargs: Optional[Dict[str, Any]] = None,
-        **kwargs,
     ):
         """Initialize the CSVWriter class."""
-        self.label_col = kwargs.pop("label_col", "y")
-        self.id_col = kwargs.pop("id_col", "id")
-        super(CSVWriter, self).__init__(path, feature_set, **kwargs)
+        self.label_col = label_col
+        self.id_col = id_col
         self._pandas_kwargs = {} if pandas_kwargs is None else pandas_kwargs
         self._sep = self._pandas_kwargs.pop("sep", ",")
         self._index = self._pandas_kwargs.pop("index", False)
+        super(CSVWriter, self).__init__(
+            path, feature_set, quiet=quiet, subsets=subsets, logger=logger
+        )
         self._use_pandas = True
 
     def _build_dataframe_with_features(
@@ -367,7 +401,7 @@ class CSVWriter(Writer):
 
         Parameters
         ----------
-        feature_set : skll.data.FeatureSet
+        feature_set : :class:`skll.data.featureset.FeatureSet`
             The ``FeatureSet`` instance being written to a file.
 
         filter_features : Optional[Set[str]], default=None
@@ -421,7 +455,7 @@ class CSVWriter(Writer):
 
         Parameters
         ----------
-        feature_set : skll.data.FeatureSet
+        feature_set : :class:`skll.data.featureset.FeatureSet`
             The ``FeatureSet`` instance being written to a file.
 
         filter_features : Optional[Set[str]], default=None
@@ -436,7 +470,7 @@ class CSVWriter(Writer):
 
         Returns
         -------
-        df_features : pd.DataFrame
+        df_features : pandas.DataFrame
             The data frame constructed from the feature set.
 
         Raises
@@ -478,10 +512,10 @@ class CSVWriter(Writer):
 
         Parameters
         ----------
-        feature_set : skll.data.FeatureSet
+        feature_set : :class:`skll.data.featureset.FeatureSet`
             The ``FeatureSet`` instance being written to a file.
 
-        output_file : PathOrStr
+        output_file : :class:`skll.types.PathOrStr`
             The path of the file being written to
 
         filter_features : Optional[Set[str]], default=None
@@ -499,33 +533,68 @@ class TSVWriter(CSVWriter):
 
     Parameters
     ----------
-    path : PathOrStr
+    path : :class:`skll.types.PathOrStr`
         A path to the feature file we would like to create.
         If ``subsets`` is not ``None``, this is assumed to be a string
         containing the path to the directory to write the feature
         files with an additional file extension specifying the file
         type. For example ``/foo/.tsv``.
 
-    feature_set : skll.data.FeatureSet
+    feature_set : :class:`skll.data.featureset.FeatureSet`
         The ``FeatureSet`` instance to dump to the output file.
 
-    pandas_kwargs : Optional[Dict[str, Any]], default=None
-        Arguments that will be passed directly
-        to the `pandas` I/O reader.
+    quiet : bool, default=True
+        Do not print "Writing..." status message to stderr.
 
-    kwargs : Optional[Dict[str, Any]], optional
-        The arguments to the ``Writer`` object being instantiated.
+    subsets : Optional[Dict[str, List[str]]], default=None
+        A mapping from subset names to lists of feature names
+        that are included in those sets. If given, a feature
+        file will be written for every subset (with the name
+        containing the subset name as suffix to ``path``).
+        Note, since string- valued features are automatically
+        converted into boolean features with names of the form
+        ``FEATURE_NAME=STRING_VALUE``, when doing the
+        filtering, the portion before the ``=`` is all that's
+        used for matching. Therefore, you do not need to
+        enumerate all of these boolean feature names in your
+        mapping.
+
+    logger : Optional[logging.Logger], default=None
+        A logger instance to use to log messages instead of creating
+        a new one by default.
+
+    label_col: str, default="y"
+        The column name containing the label.
+
+    id_col: str, default="id"
+        The column name containing the ID.
+
+    pandas_kwargs : Optional[Dict[str, Any]], default=None
+        Arguments that will be passed directly to the `pandas` I/O reader.
     """
 
     def __init__(
         self,
         path: PathOrStr,
         feature_set: FeatureSet,
+        quiet: bool = True,
+        subsets: Optional[Dict[str, List[str]]] = None,
+        logger: Optional[logging.Logger] = None,
+        label_col: str = "y",
+        id_col: str = "id",
         pandas_kwargs: Optional[Dict[str, Any]] = None,
-        **kwargs,
     ):
         """Initialize the TSVWriter class."""
-        super(TSVWriter, self).__init__(path, feature_set, pandas_kwargs, **kwargs)
+        super(TSVWriter, self).__init__(
+            path,
+            feature_set,
+            quiet=quiet,
+            subsets=subsets,
+            logger=logger,
+            label_col=label_col,
+            id_col=id_col,
+            pandas_kwargs=pandas_kwargs,
+        )
         self._sep = str("\t")
 
 
@@ -535,15 +604,35 @@ class ARFFWriter(Writer):
 
     Parameters
     ----------
-    path : PathOrStr
+    path : :class:`skll.types.PathOrStr`
         A path to the feature file we would like to create.
         If ``subsets`` is not ``None``, this is assumed to be a string
         containing the path to the directory to write the feature
         files with an additional file extension specifying the file
         type. For example ``/foo/.arff``.
 
-    feature_set : skll.data.FeatureSet
+    feature_set : :class:`skll.data.featureset.FeatureSet`
         The ``FeatureSet`` instance to dump to the output file.
+
+    quiet : bool, default=True
+        Do not print "Writing..." status message to stderr.
+
+    subsets : Optional[Dict[str, List[str]]], default=None
+        A mapping from subset names to lists of feature names
+        that are included in those sets. If given, a feature
+        file will be written for every subset (with the name
+        containing the subset name as suffix to ``path``).
+        Note, since string- valued features are automatically
+        converted into boolean features with names of the form
+        ``FEATURE_NAME=STRING_VALUE``, when doing the
+        filtering, the portion before the ``=`` is all that's
+        used for matching. Therefore, you do not need to
+        enumerate all of these boolean feature names in your
+        mapping.
+
+    logger : Optional[logging.Logger], default=None
+        A logger instance to use to log messages instead of creating
+        a new one by default.
 
     relation : str, default='skll_relation'
         The name of the relation in the ARFF file.
@@ -551,18 +640,32 @@ class ARFFWriter(Writer):
     regression : bool, default=False
         Is this an ARFF file to be used for regression?
 
-    kwargs : Optional[Dict[str, Any]], optional
+    kwargs : Optional[Dict[str, Any]]
         The arguments to the ``Writer`` object being instantiated.
     """
 
-    def __init__(self, path: PathOrStr, feature_set: FeatureSet, **kwargs):
+    def __init__(
+        self,
+        path: PathOrStr,
+        feature_set: FeatureSet,
+        quiet: bool = True,
+        subsets: Optional[Dict[str, List[str]]] = None,
+        logger: Optional[logging.Logger] = None,
+        relation="skll_relation",
+        regression=False,
+        dialect="excel-tab",
+        label_col="y",
+        id_col="id",
+    ):
         """Initialize the ARFFWRiter class."""
-        self.relation = kwargs.pop("relation", "skll_relation")
-        self.regression = kwargs.pop("regression", False)
-        self.dialect = kwargs.pop("dialect", "excel-tab")
-        self.label_col = kwargs.pop("label_col", "y")
-        self.id_col = kwargs.pop("id_col", "id")
-        super(ARFFWriter, self).__init__(path, feature_set, **kwargs)
+        self.relation = relation
+        self.regression = regression
+        self.dialect = dialect
+        self.label_col = label_col
+        self.id_col = id_col
+        super(ARFFWriter, self).__init__(
+            path, feature_set, quiet=quiet, subsets=subsets, logger=logger
+        )
         self._dict_writer: Optional[DictWriter[str]] = None
 
     def _write_header(
@@ -576,8 +679,8 @@ class ARFFWriter(Writer):
 
         Parameters
         ----------
-        feature_set : skll.data.FeatureSet
-            The FeatureSet being written to a file.
+        feature_set
+            Not used.
 
         output_file : IO[str]
             The file being written to.
@@ -627,17 +730,17 @@ class ARFFWriter(Writer):
 
         Parameters
         ----------
-        id_ : IdType
+        id_ : :class:`skll.types.IdType`
             The ID for the current instance.
 
-        label_ : LabelType
+        label_ : :class:`skll.types.LabelType`
             The label for the current instance.
 
-        feat_dict : FeatureDict
+        feat_dict : :class:`skll.types.FeatureDict`
             The feature dictionary for the current instance.
 
-        output_file : IO[str]
-            The file being written to.
+        output_file
+            Not used.
 
         Raises
         ------
@@ -672,23 +775,49 @@ class NDJWriter(Writer):
 
     Parameters
     ----------
-    path : PathOrStr
+    path : :class:`skll.types.PathOrStr`
         A path to the feature file we would like to create.
         If ``subsets`` is not ``None``, this is assumed to be a string
         containing the path to the directory to write the feature
         files with an additional file extension specifying the file
         type. For example ``/foo/.ndj``.
 
-    feature_set : skll.data.FeatureSet
+    feature_set : :class:`skll.data.featureset.FeatureSet`
         The ``FeatureSet`` instance to dump to the output file.
 
-    kwargs : Optional[Dict[str, Any]], optional
-        The arguments to the ``Writer`` object being instantiated.
+    quiet : bool, default=True
+        Do not print "Writing..." status message to stderr.
+
+    subsets : Optional[Dict[str, List[str]]], default=None
+        A mapping from subset names to lists of feature names
+        that are included in those sets. If given, a feature
+        file will be written for every subset (with the name
+        containing the subset name as suffix to ``path``).
+        Note, since string- valued features are automatically
+        converted into boolean features with names of the form
+        ``FEATURE_NAME=STRING_VALUE``, when doing the
+        filtering, the portion before the ``=`` is all that's
+        used for matching. Therefore, you do not need to
+        enumerate all of these boolean feature names in your
+        mapping.
+
+    logger : Optional[logging.Logger], default=None
+        A logger instance to use to log messages instead of creating
+        a new one by default.
     """
 
-    def __init__(self, path: PathOrStr, feature_set: FeatureSet, **kwargs):
+    def __init__(
+        self,
+        path: PathOrStr,
+        feature_set: FeatureSet,
+        quiet: bool = True,
+        subsets: Optional[Dict[str, List[str]]] = None,
+        logger: Optional[logging.Logger] = None,
+    ):
         """Initialize the NDJWriter class."""
-        super(NDJWriter, self).__init__(path, feature_set, **kwargs)
+        super(NDJWriter, self).__init__(
+            path, feature_set, quiet=quiet, subsets=subsets, logger=logger
+        )
 
     def _write_line(
         self,
@@ -702,13 +831,13 @@ class NDJWriter(Writer):
 
         Parameters
         ----------
-        id_ : IdType
+        id_ : :class:`skll.types.IdType`
             The ID for the current instance.
 
-        label_ : LabelType
+        label_ : :class:`skll.types.LabelType`
             The label for the current instance.
 
-        feat_dict : FeatureDict
+        feat_dict : :class:`skll.types.FeatureDict`
             The feature dictionary for the current instance.
 
         output_file : IO[str]
@@ -741,18 +870,38 @@ class LibSVMWriter(Writer):
 
     Parameters
     ----------
-    path : PathOrStr
+    path : :class:`skll.types.PathOrStr`
         A path to the feature file we would like to create.
         If ``subsets`` is not ``None``, this is assumed to be a string
         containing the path to the directory to write the feature
         files with an additional file extension specifying the file
         type. For example ``/foo/.libsvm``.
 
-    feature_set : skll.data.FeatureSet
+    feature_set : :class:`skll.data.featureset.FeatureSet`
         The ``FeatureSet`` instance to dump to the output file.
 
-    kwargs : Optional[Dict[str, Any]], optional
-        The arguments to the ``Writer`` object being instantiated.
+    quiet : bool, default=True
+        Do not print "Writing..." status message to stderr.
+
+    subsets : Optional[Dict[str, List[str]]], default=None
+        A mapping from subset names to lists of feature names
+        that are included in those sets. If given, a feature
+        file will be written for every subset (with the name
+        containing the subset name as suffix to ``path``).
+        Note, since string- valued features are automatically
+        converted into boolean features with names of the form
+        ``FEATURE_NAME=STRING_VALUE``, when doing the
+        filtering, the portion before the ``=`` is all that's
+        used for matching. Therefore, you do not need to
+        enumerate all of these boolean feature names in your
+        mapping.
+
+    logger : Optional[logging.Logger], default=None
+        A logger instance to use to log messages instead of creating
+        a new one by default.
+
+    label_map : Optional[Dict[str, int]], default=None
+        A mapping from label strings to integers.
     """
 
     LIBSVM_REPLACE_DICT = {
@@ -763,10 +912,20 @@ class LibSVMWriter(Writer):
         "|": "\u2223",
     }
 
-    def __init__(self, path: PathOrStr, feature_set: FeatureSet, **kwargs):
+    def __init__(
+        self,
+        path: PathOrStr,
+        feature_set: FeatureSet,
+        quiet: bool = True,
+        subsets: Optional[Dict[str, List[str]]] = None,
+        logger: Optional[logging.Logger] = None,
+        label_map: Optional[Dict[Any, Any]] = None,
+    ):
         """Initialize the LibSVMWriter class."""
-        self.label_map = kwargs.pop("label_map", None)
-        super(LibSVMWriter, self).__init__(path, feature_set, **kwargs)
+        self.label_map = label_map
+        super(LibSVMWriter, self).__init__(
+            path, feature_set, quiet=quiet, subsets=subsets, logger=logger
+        )
         if self.label_map is None:
             fs_labels = feature_set.labels if feature_set.has_labels else np.array([])
             self.label_map = {
@@ -795,13 +954,13 @@ class LibSVMWriter(Writer):
 
         Parameters
         ----------
-        name : Union[IdType, LabelType]
+        name : Union[:class:`skll.types.IdType`, :class:`skll.types.LabelType`]
             Input name in which special characters are replaced with unicode
             equivalents.
 
         Returns
         -------
-        Union[IdType, LabelType]
+        Union[:class:`skll.types.IdType`, :class:`skll.types.LabelType`]
             The sanitized name with special characters replaced.
         """
         sanitized_name = name
@@ -818,13 +977,13 @@ class LibSVMWriter(Writer):
 
         Parameters
         ----------
-        id_ : IdType
+        id_ : :class:`skll.types.IdType`
             The ID for the current instance.
 
-        label_ : LabelType
+        label_ : :class:`skll.types.LabelType`
             The label for the current instance.
 
-        feat_dict : FeatureDict
+        feat_dict : :class:`skll.types.FeatureDict`
             The feature dictionary for the current instance.
 
         output_file : IO[str]
@@ -843,10 +1002,11 @@ class LibSVMWriter(Writer):
         )
 
         # Print label
-        if label_ in self.label_map:
-            print(self.label_map[label_], end=" ", file=output_file)
-        else:
-            print(label_, end=" ", file=output_file)
+        if self.label_map:
+            if label_ in self.label_map:
+                print(self.label_map[label_], end=" ", file=output_file)
+            else:
+                print(label_, end=" ", file=output_file)
 
         # Print features
         print(
@@ -860,18 +1020,19 @@ class LibSVMWriter(Writer):
         print(self._sanitize(id_), end="", file=output_file)
         print(" |", end=" ", file=output_file)
 
-        if label_ in self.label_map:
-            print(
-                f"{self._sanitize(self.label_map[label_])}=" f"{self._sanitize(label_)}",
-                end=" | ",
-                file=output_file,
-            )
-        else:
-            print(" |", end=" ", file=output_file)
+        if self.label_map:
+            if label_ in self.label_map:
+                print(
+                    f"{self._sanitize(self.label_map[label_])}={self._sanitize(label_)}",
+                    end=" | ",
+                    file=output_file,
+                )
+            else:
+                print(" |", end=" ", file=output_file)
 
         line = (
             " ".join(
-                f"{self.feat_set.vectorizer.vocabulary_[field] + 1}=" f"{self._sanitize(field)}"
+                f"{self.feat_set.vectorizer.vocabulary_[field] + 1}={self._sanitize(field)}"
                 for field, value in feat_dict.items()
                 if Decimal(value) != 0
             )

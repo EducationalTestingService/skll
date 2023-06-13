@@ -35,12 +35,12 @@ class FeatureSet(object):
     labels : Optional[Union[List[str], numpy.ndarray], default=None
         Labels for this set.
 
-    features : Optional[Union[FeatureDictList, np.ndarray]], default=None
+    features : Optional[Union[:class:`skll.types.FeatureDictList`, :class:`numpy.ndarray`]], default=None
         The features for each instance represented as either a
-        list of dictionaries or an array-like (if ``vectorizer`` is
+        list of dictionaries or a numpy array (if ``vectorizer`` is
         also specified).
 
-    vectorizer : Union[DictVectorizer, FeatureHasher], default=None
+    vectorizer : Optional[Union[:class:`sklearn.feature_extraction.DictVectorizer`, :class:`sklearn.feature_extraction.FeatureHasher`], default=None
         Vectorizer which will be used to generate the feature matrix.
 
     Warnings
@@ -134,7 +134,7 @@ class FeatureSet(object):
 
         Parameters
         ----------
-        other : skll.data.FeatureSet
+        other : :class:`skll.data.featureset.FeatureSet`
             The other ``FeatureSet`` to check equivalence with.
 
         Returns
@@ -142,8 +142,8 @@ class FeatureSet(object):
         bool
             ``True`` if they are the same, ``False`` otherwise.
 
-        Note
-        ----
+        Notes
+        -----
         We consider feature values to be equal if any differences are in the
         sixth decimal place or higher.
         """
@@ -193,12 +193,12 @@ class FeatureSet(object):
 
         Parameters
         ----------
-        other : skll.data.FeatureSet
+        other : :class:`skll.data.featureset.FeatureSet`
             The other ``FeatureSet`` to add to this one.
 
         Returns
         -------
-        skll.data.FeatureSet
+        :class:`skll.data.featureset.FeatureSet
             The combined feature set.
 
         Raises
@@ -301,17 +301,17 @@ class FeatureSet(object):
         inverse: bool = False,
     ) -> None:
         """
-        Remove or keep features and/or examples from the ``Featureset``.
+        Remove or keep features and/or examples from the given feature set.
 
         Filtering is done in-place.
 
         Parameters
         ----------
-        ids : Optional[List[FloatOrStr]], default=None
+        ids : Optional[List[:class:`skll.types.IdType`]], default=None
             Examples to keep in the FeatureSet. If ``None``, no ID
             filtering takes place.
 
-        labels : Optional[List[LabelType]], default=None
+        labels : Optional[List[:class:`skll.types.LabelType`]], default=None
             Labels that we want to retain examples for. If ``None``,
             no label filtering takes place.
 
@@ -386,11 +386,11 @@ class FeatureSet(object):
 
         Parameters
         ----------
-        ids : Optional[List[IdType]], default=None
+        ids : Optional[List[:class:`skll.types.IdType`]], default=None
             Examples to keep in the ``FeatureSet``. If ``None``, no ID
             filtering takes place.
 
-        labels : Optional[List[LabelType]], default=None
+        labels : Optional[List[:class:`skll.types.LabelType`]], default=None
             Labels that we want to retain examples for. If ``None``,
             no label filtering takes place.
 
@@ -409,17 +409,18 @@ class FeatureSet(object):
             Instead of keeping features and/or examples in lists,
             remove them.
 
-        Yields
-        ------
-        id_ : IdType
-            The ID of the example.
+        Returns
+        -------
+        :class:`skll.types.FeatGenerator`
 
-        label_ : LabelType
-            The label of the example.
+            A generator that yields 3-tuples containing:
 
-        feat_dict : FeatureDict
-            The feature dictionary, with feature name as the key
-            and example value as the value.
+              - :class:`skll.types.IdType`  - The ID of the example.
+
+              - :class:`skll.types.LabelType` - The label of the example.
+
+              - :class:`skll.types.FeatureDict` - The feature dictionary, with
+                feature name as the key and example value as the value.
 
         Raises
         ------
@@ -468,13 +469,13 @@ class FeatureSet(object):
 
         Parameters
         ----------
-        other : skll.data.FeatureSet
+        other : :class:`skll.data.featureset.FeatureSet`
             The other ``FeatureSet`` containing the features that should
             be removed from this ``FeatureSet``.
 
         Returns
         -------
-        FeatureSet:
+        :class:`skll.data.featureset.FeatureSet`
             A copy of ``self`` with all features in ``other`` removed.
         """
         new_set = deepcopy(self)
@@ -537,7 +538,7 @@ class FeatureSet(object):
 
         Returns
         -------
-        Union["FeatureSet", Tuple[IdType, LabelType, FeatureDictList]]
+        Union[:class:`skll.data.featureset.FeatureSet`, Tuple[:class:`skll.types.IdType`, :class:`skll.types.LabelType`, :class:`skll.types.FeatureDictList`]]  # noqa: E501
             If `value` is a slice, then return a new ``FeatureSet`` instance
             containing a subset of the data. If it's an index, return the
             specific example by row number.
@@ -574,7 +575,7 @@ class FeatureSet(object):
 
         Parameters
         ----------
-        fs : skll.data.FeatureSet
+        fs : skll.data.featureset.FeatureSet
             The ``FeatureSet`` instance to split.
 
         ids_for_split1 : List[int]
@@ -594,11 +595,8 @@ class FeatureSet(object):
 
         Returns
         -------
-        fs1 : skll.data.FeatureSet
-            The first ``FeatureSet``.
-
-        fs2 : skll.data.FeatureSet
-            The second ``FeatureSet``.
+        Tuple[:class:`skll.data.featureset.FeatureSet`, :class:`skll.data.featureset.FeatureSet`]
+            A tuple containing the two featureset instances.
         """
         # Note: an alternative way to implement this is to make copies
         # of the given FeatureSet instance and then use the `filter()`
@@ -634,7 +632,7 @@ class FeatureSet(object):
         vectorizer: Optional[Union[DictVectorizer, FeatureHasher]] = None,
     ) -> "FeatureSet":
         """
-        Create a ``FeatureSet`` instance from a `pandas.DataFrame`.
+        Create a ``FeatureSet`` instance from a pandas data frame.
 
         Will raise an Exception if pandas is not installed in your environment.
         The ``ids`` in the ``FeatureSet`` will be the index from the given frame.
@@ -650,12 +648,12 @@ class FeatureSet(object):
         labels_column : Optional[str], default=None
             The name of the column containing the labels (data to predict).
 
-        vectorizer : Optional[Union[DictVectorizer, FeatureHasher]], default=None
+        vectorizer : Optional[Union[:class:`sklearn.feature_extraction.DictVectorizer`, :class:`sklearn.feature_extraction.FeatureHasher`]], default=None
             Vectorizer which will be used to generate the feature matrix.
 
         Returns
         -------
-        feature_set : skll.data.FeatureSet
+        :class:`skll.data.featureset.FeatureSet`
             A ``FeatureSet`` instance generated from from the given data frame.
         """
         if labels_column:
