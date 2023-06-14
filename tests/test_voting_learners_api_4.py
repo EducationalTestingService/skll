@@ -103,7 +103,7 @@ def check_cross_validate_without_grid_search(
         learner_names = ["LinearRegression", "SVR", "Ridge"]
         voting_type = "hard"
         featureset = FS_HOUSING
-        extra_metric = "neg_mean_squared_error"
+        extra_metric = "neg_root_mean_squared_error"
 
     # instantiate and cross-validate the SKLL voting learner
     # on the full digits dataset
