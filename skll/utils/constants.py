@@ -159,8 +159,9 @@ PROBABILISTIC_METRICS = frozenset(["average_precision", "neg_log_loss", "roc_auc
 REGRESSION_ONLY_METRICS = {
     "explained_variance",
     "max_error",
-    "neg_mean_squared_error",
     "neg_mean_absolute_error",
+    "neg_mean_squared_error",
+    "neg_root_mean_squared_error",
     "r2",
 }
 
