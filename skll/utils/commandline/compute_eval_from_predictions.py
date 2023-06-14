@@ -51,7 +51,7 @@ def get_prediction_from_probabilities(
             2. ``"expected_value"``: Calculates an expected value over integer classes and
                rounds to the nearest int.
     random_state: int, default=1234567890
-        Seed for ``np.random.RandomState``, used for randomly selecting a class
+        Seed for ``numpy.random.RandomState``, used for randomly selecting a class
         when necessary.
 
     Returns
