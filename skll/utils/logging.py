@@ -45,14 +45,12 @@ def get_skll_logger(
     ----------
     name : str
         The name to be used for the logger.
-    filepath : str, optional
+    filepath : Optional[str], default=None
         The file to be used for the logger via a FileHandler.
         Default: None in which case no file is attached to the
         logger.
-        Defaults to ``None``.
-    log_level : str, optional
+    log_level : int, default=logging.INFO
         The level for logging messages
-        Defaults to ``logging.INFO``.
 
     Returns
     -------
@@ -85,7 +83,7 @@ def get_skll_logger(
     return logger
 
 
-def close_and_remove_logger_handlers(logger):
+def close_and_remove_logger_handlers(logger: logging.Logger) -> None:
     """
     Close and remove any handlers attached to a logger instance.
 
@@ -93,10 +91,6 @@ def close_and_remove_logger_handlers(logger):
     ----------
     logger : logging.Logger
         Logger instance
-
-    Returns
-    -------
-    NoneType
     """
     for handler in logger.handlers[:]:
         handler.close()

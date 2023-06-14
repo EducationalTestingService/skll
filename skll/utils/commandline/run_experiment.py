@@ -23,10 +23,9 @@ def main(argv: Optional[List[str]] = None) -> None:
 
     Parameters
     ----------
-    argv : Optional[List[str]]
+    argv : Optional[List[str]], default=None
         List of arguments, as if specified on the command-line.
         If ``None``, ``sys.argv[1:]`` is used instead.
-        Defaults to ``None``.
     """
     # Get command line arguments
     parser = ArgumentParser(

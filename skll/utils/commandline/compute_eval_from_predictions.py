@@ -50,8 +50,9 @@ def get_prediction_from_probabilities(
                multiple classes have the same probability, a class is selected randomly.
             2. ``"expected_value"``: Calculates an expected value over integer classes and
                rounds to the nearest int.
-    random_state: int
-        Seed for ``np.random.RandomState``, used for randomly selecting a class when necessary.
+    random_state: int, default=1234567890
+        Seed for ``np.random.RandomState``, used for randomly selecting a class
+        when necessary.
 
     Returns
     -------
@@ -93,20 +94,19 @@ def compute_eval_from_predictions(
 
     Parameters
     ----------
-    examples_file: PathOrStr
+    examples_file: :class:`skll.types.PathOrStr`
         Path to a SKLL examples file (in .jsonlines or other format).
-    predictions_file: PathOrStr
+    predictions_file: :class:`skll.types.PathOrStr`
         Path to a SKLL predictions output TSV file with id and prediction column names.
     metric_names: List[str]
         A list of SKLL metric names (e.g., ``["pearson", "unweighted_kappa"]``).
-    prediction_method: Optional[str]
+    prediction_method: Optional[str], default=None
         Indicates how to get a single class prediction from the probabilities.
         Currently supported options are ``"highest"``, which selects the class
         with the highest probability, and ``"expected_value"``, which calculates
         an expected value over integer classes and rounds to the nearest int.
         If predictions file does not contain probabilities, this should be set
         to ``None``.
-        Defaults to ``None``.
 
     Returns
     -------
@@ -189,10 +189,9 @@ def main(argv: Optional[List[str]] = None) -> None:
 
     Parameters
     ----------
-    argv: Optional[List[str]]
+    argv: Optional[List[str]], default=None
         List of arguments, as if specified on the command-line. If ``None``,
         then ``sys.argv[1:]`` is used instead.
-        Defaults to ``None``.
     """
     # Get command line arguments
     parser = argparse.ArgumentParser(
