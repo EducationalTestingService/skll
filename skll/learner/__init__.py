@@ -683,7 +683,7 @@ class Learner(object):
         ------
         ValueError
             If ``self.feat_vectorizer`` is either ``None`` or a
-            :class:`sklearn.feature_extraction.FeatureHasher``.
+            :class:`sklearn.feature_extraction.FeatureHasher`.
         """
         if isinstance(self.feat_vectorizer, DictVectorizer):
             return self.feat_vectorizer.get_feature_names_out()[self.feat_selector.get_support()]

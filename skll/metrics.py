@@ -55,21 +55,19 @@ def kappa(
         The true/actual/gold labels for the data.
     y_pred : numpy.ndarray
         The predicted/observed labels for the data.
-    weights : Optional[Union[str, numpy.ndarray]]
+    weights : Optional[Union[str, numpy.ndarray]], default=None
         Specifies the weight matrix for the calculation.
         Possible values are: ``None`` (unweighted-kappa), ``"quadratic"``
         (quadratically weighted kappa), ``"linear"`` (linearly weighted kappa),
         and a two-dimensional numpy array (a custom matrix of weights). Each
         weight in this array corresponds to the :math:`w_{ij}` values in the
         Wikipedia description of how to calculate weighted Cohen's kappa.
-        Defaults to ``None``.
-    allow_off_by_one : bool
+    allow_off_by_one : bool, default=False
         If true, ratings that are off by one are counted as
         equal, and all other differences are reduced by
         one. For example, 1 and 2 will be considered to be
         equal, whereas 1 and 3 will have a difference of 1
         for when building the weights matrix.
-        Defaults to ``False``.
 
     Returns
     -------
@@ -181,10 +179,9 @@ def correlation(y_true: np.ndarray, y_pred: np.ndarray, corr_type: str = "pearso
         The true/actual/gold labels for the data.
     y_pred : numpy.ndarray
         The predicted/observed labels for the data.
-    corr_type : str
+    corr_type : str, default="pearson"
         Which type of correlation to compute. Possible
         choices are "pearson", "spearman", and "kendall_tau".
-        Defaults to "pearson".
 
     Returns
     -------
@@ -237,7 +234,7 @@ def register_custom_metric(custom_metric_path: PathOrStr, custom_metric_name: st
 
     Parameters
     ----------
-    custom_metric_path : PathOrStr
+    custom_metric_path : :class:`skll.types.PathOrStr`
         The path to a custom metric.
     custom_metric_name : str
         The name of the custom metric function to load. This function must take
