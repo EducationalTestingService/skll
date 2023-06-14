@@ -221,9 +221,8 @@ def _print_fancy_output(
     ----------
     learner_result_dicts : List[Dict[str, Any]]
         List of result dictionaries.
-    output_file : IO[str]
+    output_file : IO[str], default=sys.stdout
         The file buffer to print to.
-        Defaults to ``sys.stdout``.
     """
     if not learner_result_dicts:
         raise ValueError("Result dictionary list is empty!")
@@ -413,9 +412,8 @@ def _write_summary_file(result_json_paths: List[str], output_file: IO[str], abla
         A list of paths to the individual result JSON files.
     output_file : IO[str]
         The file buffer to write to.
-    ablation : int
+    ablation : int, default=0
         The number of features to remove when doing ablation experiment.
-        Defaults to 0.
     """
     learner_result_dicts = []
     # Map from feature set names to all features in them
