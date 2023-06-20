@@ -465,7 +465,7 @@ def check_adaboost_regression(base_estimator):
 
     # train an AdaBoostRegressor on the training data and evalute on the
     # testing data
-    learner = Learner("AdaBoostRegressor", model_kwargs={"base_estimator": base_estimator})
+    learner = Learner("AdaBoostRegressor", model_kwargs={"estimator": base_estimator})
     learner.train(train_fs, grid_search=False)
 
     # now generate the predictions on the test set
@@ -507,9 +507,37 @@ def check_ransac_regression(base_estimator, pearson_value):
 
 def test_ransac_regression():
     for base_estimator_name, pearson_value in zip(
-        [None, "SGDRegressor", "DecisionTreeRegressor", "SVR"], [0.95, 0.45, 0.75, 0.64]
+        [None, "SGDRegressor", "DecisionTreeRegressor", "SVR"], [0.95, 0.95, 0.75, 0.64]
     ):
         yield check_ransac_regression, base_estimator_name, pearson_value
+
+
+def check_bagging_regression(base_estimator, pearson_value):
+    train_fs, test_fs, _ = make_regression_data(num_examples=2000, sd_noise=4, num_features=3)
+
+    # train a RANSACRegressor on the training data and evalute on the
+    # testing data
+    model_kwargs = {"estimator": base_estimator} if base_estimator else {}
+    learner = Learner("BaggingRegressor", model_kwargs=model_kwargs)
+    learner.train(train_fs, grid_search=False)
+
+    # now generate the predictions on the test set
+    predictions = learner.predict(test_fs)
+
+    # now make sure that the predictions are close to
+    # the actual test FeatureSet labels that we generated
+    # using make_regression_data. To do this, we just
+    # make sure that they are correlated and the value
+    # of the correlation is as expected
+    cor, _ = pearsonr(predictions, test_fs.labels)
+    assert_greater(cor, pearson_value)
+
+
+def test_bagging_regression():
+    for base_estimator_name, pearson_value in zip(
+        [None, "SGDRegressor", "DecisionTreeRegressor", "SVR"], [0.95, 0.95, 0.95, 0.9]
+    ):
+        yield check_bagging_regression, base_estimator_name, pearson_value
 
 
 def check_mlp_regression(use_rescaling=False):
@@ -605,6 +633,7 @@ def check_invalid_regression_grid_objective(learner, grid_objective):
 def test_invalid_regression_grid_objective():
     for learner in [
         "AdaBoostRegressor",
+        "BaggingRegressor",
         "BayesianRidge",
         "DecisionTreeRegressor",
         "ElasticNet",
@@ -640,6 +669,7 @@ def check_invalid_regression_metric(learner, metric, by_itself=False):
 def test_invalid_regression_metric():
     for learner in [
         "AdaBoostRegressor",
+        "BaggingRegressor",
         "BayesianRidge",
         "DecisionTreeRegressor",
         "ElasticNet",
