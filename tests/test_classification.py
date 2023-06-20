@@ -863,7 +863,7 @@ def check_bagging_predict(base_estimator, oob_score, expected_score):
     """
     train_fs, test_fs = make_sparse_data()
 
-    # train an AdaBoostClassifier on the training data and evalute on the
+    # train an AdaBoostClassifier on the training data and evaluate on the
     # testing data
     learner = Learner(
         "BaggingClassifier",

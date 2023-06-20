@@ -545,7 +545,7 @@ def test_ransac_regression():
 def check_bagging_regression(base_estimator, pearson_value):
     train_fs, test_fs, _ = make_regression_data(num_examples=2000, sd_noise=4, num_features=3)
 
-    # train a RANSACRegressor on the training data and evalute on the
+    # train a RANSACRegressor on the training data and evaluate on the
     # testing data
     model_kwargs = {"estimator": base_estimator} if base_estimator else {}
     learner = Learner("BaggingRegressor", model_kwargs=model_kwargs)
