@@ -14,6 +14,7 @@ from collections import defaultdict
 from typing import Any, Dict, List, Union
 
 import numpy as np
+from sklearn.base import BaseEstimator
 from sklearn.pipeline import Pipeline
 from tabulate import tabulate  # type: ignore
 
@@ -132,6 +133,14 @@ def _create_learner_result_dicts(
 
         if learner_result_dict_base["task"] == "cross_validate":
             learner_result_dict["fold"] = k
+
+        # before we dump the model parameters to disk, we need to handle
+        # certain ensemble meta-estimators that have a base estimator
+        # since the estimator object is not JSON-serializable; for these
+        # meta-estimators, we convert the "estimator" parameter back to
+        # a string
+        if (estimator := model_params.get("estimator")) and isinstance(estimator, BaseEstimator):
+            model_params["estimator"] = estimator.__class__.__name__
 
         # include model parameters dump for regular learners only;
         # we need to use a special JSON encoder for voting learners

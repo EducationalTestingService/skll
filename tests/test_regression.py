@@ -51,17 +51,19 @@ def setup():
 
 def tearDown():
     """Clean up after tests."""
-    for dir_path in [train_dir, test_dir]:
-        unlink(dir_path / "fancy_train.jsonlines")
-
     for output_file in chain(
         output_dir.glob("regression_fancy_output*"),
+        output_dir.glob("test_ensemble_evaluate*"),
         output_dir.glob("test_int_labels_cv*"),
-        [test_dir / "fancy_test.jsonlines"],
+        [train_dir / "fancy_train.jsonlines", test_dir / "fancy_test.jsonlines"],
     ):
         unlink(output_file)
 
-    for file_name in ["test_regression_fancy_output.cfg", "test_int_labels_cv.cfg"]:
+    for file_name in [
+        "test_regression_fancy_output.cfg",
+        "test_ensemble_evaluate.cfg",
+        "test_int_labels_cv.cfg",
+    ]:
         unlink(config_dir / file_name)
 
 
@@ -360,6 +362,34 @@ def test_ensemble_models():
         yield (check_ensemble_models, regressor_name, use_feature_hashing, use_rescaling)
 
 
+def test_ensemble_model_config_file():
+    """Test that ensemble models work via a config file."""
+    config_template_path = config_dir / "test_ensemble_evaluate.template.cfg"
+    config_path = config_dir / "test_ensemble_evaluate.cfg"
+
+    # create and write out train and test sets
+    train_fs, test_fs, _ = make_regression_data(num_examples=2000, num_features=3)
+    train_file = train_dir / "fancy_train.jsonlines"
+    train_writer = NDJWriter(train_file, train_fs)
+    train_writer.write()
+    test_file = test_dir / "fancy_test.jsonlines"
+    test_writer = NDJWriter(test_file, test_fs)
+    test_writer.write()
+
+    # create configuration file and run it
+    config = _setup_config_parser(config_template_path, validate=False)
+    config.set("Input", "train_file", str(train_dir / "fancy_train.jsonlines"))
+    config.set("Input", "test_file", str(test_dir / "fancy_test.jsonlines"))
+    config.set("Output", "results", str(output_dir))
+    config.set("Output", "logs", str(output_dir))
+    config.set("Output", "predictions", str(output_dir))
+
+    with open(config_path, "w") as new_config_file:
+        config.write(new_config_file)
+
+    run_configuration(config_path, quiet=True, local=True)
+
+
 def test_int_labels():
     """
     Test that SKLL can take integer input.
@@ -465,7 +495,7 @@ def check_adaboost_regression(base_estimator):
 
     # train an AdaBoostRegressor on the training data and evalute on the
     # testing data
-    learner = Learner("AdaBoostRegressor", model_kwargs={"base_estimator": base_estimator})
+    learner = Learner("AdaBoostRegressor", model_kwargs={"estimator": base_estimator})
     learner.train(train_fs, grid_search=False)
 
     # now generate the predictions on the test set
@@ -507,9 +537,37 @@ def check_ransac_regression(base_estimator, pearson_value):
 
 def test_ransac_regression():
     for base_estimator_name, pearson_value in zip(
-        [None, "SGDRegressor", "DecisionTreeRegressor", "SVR"], [0.95, 0.45, 0.75, 0.64]
+        [None, "SGDRegressor", "DecisionTreeRegressor", "SVR"], [0.95, 0.95, 0.75, 0.64]
     ):
         yield check_ransac_regression, base_estimator_name, pearson_value
+
+
+def check_bagging_regression(base_estimator, pearson_value):
+    train_fs, test_fs, _ = make_regression_data(num_examples=2000, sd_noise=4, num_features=3)
+
+    # train a RANSACRegressor on the training data and evaluate on the
+    # testing data
+    model_kwargs = {"estimator": base_estimator} if base_estimator else {}
+    learner = Learner("BaggingRegressor", model_kwargs=model_kwargs)
+    learner.train(train_fs, grid_search=False)
+
+    # now generate the predictions on the test set
+    predictions = learner.predict(test_fs)
+
+    # now make sure that the predictions are close to
+    # the actual test FeatureSet labels that we generated
+    # using make_regression_data. To do this, we just
+    # make sure that they are correlated and the value
+    # of the correlation is as expected
+    cor, _ = pearsonr(predictions, test_fs.labels)
+    assert_greater(cor, pearson_value)
+
+
+def test_bagging_regression():
+    for base_estimator_name, pearson_value in zip(
+        [None, "SGDRegressor", "DecisionTreeRegressor", "SVR"], [0.95, 0.95, 0.95, 0.9]
+    ):
+        yield check_bagging_regression, base_estimator_name, pearson_value
 
 
 def check_mlp_regression(use_rescaling=False):
@@ -605,6 +663,7 @@ def check_invalid_regression_grid_objective(learner, grid_objective):
 def test_invalid_regression_grid_objective():
     for learner in [
         "AdaBoostRegressor",
+        "BaggingRegressor",
         "BayesianRidge",
         "DecisionTreeRegressor",
         "ElasticNet",
@@ -640,6 +699,7 @@ def check_invalid_regression_metric(learner, metric, by_itself=False):
 def test_invalid_regression_metric():
     for learner in [
         "AdaBoostRegressor",
+        "BaggingRegressor",
         "BayesianRidge",
         "DecisionTreeRegressor",
         "ElasticNet",

@@ -543,6 +543,7 @@ def test_sparse_predict():  # noqa: D103
             "DecisionTreeClassifier",
             "RandomForestClassifier",
             "AdaBoostClassifier",
+            "BaggingClassifier",
             "MultinomialNB",
             "KNeighborsClassifier",
             "RidgeClassifier",
@@ -553,6 +554,7 @@ def test_sparse_predict():  # noqa: D103
             (0.52, 0.5),
             (0.48, 0.5),
             (0.49, 0.5),
+            (0.54, 0.5),
             (0.43, 0),
             (0.53, 0.57),
             (0.45, 0.52),
@@ -830,7 +832,7 @@ def check_adaboost_predict(base_estimator, algorithm, expected_score):
     # testing data
     learner = Learner(
         "AdaBoostClassifier",
-        model_kwargs={"base_estimator": base_estimator, "algorithm": algorithm},
+        model_kwargs={"estimator": base_estimator, "algorithm": algorithm},
     )
     learner.train(train_fs, grid_search=False)
     test_score = learner.evaluate(test_fs)[1]
@@ -844,6 +846,41 @@ def test_adaboost_predict():  # noqa: D103
         [0.46, 0.52, 0.46, 0.5],
     ):
         yield check_adaboost_predict, base_estimator_name, algorithm, expected_score
+
+
+def check_bagging_predict(base_estimator, oob_score, expected_score):
+    """
+    Check predictions for BaggingClassifier learners.
+
+    Parameters
+    ----------
+    base_estimator : str
+        Name of base estimator to use.
+    oob_score : bool
+        Whether to use out-of-bag samples to estimate generalization error.
+    expected_score : float
+        Expected score for the predictions.
+    """
+    train_fs, test_fs = make_sparse_data()
+
+    # train an AdaBoostClassifier on the training data and evaluate on the
+    # testing data
+    learner = Learner(
+        "BaggingClassifier",
+        model_kwargs={"estimator": base_estimator, "oob_score": oob_score},
+    )
+    learner.train(train_fs, grid_search=False)
+    test_score = learner.evaluate(test_fs)[1]
+    assert_almost_equal(test_score, expected_score)
+
+
+def test_bagging_predict():  # noqa: D103
+    for base_estimator_name, oob_score, expected_score in zip(
+        ["MultinomialNB", "DecisionTreeClassifier", "SGDClassifier", "SVC"],
+        [False, True, False, True],
+        [0.43, 0.54, 0.47, 0.52],
+    ):
+        yield check_bagging_predict, base_estimator_name, oob_score, expected_score
 
 
 def check_results_with_unseen_labels(res, n_labels, new_label_list):  # noqa: D103
@@ -1101,6 +1138,7 @@ def test_invalid_classification_grid_objective():  # noqa: D103
     for learner, (label_array, bad_objectives) in product(
         [
             "AdaBoostClassifier",
+            "BaggingClassifier",
             "DecisionTreeClassifier",
             "GradientBoostingClassifier",
             "KNeighborsClassifier",
@@ -1159,6 +1197,7 @@ def test_invalid_classification_metric():  # noqa: D103
     for learner, (label_array, bad_objectives) in product(
         [
             "AdaBoostClassifier",
+            "BaggingClassifier",
             "DecisionTreeClassifier",
             "GradientBoostingClassifier",
             "KNeighborsClassifier",

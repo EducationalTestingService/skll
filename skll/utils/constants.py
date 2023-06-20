@@ -17,6 +17,8 @@ from sklearn.dummy import DummyClassifier, DummyRegressor
 from sklearn.ensemble import (
     AdaBoostClassifier,
     AdaBoostRegressor,
+    BaggingClassifier,
+    BaggingRegressor,
     GradientBoostingClassifier,
     GradientBoostingRegressor,
     RandomForestClassifier,
@@ -46,6 +48,14 @@ from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 KNOWN_DEFAULT_PARAM_GRIDS = {
     AdaBoostClassifier: {"learning_rate": [0.01, 0.1, 1.0, 10.0, 100.0]},
     AdaBoostRegressor: {"learning_rate": [0.01, 0.1, 1.0, 10.0, 100.0]},
+    BaggingClassifier: {
+        "max_samples": [0.1, 0.25, 0.5, 1.0],
+        "max_features": [0.1, 0.25, 0.5, 1.0],
+    },
+    BaggingRegressor: {
+        "max_samples": [0.1, 0.25, 0.5, 1.0],
+        "max_features": [0.1, 0.25, 0.5, 1.0],
+    },
     BayesianRidge: {
         "alpha_1": [1e-6, 1e-4, 1e-2, 1, 10],
         "alpha_2": [1e-6, 1e-4, 1e-2, 1, 10],
