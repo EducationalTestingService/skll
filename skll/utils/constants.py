@@ -21,6 +21,8 @@ from sklearn.ensemble import (
     BaggingRegressor,
     GradientBoostingClassifier,
     GradientBoostingRegressor,
+    HistGradientBoostingClassifier,
+    HistGradientBoostingRegressor,
     RandomForestClassifier,
     RandomForestRegressor,
 )
@@ -69,6 +71,15 @@ KNOWN_DEFAULT_PARAM_GRIDS = {
     ElasticNet: {"alpha": [0.01, 0.1, 1.0, 10.0, 100.0]},
     GradientBoostingClassifier: {"max_depth": [1, 3, 5]},
     GradientBoostingRegressor: {"max_depth": [1, 3, 5]},
+    HistGradientBoostingClassifier: {
+        "learning_rate": [0.1, 0.5, 1.0],
+        "min_samples_leaf": [10, 20, 40],
+    },
+    HistGradientBoostingRegressor: {
+        "loss": ["squared_error", "absolute_error", "poisson"],
+        "learning_rate": [0.1, 0.5, 1.0],
+        "min_samples_leaf": [10, 20, 40],
+    },
     HuberRegressor: {
         "epsilon": [1.05, 1.35, 1.5, 2.0, 2.5, 5.0],
         "alpha": [1e-4, 1e-3, 1e-2, 1e-1, 1, 10, 100, 1000],
@@ -116,7 +127,13 @@ KNOWN_DEFAULT_PARAM_GRIDS = {
     TheilSenRegressor: {},
 }
 
-KNOWN_REQUIRES_DENSE: Tuple[Any, ...] = (BayesianRidge, Lars, TheilSenRegressor)
+KNOWN_REQUIRES_DENSE: Tuple[Any, ...] = (
+    BayesianRidge,
+    HistGradientBoostingClassifier,
+    HistGradientBoostingRegressor,
+    Lars,
+    TheilSenRegressor,
+)
 
 MAX_CONCURRENT_PROCESSES = int(os.getenv("SKLL_MAX_CONCURRENT_PROCESSES", "5"))
 
