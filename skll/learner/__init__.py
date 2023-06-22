@@ -27,6 +27,8 @@ from sklearn.ensemble import (
     BaggingRegressor,
     GradientBoostingClassifier,
     GradientBoostingRegressor,
+    HistGradientBoostingClassifier,
+    HistGradientBoostingRegressor,
     RandomForestClassifier,
     RandomForestRegressor,
 )
@@ -299,6 +301,8 @@ class Learner(object):
                 ElasticNet,
                 GradientBoostingClassifier,
                 GradientBoostingRegressor,
+                HistGradientBoostingClassifier,
+                HistGradientBoostingRegressor,
                 Lasso,
                 LinearSVC,
                 LinearSVR,
