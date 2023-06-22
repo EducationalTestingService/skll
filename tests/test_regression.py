@@ -565,9 +565,29 @@ def check_bagging_regression(base_estimator, pearson_value):
 
 def test_bagging_regression():
     for base_estimator_name, pearson_value in zip(
-        [None, "SGDRegressor", "DecisionTreeRegressor", "SVR"], [0.95, 0.95, 0.95, 0.9]
+        [None, "sgdregressor", "decisiontreeregressor", "svr"], [0.95, 0.95, 0.95, 0.9]
     ):
         yield check_bagging_regression, base_estimator_name, pearson_value
+
+
+def test_hist_gradient_boosting_regression():
+    train_fs, test_fs, _ = make_regression_data(num_examples=2000, sd_noise=4, num_features=3)
+
+    # train a RANSACRegressor on the training data and evaluate on the
+    # testing data
+    learner = Learner("HistGradientBoostingRegressor")
+    learner.train(train_fs, grid_search=False)
+
+    # now generate the predictions on the test set
+    predictions = learner.predict(test_fs)
+
+    # now make sure that the predictions are close to
+    # the actual test FeatureSet labels that we generated
+    # using make_regression_data. To do this, we just
+    # make sure that they are correlated and the value
+    # of the correlation is as expected
+    cor, _ = pearsonr(predictions, test_fs.labels)
+    assert_greater(cor, 0.98)
 
 
 def check_mlp_regression(use_rescaling=False):
@@ -668,6 +688,7 @@ def test_invalid_regression_grid_objective():
         "DecisionTreeRegressor",
         "ElasticNet",
         "GradientBoostingRegressor",
+        "HistGradientBoostingRegressor",
         "HuberRegressor",
         "KNeighborsRegressor",
         "Lars",
@@ -704,6 +725,7 @@ def test_invalid_regression_metric():
         "DecisionTreeRegressor",
         "ElasticNet",
         "GradientBoostingRegressor",
+        "HistGradientBoostingRegressor",
         "HuberRegressor",
         "KNeighborsRegressor",
         "Lars",
