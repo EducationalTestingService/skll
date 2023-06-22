@@ -305,6 +305,7 @@ Classifiers:
     *   **DummyClassifier**: `Simple rule-based Classification <https://scikit-learn.org/stable/modules/generated/sklearn.dummy.DummyClassifier.html#sklearn.dummy.DummyClassifier>`__
     *   **DecisionTreeClassifier**: `Decision Tree Classification <https://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeClassifier.html#sklearn.tree.DecisionTreeClassifier>`__
     *   **GradientBoostingClassifier**: `Gradient Boosting Classification <https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingClassifier.html#sklearn.ensemble.GradientBoostingClassifier>`__
+    *   **HistGradientBoostingClassifier**: `Histogram-based Gradient Boosting Classifier <https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.HistGradientBoostingClassifier.html#sklearn.ensemble.HistGradientBoostingClassifier>`__. Requires dense feature array; sparse features will be automatically converted to dense when using this learner.
     *   **KNeighborsClassifier**: `K-Nearest Neighbors Classification <https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.KNeighborsClassifier.html#sklearn.neighbors.KNeighborsClassifier>`__
     *   **LinearSVC**: `Support Vector Classification using LibLinear <https://scikit-learn.org/stable/modules/generated/sklearn.svm.LinearSVC.html#sklearn.svm.LinearSVC>`__
     *   **LogisticRegression**: `Logistic Regression Classification using LibLinear <https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html#sklearn.linear_model.LogisticRegression>`__
@@ -329,24 +330,25 @@ Regressors:
 
     *   **AdaBoostRegressor**: `AdaBoost Regression <https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.AdaBoostRegressor.html#sklearn.ensemble.AdaBoostRegressor>`__. Note that the default base estimator is a ``DecisionTreeRegressor``. A different base estimator can be used by specifying an ``estimator`` fixed parameter in the :ref:`fixed_parameters <fixed_parameters>` list. The following additional base estimators are supported: ``LinearRegression``, ``SGDRegressor``, and ``SVR``.
     *   **BaggingRegressor**: `Bagging Regression <https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.BaggingRegressor.html#sklearn.ensemble.BaggingRegressor>`__. Note that the default base estimator is a ``DecisionTreeRegressor``. A different base estimator can be used by specifying an ``estimator`` fixed parameter in the :ref:`fixed_parameters <fixed_parameters>` list. The following additional base estimators are supported: ``LinearRegression``, ``SGDRegressor``, and ``SVR``.
-    *   **BayesianRidge**: `Bayesian Ridge Regression <https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.BayesianRidge.html#sklearn.linear_model.BayesianRidge>`__
+    *   **BayesianRidge**: `Bayesian Ridge Regression <https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.BayesianRidge.html#sklearn.linear_model.BayesianRidge>`__. Requires dense feature array; sparse features will be automatically converted to dense when using this learner.
     *   **DecisionTreeRegressor**: `Decision Tree Regressor <https://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeRegressor.html#sklearn.tree.DecisionTreeRegressor>`__
     *   **DummyRegressor**: `Simple Rule-based Regression <https://scikit-learn.org/stable/modules/generated/sklearn.dummy.DummyRegressor.html#sklearn.dummy.DummyRegressor>`__
     *   **ElasticNet**: `ElasticNet Regression <https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.ElasticNet.html#sklearn.linear_model.ElasticNet>`__
     *   **GradientBoostingRegressor**: `Gradient Boosting Regressor <https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingRegressor.html#sklearn.ensemble.GradientBoostingRegressor>`__
+    *   **HistGradientBoostingRegressor**: `Histogram-based Gradient Boosting Regressor <https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.HistGradientBoostingRegressor.html#sklearn.ensemble.HistGradientBoostingRegressor>`__. Requires dense feature array; sparse features will be automatically converted to dense when using this learner.
     *   **HuberRegressor**: `Huber Regression <https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.HuberRegressor.html#sklearn.linear_model.HuberRegressor>`__
     *   **KNeighborsRegressor**: `K-Nearest Neighbors Regression <https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.KNeighborsRegressor.html#sklearn.neighbors.KNeighborsRegressor>`__
-    *   **Lars**: `Least Angle Regression <https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Lars.html#sklearn.linear_model.Lars>`__
+    *   **Lars**: `Least Angle Regression <https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Lars.html#sklearn.linear_model.Lars>`__. Requires dense feature array; sparse features will be automatically converted to dense when using this learner.
     *   **Lasso**: `Lasso Regression <https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Lasso.html#sklearn.linear_model.Lasso>`__
     *   **LinearRegression**: `Linear Regression <https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LinearRegression.html#sklearn.linear_model.LinearRegression>`__
     *   **LinearSVR**: `Support Vector Regression using LibLinear <https://scikit-learn.org/stable/modules/generated/sklearn.svm.LinearSVR.html#sklearn.svm.LinearSVR>`__
     *   **MLPRegressor**: `Multi-layer Perceptron Regression <https://scikit-learn.org/stable/modules/generated/sklearn.neural_network.MLPRegressor.html#sklearn.neural_network.MLPRegressor>`__
     *   **RandomForestRegressor**: `Random Forest Regression <https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestRegressor.html#sklearn.ensemble.RandomForestRegressor>`__
-    *   **RANSACRegressor**: `RANdom SAmple Consensus Regression <https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.RANSACRegressor.html#sklearn.linear_model.RANSACRegressor>`__. Note that the default base estimator is a ``LinearRegression``. A different base regressor can be used by specifying a ``estimator`` fixed parameter in the :ref:`fixed_parameters <fixed_parameters>` list.
+    *   **RANSACRegressor**: `RANdom SAmple Consensus Regression <https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.RANSACRegressor.html#sklearn.linear_model.RANSACRegressor>`__. Note that the default base estimator is a ``LinearRegression``. A different base regressor can be used by specifying a ``estimator`` fixed parameter in the :ref:`fixed_parameters <fixed_parameters>` list. The following additional base estimators are supported: ``LinearRegression``, ``SGDRegressor``, and ``SVR``.
     *   **Ridge**: `Ridge Regression <https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Ridge.html#sklearn.linear_model.Ridge>`__
     *   **SGDRegressor**: `Stochastic Gradient Descent Regression <https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDRegressor.html>`__
     *   **SVR**: `Support Vector Regression using LibSVM <https://scikit-learn.org/stable/modules/generated/sklearn.svm.SVR.html#sklearn.svm.SVR>`__
-    *   **TheilSenRegressor**: `Theil-Sen Regression <https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.TheilSenRegressor.html#sklearn.linear_model.TheilSenRegressor>`__
+    *   **TheilSenRegressor**: `Theil-Sen Regression <https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.TheilSenRegressor.html#sklearn.linear_model.TheilSenRegressor>`__. Requires dense feature array; sparse features will be automatically converted to dense when using this learner.
     *   **VotingRegressor**: `Prediction voting regressor for unfitted estimators. <https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.VotingClassifier.html>`__. Using this learner requires specifying the underlying estimators using the ``estimator_names`` fixed parameter in the :ref:`fixed_parameters <fixed_parameters>` list. The following additional fixed parameters can also be supplied in this list:
 
         *   ``estimator_fixed_parameters`` which takes a list of dictionaries to fix any parameters in the underlying learners to desired values,
@@ -603,6 +605,11 @@ AdaBoostClassifier and AdaBoostRegressor
 
        {'n_estimators': 500, 'random_state': 123456789}
 
+BaggingClassifier and BaggingRegressor
+    .. code-block:: python
+
+       {'n_estimators': 500, 'random_state': 123456789}
+
 DecisionTreeClassifier and DecisionTreeRegressor
     .. code-block:: python
 
@@ -622,6 +629,11 @@ GradientBoostingClassifier and GradientBoostingRegressor
     .. code-block:: python
 
        {'n_estimators': 500, 'random_state': 123456789}
+
+HistGradientBoostingClassifier and HistGradientBoostingRegressor
+    .. code-block:: python
+
+       {'random_state': 123456789}
 
 Lasso:
     .. code-block:: python
@@ -1066,6 +1078,12 @@ AdaBoostClassifier and AdaBoostRegressor
 
         {'learning_rate': [0.01, 0.1, 1.0, 10.0, 100.0]}
 
+BaggingClassifier and BaggingRegressor
+    .. code-block:: python
+
+        {'max_samples': [0.1, 0.25, 0.5, 1.0],
+         'max_features': [0.1, 0.25, 0.5, 1.0]}
+
 BayesianRidge
     .. code-block:: python
 
@@ -1088,6 +1106,19 @@ GradientBoostingClassifier and GradientBoostingRegressor
     .. code-block:: python
 
        {'max_depth': [1, 3, 5]}
+
+HistGradientBoostingClassifier
+    .. code-block:: python
+
+       {'learning_rate': [0.1, 0.5, 1.0],
+        'min_samples_leaf': [10, 20, 40]}
+
+HistGradientBoostingRegressor
+    .. code-block:: python
+
+       {'loss': ['squared_error', 'absolute_error', 'poisson'],
+        'learning_rate': [0.1, 0.5, 1.0],
+        'min_samples_leaf': [10, 20, 40]}
 
 HuberRegressor
     .. code-block:: python
