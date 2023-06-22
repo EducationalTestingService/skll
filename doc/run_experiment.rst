@@ -1110,14 +1110,14 @@ GradientBoostingClassifier and GradientBoostingRegressor
 HistGradientBoostingClassifier
     .. code-block:: python
 
-       {'learning_rate': [0.1, 0.5, 1.0],
+       {'learning_rate': [0.01, 0.1, 1.0],
         'min_samples_leaf': [10, 20, 40]}
 
 HistGradientBoostingRegressor
     .. code-block:: python
 
        {'loss': ['squared_error', 'absolute_error', 'poisson'],
-        'learning_rate': [0.1, 0.5, 1.0],
+        'learning_rate': [0.01, 0.1, 1.0],
         'min_samples_leaf': [10, 20, 40]}
 
 HuberRegressor

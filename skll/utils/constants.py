@@ -72,12 +72,12 @@ KNOWN_DEFAULT_PARAM_GRIDS = {
     GradientBoostingClassifier: {"max_depth": [1, 3, 5]},
     GradientBoostingRegressor: {"max_depth": [1, 3, 5]},
     HistGradientBoostingClassifier: {
-        "learning_rate": [0.1, 0.5, 1.0],
+        "learning_rate": [0.01, 0.1, 1.0],
         "min_samples_leaf": [10, 20, 40],
     },
     HistGradientBoostingRegressor: {
         "loss": ["squared_error", "absolute_error", "poisson"],
-        "learning_rate": [0.1, 0.5, 1.0],
+        "learning_rate": [0.01, 0.1, 1.0],
         "min_samples_leaf": [10, 20, 40],
     },
     HuberRegressor: {
