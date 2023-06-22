@@ -565,7 +565,7 @@ def check_bagging_regression(base_estimator, pearson_value):
 
 def test_bagging_regression():
     for base_estimator_name, pearson_value in zip(
-        [None, "sgdregressor", "decisiontreeregressor", "svr"], [0.95, 0.95, 0.95, 0.9]
+        [None, "SGDRegressor", "DecisionTreeRegressor", "SVR"], [0.95, 0.95, 0.95, 0.9]
     ):
         yield check_bagging_regression, base_estimator_name, pearson_value
 
