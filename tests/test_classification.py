@@ -883,6 +883,15 @@ def test_bagging_predict():  # noqa: D103
         yield check_bagging_predict, base_estimator_name, oob_score, expected_score
 
 
+def test_hist_gradient_boosting_predict():  # noqa: D103
+    train_fs, test_fs = make_sparse_data()
+    learner = Learner("HistGradientBoostingClassifier")
+
+    learner.train(train_fs, grid_search=False)
+    test_score = learner.evaluate(test_fs)[1]
+    assert_almost_equal(test_score, 0.51)
+
+
 def check_results_with_unseen_labels(res, n_labels, new_label_list):  # noqa: D103
     (confusion_matrix, _, result_dict, _, _, additional_scores) = res
 
