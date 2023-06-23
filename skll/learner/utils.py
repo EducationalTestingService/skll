@@ -13,6 +13,7 @@ from __future__ import annotations
 import inspect
 import logging
 import sys
+import time
 from collections import Counter, defaultdict
 from csv import DictWriter, excel_tab
 from functools import wraps
@@ -1078,7 +1079,7 @@ def train_and_score(
     train_examples: FeatureSet,
     test_examples: FeatureSet,
     metric: str,
-) -> Tuple[float, float]:
+) -> Tuple[float, float, float]:
     """
     Train learner, generate predictions, and evaluate predictions.
 
@@ -1117,7 +1118,12 @@ def train_and_score(
         Output of the score function applied to predictions of
         ``learner`` on ``test_examples``.
     """
+    # capture the time before we train the model
+    start_time = time.time()
     _ = learner.train(train_examples, grid_search=False, shuffle=False)
+
+    # compute the time it took to train the model
+    fit_time = time.time() - start_time
 
     # get the train and test class probabilities or indices (not labels)
     train_predictions = learner.predict(train_examples, class_labels=False)
@@ -1157,7 +1163,8 @@ def train_and_score(
     # now compute and return the scores
     train_score = use_score_func(metric, train_labels, train_predictions)
     test_score = use_score_func(metric, test_labels, test_predictions)
-    return train_score, test_score
+
+    return train_score, test_score, fit_time
 
 
 def write_predictions(
