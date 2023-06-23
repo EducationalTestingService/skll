@@ -860,7 +860,7 @@ class VotingLearner(object):
         cv_folds: Union[int, FoldMapping] = 10,
         train_sizes: LearningCurveSizes = np.linspace(0.1, 1.0, 5),
         override_minimum: bool = False,
-    ) -> Tuple[List[float], List[float], List[int]]:
+    ) -> Tuple[List[float], List[float], List[float], List[int]]:
         """
         Generate learning curves for the meta-estimator.
 
@@ -903,6 +903,8 @@ class VotingLearner(object):
             The scores for the training set.
         test_scores : List[float]
             The scores on the test set.
+        fit_times : List[float]
+            The average times taken to fit each model.
         num_examples : List[int]
             The numbers of training examples used to generate the curve.
 
@@ -966,7 +968,7 @@ class VotingLearner(object):
         # Reshape the outputs
         out = np.array(out)
         n_cv_folds = out.shape[0] // n_unique_ticks
-        out = out.reshape(n_cv_folds, n_unique_ticks, 2)
+        out = out.reshape(n_cv_folds, n_unique_ticks, 3)
         out = np.asarray(out).transpose((2, 1, 0))
 
-        return list(out[0]), list(out[1]), list(train_sizes_abs)
+        return list(out[0]), list(out[1]), list(out[2]), list(train_sizes_abs)
