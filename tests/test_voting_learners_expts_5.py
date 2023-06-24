@@ -81,8 +81,8 @@ def check_learning_curve_task(learner_type, options_dict):
     init_patcher = patch.object(VotingLearner, "__init__", return_value=None)
 
     # mock the `learning_curve()` method for the `VotingLearner` class;
-    # this method needs to return a tuple of 3 values
-    learning_curve_return_value = ([[0, 0]], [[0, 0]], [[0, 0]])
+    # this method needs to return a tuple of 4 values
+    learning_curve_return_value = ([[0, 0]], [[0, 0]], [[0, 0]], [[0, 0]])
     learning_curve_patcher = patch.object(
         VotingLearner, "learning_curve", return_value=learning_curve_return_value
     )

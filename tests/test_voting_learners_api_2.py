@@ -181,7 +181,7 @@ def check_learning_curve(learner_type, with_soft_voting):
     skll_vl = VotingLearner(
         learner_names, feature_scaling="none", min_feature_count=0, voting=voting_type
     )
-    (train_scores1, test_scores1, train_sizes1) = skll_vl.learning_curve(
+    (train_scores1, test_scores1, _, train_sizes1) = skll_vl.learning_curve(
         featureset, cv_folds=cv_folds, train_sizes=train_sizes, metric=scoring_function
     )
 
