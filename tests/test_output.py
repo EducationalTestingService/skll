@@ -678,7 +678,7 @@ def check_learning_curve_implementation(with_probability):
     # we don't want to filter out any features since scikit-learn
     # does not do that either
     learner = Learner("MultinomialNB", min_feature_count=0, probability=with_probability)
-    (train_scores2, test_scores2, train_sizes2) = learner.learning_curve(
+    (train_scores2, test_scores2, _, train_sizes2) = learner.learning_curve(
         fs_digits, cv_folds=cv_folds, train_sizes=train_sizes, metric="accuracy"
     )
 
@@ -711,16 +711,18 @@ def test_learning_curve_output():
         r = csv.reader(tsvf, dialect=csv.excel_tab)
         header = next(r)
         # make sure we have the expected number of columns
-        eq_(len(header), 11)
+        eq_(len(header), 13)
         num_rows = len(list(r))
         # we should have 2 featuresets x 3 learners x 2 objectives x 5 (default)
         # training sizes = 60 rows
         eq_(num_rows, 60)
 
-    # make sure that the two PNG files (one per featureset) are created
+    # make sure that the four PNG files (two per featureset) are created
     for featureset_name in ["test_learning_curve1", "test_learning_curve2"]:
-        path = output_dir / f"{outprefix}_{featureset_name}.png"
-        ok_(path.exists())
+        path_score = output_dir / f"{outprefix}_{featureset_name}.png"
+        path_time = output_dir / f"{outprefix}_{featureset_name}_times.png"
+        ok_(path_score.exists())
+        ok_(path_time.exists())
 
 
 def test_learning_curve_output_with_objectives():
@@ -742,16 +744,18 @@ def test_learning_curve_output_with_objectives():
         r = csv.reader(tsvf, dialect=csv.excel_tab)
         header = next(r)
         # make sure we have the expected number of columns
-        eq_(len(header), 11)
+        eq_(len(header), 13)
         num_rows = len(list(r))
         # we should have 2 featuresets x 3 learners x 2 objectives x 5 (default)
         # training sizes = 60 rows
         eq_(num_rows, 60)
 
-    # make sure that the two PNG files (one per featureset) are created
+    # make sure that the four PNG files (two per featureset) are created
     for featureset_name in ["test_learning_curve1", "test_learning_curve2"]:
-        path = output_dir / f"{outprefix}_{featureset_name}.png"
-        ok_(path.exists())
+        path_score = output_dir / f"{outprefix}_{featureset_name}.png"
+        path_time = output_dir / f"{outprefix}_{featureset_name}_times.png"
+        ok_(path_score.exists())
+        ok_(path_time.exists())
 
 
 def test_learning_curve_plots():
@@ -766,10 +770,12 @@ def test_learning_curve_plots():
     run_configuration(config_path, quiet=True, local=True)
     outprefix = "test_learning_curve"
 
-    # make sure that the two PNG files (one per featureset) are created
+    # make sure that the four PNG files (two per featureset) are created
     for featureset_name in ["test_learning_curve1", "test_learning_curve2"]:
-        path = output_dir / f"{outprefix}_{featureset_name}.png"
-        ok_(path.exists())
+        path_score = output_dir / f"{outprefix}_{featureset_name}.png"
+        path_time = output_dir / f"{outprefix}_{featureset_name}_times.png"
+        ok_(path_score.exists())
+        ok_(path_time.exists())
 
 
 def test_learning_curve_plots_with_objectives():
@@ -784,10 +790,12 @@ def test_learning_curve_plots_with_objectives():
     run_configuration(config_path, quiet=True, local=True)
     outprefix = "test_learning_curve"
 
-    # make sure that the two PNG files (one per featureset) are created
+    # make sure that the four PNG files (two per featureset) are created
     for featureset_name in ["test_learning_curve1", "test_learning_curve2"]:
-        path = output_dir / f"{outprefix}_{featureset_name}.png"
-        ok_(path.exists())
+        path_score = output_dir / f"{outprefix}_{featureset_name}.png"
+        path_time = output_dir / f"{outprefix}_{featureset_name}_times.png"
+        ok_(path_score.exists())
+        ok_(path_time.exists())
 
 
 def test_learning_curve_ylimits():
