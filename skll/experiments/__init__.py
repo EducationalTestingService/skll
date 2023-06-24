@@ -268,7 +268,7 @@ def _classify_featureset(args: Dict[str, Any]) -> List[Dict[str, Any]]:
                     learner_names = fixed_parameters["estimator_names"]
                 except KeyError:
                     raise ValueError(
-                        "'estimator names' must be specified as "
+                        "'estimator_names' must be specified as "
                         "fixed parameters for voting classifiers "
                         "and/or regressors."
                     ) from None
@@ -441,6 +441,7 @@ def _classify_featureset(args: Dict[str, Any]) -> List[Dict[str, Any]]:
             (
                 curve_train_scores,
                 curve_test_scores,
+                curve_fit_times,
                 computed_curve_train_sizes,
             ) = learner.learning_curve(
                 train_examples,
@@ -451,7 +452,7 @@ def _classify_featureset(args: Dict[str, Any]) -> List[Dict[str, Any]]:
         else:
             # if we do not have a saved model, we need to train one
             if not modelfile.exists() or overwrite:
-                logger.info(f"Featurizing and training new {learner_name} " "model")
+                logger.info(f"Featurizing and training new {learner_name} model")
 
                 # set up the keyword arguments for learner training;
                 # note that most are shared by all types of learners
@@ -561,8 +562,10 @@ def _classify_featureset(args: Dict[str, Any]) -> List[Dict[str, Any]]:
                     "given_curve_train_sizes": learning_curve_train_sizes,
                     "learning_curve_train_scores_means": np.mean(curve_train_scores, axis=1),
                     "learning_curve_test_scores_means": np.mean(curve_test_scores, axis=1),
+                    "learning_curve_fit_times_means": np.mean(curve_fit_times, axis=1),
                     "learning_curve_train_scores_stds": np.std(curve_train_scores, axis=1, ddof=1),
                     "learning_curve_test_scores_stds": np.std(curve_test_scores, axis=1, ddof=1),
+                    "learning_curve_fit_times_stds": np.std(curve_fit_times, axis=1),
                     "computed_curve_train_sizes": computed_curve_train_sizes,
                 }
             )
