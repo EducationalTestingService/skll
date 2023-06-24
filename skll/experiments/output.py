@@ -36,7 +36,7 @@ def _compute_ylimits_for_featureset(
     df: pd.DataFrame, metrics: List[str]
 ) -> Dict[str, Tuple[float, float]]:
     """
-    Compute the y-limits for learning curve plots.
+    Compute the y-limits for learning curve score plots.
 
     Parameters
     ----------
@@ -83,44 +83,43 @@ def _compute_ylimits_for_featureset(
     return ylimits
 
 
-def generate_learning_curve_plots(
-    experiment_name: str, output_dir: PathOrStr, learning_curve_tsv_file: PathOrStr
+def _generate_learning_curve_score_plots(
+    df_scores: pd.DataFrame,
+    num_metrics: int,
+    num_learners: int,
+    experiment_name: str,
+    output_dir: PathOrStr,
+    rotate_labels: bool = False,
 ) -> None:
     """
-    Generate learning curves using the TSV output file from a learning curve experiment.
+    Generate learning curve score plots, one per featureset.
+
+    This function generates score-based learning curve plots, i.e., plots
+    where the training set size is on the x-axis and the training and
+    cross-validation scores are on the y-axis. The plots are faceted, with
+    different metrics along the rows and different learners along the columns.
 
     Parameters
     ----------
+    df_scores : pandas.DataFrame
+        The pandas data frame containing the various scores to be plotted.
+    num_metrics : int
+        The number of metrics specified in the experiment.
+    num_learners: int
+        The number of learners specified in the experiment.
     experiment_name : str
         The name of the experiment.
     output_dir : :class:`skll.types.PathOrStr`
         Path to the output directory for the plots.
-    learning_curve_tsv_file : :class:`skll.types.PathOrStr`
-        The path to the learning curve TSV file.
+    rotate_labels : bool, default=False
+        Whether to rotate the x-axis labels for the training data size.
     """
-    # convert output_dir to Path object
+    # convert output dir to a path
     output_dir = Path(output_dir)
-
-    # use pandas to read in the TSV file into a data frame
-    # and massage it from wide to long format for plotting
-    df = pd.read_csv(learning_curve_tsv_file, sep="\t")
-    num_learners = len(df["learner_name"].unique())
-    num_metrics = len(df["metric"].unique())
-    df_melted = pd.melt(
-        df, id_vars=[c for c in df.columns if c not in ["train_score_mean", "test_score_mean"]]
-    )
-    # make sure the "variable" column is categorical since it will be
-    # mapped to hue levels in the learning curve below
-    df_melted["variable"] = df_melted["variable"].astype("category")
-
-    # if there are any training sizes greater than 1000,
-    # then we should probably rotate the tick labels
-    # since otherwise the labels are not clearly rendered
-    rotate_labels = np.any([size >= 1000 for size in df["training_set_size"].unique()])
 
     # set up and draw the actual learning curve figures, one for
     # each of the featuresets
-    for fs_name, df_fs in df_melted.groupby("featureset_name"):
+    for fs_name, df_fs in df_scores.groupby("featureset_name"):
         fig = plt.figure()
         fig.set_size_inches(2.5 * num_learners, 2.5 * num_metrics)
 
@@ -209,6 +208,211 @@ def generate_learning_curve_plots(
             plt.savefig(output_dir / f"{experiment_name}_{fs_name}.png", dpi=300)
             # explicitly close figure to save memory
             plt.close(fig)
+
+
+def _generate_learning_curve_time_plots(
+    df_times: pd.DataFrame,
+    num_learners: int,
+    experiment_name: str,
+    output_dir: PathOrStr,
+    rotate_labels: bool = False,
+) -> None:
+    """
+    Generate learning curve time plots, one per featureset.
+
+    This function generates time-based learning curve plots, i.e., plots
+    where the training set size is on the x-axis and the model fit times
+    are on the y-axis. The plots are faceted, with different learners
+    along the columns. There is a single row.
+
+    Parameters
+    ----------
+    df_times : pandas.DataFrame
+        The pandas data frame containing the various fit times to be plotted.
+    num_learners: int
+        The number of learners specified in the experiment.
+    experiment_name : str
+        The name of the experiment.
+    output_dir : :class:`skll.types.PathOrStr`
+        Path to the output directory for the plots.
+    rotate_labels : bool, default=False
+        Whether to rotate the x-axis labels for the training data size.
+    """
+    # convert output dir to a path
+    output_dir = Path(output_dir)
+
+    # set up and draw the actual learning curve figures, one for
+    # each of the featuresets
+    for fs_name, df_fs in df_times.groupby("featureset_name"):
+        fig = plt.figure()
+        fig.set_size_inches(2.5 * num_learners, 2.5)
+
+        # compute ylimits for this feature set for each metric
+        with sns.axes_style("whitegrid", {"grid.linestyle": ":", "xtick.major.size": 3.0}):
+            g = sns.FacetGrid(
+                df_fs,
+                col="learner_name",
+                height=2.5,
+                aspect=1,
+                margin_titles=True,
+                despine=True,
+                sharex=False,
+                sharey=True,
+                legend_out=False,
+            )
+            # train_color, test_color = sns.color_palette(palette="Set1", n_colors=2)
+            g = g.map_dataframe(
+                sns.pointplot,
+                x="training_set_size",
+                y="value",
+                hue="variable",
+                scale=0.5,
+                errorbar=None,
+            )
+            # compute the upper and lower
+            for ax in g.axes.flat:
+                plt.setp(ax.texts, text="")
+            g = g.set_titles(row_template="", col_template="{col_name}").set_axis_labels(
+                "Training Examples", "Fit time (s)"
+            )
+            if rotate_labels:
+                g = g.set_xticklabels(rotation=60)
+
+            for j, col_name in enumerate(g.col_names):
+                ax = g.axes[0][j]
+                df_ax = df_fs[
+                    (df_fs["learner_name"] == col_name) & (df_fs["variable"] == "fit_time_mean")
+                ]
+                ax.fill_between(
+                    list(range(len(df_ax))),
+                    df_ax["value"] - df_ax["fit_time_std"],
+                    df_ax["value"] + df_ax["fit_time_std"],
+                    alpha=0.1,
+                )
+
+            g.fig.tight_layout(w_pad=1)
+            plt.savefig(output_dir / f"{experiment_name}_{fs_name}_times.png", dpi=300)
+
+            # explicitly close figure to save memory
+            plt.close(fig)
+
+
+def generate_learning_curve_plots(
+    experiment_name: str, output_dir: PathOrStr, learning_curve_tsv_file: PathOrStr
+) -> None:
+    """
+    Generate learning curves using the TSV output file from a learning curve experiment.
+
+    This function generates both the score plots as well as the fit time plots.
+
+    Parameters
+    ----------
+    experiment_name : str
+        The name of the experiment.
+    output_dir : :class:`skll.types.PathOrStr`
+        Path to the output directory for the plots.
+    learning_curve_tsv_file : :class:`skll.types.PathOrStr`
+        The path to the learning curve TSV file.
+    """
+    # convert output_dir to Path object
+    output_dir = Path(output_dir)
+
+    # use pandas to read in the TSV file into a data frame
+    # and massage it from wide to long format for plotting
+    df = pd.read_csv(learning_curve_tsv_file, sep="\t")
+    num_learners = len(df["learner_name"].unique())
+    num_metrics = len(df["metric"].unique())
+
+    # if there are any training sizes greater than 1000,
+    # then we should probably rotate the tick labels
+    # since otherwise the labels are not clearly rendered
+    rotate_labels = np.any([size >= 1000 for size in df["training_set_size"].unique()])
+
+    # get the columns relevant to the two types of plots
+    score_columns = [
+        column
+        for column in df.columns
+        if column
+        not in [
+            "train_set_name",
+            "fit_time_mean",
+            "fit_time_std",
+            "scikit_learn_version",
+            "version",
+        ]
+    ]
+    time_columns = [
+        column
+        for column in df.columns
+        if column
+        not in [
+            "train_set_name",
+            "train_score_mean",
+            "train_score_std",
+            "test_score_mean",
+            "test_score_std",
+            "scikit_learn_version",
+            "version",
+        ]
+    ]
+
+    # create the score-specific data frame
+    df_score = df[score_columns].copy()
+    df_score_melted = pd.melt(
+        df_score,
+        id_vars=[c for c in df_score.columns if c not in ["train_score_mean", "test_score_mean"]],
+    )
+    # make sure the "variable" column is categorical since it will be
+    # mapped to hue levels in the learning curve below
+    df_score_melted["variable"] = df_score_melted["variable"].astype("category")
+
+    # also make sure that the "learner_name" column is categorical so that
+    # it's sorted correctly
+    df_score_melted["learner_name"] = df_score_melted["learner_name"].astype("category")
+
+    # now compute the time-specific data frame
+    df_time = df[time_columns].copy()
+
+    # note that although we have already averaged the fit times over
+    # the various training, we still have multiple fit times for each
+    # of the metrics so we can further average those out
+    df_time_indexed = df_time.set_index(
+        ["featureset_name", "learner_name", "training_set_size", "metric"]
+    )
+    df_time = (
+        df_time_indexed.groupby(level=["featureset_name", "learner_name", "training_set_size"])
+        .mean()
+        .reset_index()
+    )
+
+    # now let's melt the time data frame the same way that we did the score one
+    df_time_melted = pd.melt(
+        df_time,
+        id_vars=[c for c in df_time.columns if c != "fit_time_mean"],
+    )
+
+    # also make sure that the "learner_name" column is categorical so that
+    # it's sorted correctly
+    df_time_melted["learner_name"] = df_time_melted["learner_name"].astype("category")
+
+    # call the function to generate the score plots first
+    _generate_learning_curve_score_plots(
+        df_score_melted,
+        num_metrics,
+        num_learners,
+        experiment_name,
+        output_dir,
+        rotate_labels=rotate_labels,
+    )
+
+    # now call the function to generate the time plots
+    _generate_learning_curve_time_plots(
+        df_time_melted,
+        num_learners,
+        experiment_name,
+        output_dir,
+        rotate_labels=rotate_labels,
+    )
 
 
 def _print_fancy_output(
@@ -341,8 +545,10 @@ def _write_learning_curve_file(result_json_paths: List[str], output_file: IO[str
         "training_set_size",
         "train_score_mean",
         "test_score_mean",
+        "fit_time_mean",
         "train_score_std",
         "test_score_std",
+        "fit_time_std",
         "scikit_learn_version",
         "version",
     ]
@@ -356,24 +562,38 @@ def _write_learning_curve_file(result_json_paths: List[str], output_file: IO[str
         training_set_sizes = lrd["computed_curve_train_sizes"]
         train_scores_means_by_size = lrd["learning_curve_train_scores_means"]
         test_scores_means_by_size = lrd["learning_curve_test_scores_means"]
+        fit_times_means_by_size = lrd["learning_curve_fit_times_means"]
         train_scores_stds_by_size = lrd["learning_curve_train_scores_stds"]
         test_scores_stds_by_size = lrd["learning_curve_test_scores_stds"]
+        fit_times_stds_by_size = lrd["learning_curve_fit_times_stds"]
 
         # rename `grid_objective` to `metric` since the latter name can be confusing
         lrd["metric"] = lrd["grid_objective"]
 
-        for size, train_score_mean, test_score_mean, train_score_std, test_score_std in zip(
+        for (
+            size,
+            train_score_mean,
+            test_score_mean,
+            fit_time_mean,
+            train_score_std,
+            test_score_std,
+            fit_time_std,
+        ) in zip(
             training_set_sizes,
             train_scores_means_by_size,
             test_scores_means_by_size,
+            fit_times_means_by_size,
             train_scores_stds_by_size,
             test_scores_stds_by_size,
+            fit_times_stds_by_size,
         ):
             lrd["training_set_size"] = size
             lrd["train_score_mean"] = train_score_mean
             lrd["test_score_mean"] = test_score_mean
+            lrd["fit_time_mean"] = fit_time_mean
             lrd["train_score_std"] = train_score_std
             lrd["test_score_std"] = test_score_std
+            lrd["fit_time_std"] = fit_time_std
 
             writer.writerow(lrd)
 
