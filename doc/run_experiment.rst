@@ -236,13 +236,15 @@ field in each section is provided below, but to summarize:
 
 .. _learning_curve:
 
-*   If you want to **generate a learning curve** for your data, specify a training location and set :ref:`task` to ``learning_curve``. The learning curve is generated using essentially the same underlying process as in `scikit-learn <https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.learning_curve.html#sklearn.model_selection.learning_curve>`__ except that the SKLL feature pre-processing pipline is used while training the various models and computing the scores.
+*   If you want to **generate learning curves** for your data, specify a training location and set :ref:`task` to ``learning_curve``. The learning curves are generated using essentially the same underlying process as in `scikit-learn <https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.learning_curve.html#sklearn.model_selection.learning_curve>`__ except that the SKLL feature pre-processing pipeline is used while training the various models and computing the scores.
 
     .. note::
 
         1. Ideally, one would first do cross-validation experiments with grid search and/or ablation and get a well-performing set of features and hyper-parameters for a set of learners. Then, one would explicitly specify those features (via :ref:`featuresets <featuresets>`) and hyper-parameters (via :ref:`fixed_parameters <fixed_parameters>`) in the config file for the learning curve and explore the impact of the size of the training data.
 
-        2. If you set :ref:`probability <probability>` to ``True``, the probabilities will be converted to the most likely label via an argmax before computing the curve.
+        2. To ensure reliable results, SKLL expects a minimum of 500 examples in the training set when generating learning curves.
+
+        3. If you set :ref:`probability <probability>` to ``True``, the probabilities will be converted to the most likely label via an ``argmax`` before computing the curve.
 
 .. _learners_required:
 
@@ -1629,16 +1631,28 @@ Learning curve plots
 ^^^^^^^^^^^^^^^^^^^^
 
 When running a :ref:`learning_curve <learning_curve>` experiment,
-actual learning curves are also generated as PNG files - one for each feature set
-specified in the configuration file. Each PNG file is named ``EXPERIMENT_FEATURESET.png``
-and contains a faceted learning curve plot for the featureset with objective
-functions on rows and learners on columns. Here's an example of such a plot.
+actual learning curves are also generated as ``.png`` files. Two curves are generated
+for each feature set specified in the configuration file.
+
+The first ``.png`` file is named ``EXPERIMENT_FEATURESET.png``
+and contains a double-faceted learning curve plot for the featureset with the
+specified :ref:`output metrics <metrics>` along the rows and the
+:ref:`learners` along the columns. Each sub-plot has the number of training
+examples  on the x-axis and the metric score on the y-axis. Here's an example
+of such a plot.
 
     .. image:: learning_curve.png
 
+The second ``.png`` file is named ``EXPERIMENT_FEATURESET_times.png``
+and contains a column-faceted learning curve plot for the featureset with a single
+row and the specified :ref:`learners` along the columns. Each sub-plot has the
+number of training examples on the x-axis and the model fit times on the y-axis.
+Here's an example of this plot.
+
+    .. image:: learning_curve_times.png
+
 You can also generate the plots from the learning curve summary
 file using the :ref:`plot_learning_curves <plot_learning_curves>` utility script.
-
 
 .. rubric:: Footnotes
 
