@@ -260,7 +260,6 @@ def _generate_learning_curve_time_plots(
                 sharey=True,
                 legend_out=False,
             )
-            # train_color, test_color = sns.color_palette(palette="Set1", n_colors=2)
             g = g.map_dataframe(
                 sns.pointplot,
                 x="training_set_size",
