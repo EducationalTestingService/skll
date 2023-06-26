@@ -325,7 +325,7 @@ def generate_learning_curve_plots(
     # if there are any training sizes greater than 1000,
     # then we should probably rotate the tick labels
     # since otherwise the labels are not clearly rendered
-    rotate_labels = np.any([size >= 1000 for size in df["training_set_size"].unique()])
+    rotate_labels = df["training_set_size"].unique().max() >= 1000
 
     # get the columns relevant to the two types of plots
     score_columns = [
