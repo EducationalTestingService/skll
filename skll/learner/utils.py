@@ -1117,6 +1117,9 @@ def train_and_score(
     float
         Output of the score function applied to predictions of
         ``learner`` on ``test_examples``.
+    float
+        The time taken in seconds to fit the ``learner`` on
+        ``train_examples``.
     """
     # capture the time before we train the model
     start_time = time.time()

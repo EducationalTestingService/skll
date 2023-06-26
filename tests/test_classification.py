@@ -1048,7 +1048,7 @@ def check_train_and_score_function(model_type):
     estimator_name = "LogisticRegression" if model_type == "classifier" else "Ridge"
     metric = "accuracy" if model_type == "classifier" else "pearson"
     learner1 = Learner(estimator_name)
-    train_score1, test_score1 = train_and_score(learner1, train_fs, test_fs, metric)
+    train_score1, test_score1, _ = train_and_score(learner1, train_fs, test_fs, metric)
 
     # this should yield identical results when training another instance
     # of the same learner without grid search and shuffling and evaluating
