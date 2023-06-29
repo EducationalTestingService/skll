@@ -1,3 +1,5 @@
 [run]
 source=skll
+omit=skll/utils/testing.py
+     tests/*
 parallel=true
