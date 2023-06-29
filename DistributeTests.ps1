@@ -29,40 +29,40 @@ Write-Host "Total tests: $testCount"
 $testsToRun= @()
 
 if ($agentNumber -eq 1) {
-    $testsToRun = $testsToRun + "tests/test_featureset.py"
-    $testsToRun = $testsToRun + "tests/test_commandline_utils.py"
-    $testsToRun = $testsToRun + "tests/test_custom_metrics.py"
-    $testsToRun = $testsToRun + "tests/test_voting_learners_api_5.py"
+    $testsToRun = $testsToRun + "test_featureset"
+    $testsToRun = $testsToRun + "test_commandline_utils"
+    $testsToRun = $testsToRun + "test_custom_metrics"
+    $testsToRun = $testsToRun + "test_voting_learners_api_5"
 }
 elseif ($agentNumber -eq 2) {
-    $testsToRun = $testsToRun + "tests/test_output.py"
-    $testsToRun = $testsToRun + "tests/test_voting_learners_api_4.py"
+    $testsToRun = $testsToRun + "test_output"
+    $testsToRun = $testsToRun + "test_voting_learners_api_4"
 }
 elseif ($agentNumber -eq 3) {
-    $testsToRun = $testsToRun + "tests/test_regression.py"
-    $testsToRun = $testsToRun + "tests/test_voting_learners_api_2.py"
+    $testsToRun = $testsToRun + "test_regression"
+    $testsToRun = $testsToRun + "test_voting_learners_api_2"
 }
 elseif ($agentNumber -eq 4) {
-    $testsToRun = $testsToRun + "tests/test_input.py"
-    $testsToRun = $testsToRun + "tests/test_preprocessing.py"
-    $testsToRun = $testsToRun + "tests/test_metrics.py"
-    $testsToRun = $testsToRun + "tests/test_custom_learner.py"
-    $testsToRun = $testsToRun + "tests/test_logging_utils.py"
-    $testsToRun = $testsToRun + "tests/test_examples.py"
-    $testsToRun = $testsToRun + "tests/test_voting_learners_api_1.py"
-    $testsToRun = $testsToRun + "tests/test_voting_learners_expts_1.py"
+    $testsToRun = $testsToRun + "test_input"
+    $testsToRun = $testsToRun + "test_preprocessing"
+    $testsToRun = $testsToRun + "test_metrics"
+    $testsToRun = $testsToRun + "test_custom_learner"
+    $testsToRun = $testsToRun + "test_logging_utils"
+    $testsToRun = $testsToRun + "test_examples"
+    $testsToRun = $testsToRun + "test_voting_learners_api_1"
+    $testsToRun = $testsToRun + "test_voting_learners_expts_1"
 }
 elseif ($agentNumber -eq 5) {
-    $testsToRun = $testsToRun + "tests/test_classification.py"
-    $testsToRun = $testsToRun + "tests/test_cv.py"
-    $testsToRun = $testsToRun + "tests/test_ablation.py"
-    $testsToRun = $testsToRun + "tests/test_voting_learners_expts_4.py"
+    $testsToRun = $testsToRun + "test_classification"
+    $testsToRun = $testsToRun + "test_cv"
+    $testsToRun = $testsToRun + "test_ablation"
+    $testsToRun = $testsToRun + "test_voting_learners_expts_4"
 }
 elseif ($agentNumber -eq 6) {
-    $testsToRun = $testsToRun + "tests/test_voting_learners_api_3.py"
-    $testsToRun = $testsToRun + "tests/test_voting_learners_expts_2.py"
-    $testsToRun = $testsToRun + "tests/test_voting_learners_expts_3.py"
-    $testsToRun = $testsToRun + "tests/test_voting_learners_expts_5.py"
+    $testsToRun = $testsToRun + "test_voting_learners_api_3"
+    $testsToRun = $testsToRun + "test_voting_learners_expts_2"
+    $testsToRun = $testsToRun + "test_voting_learners_expts_3"
+    $testsToRun = $testsToRun + "test_voting_learners_expts_5"
 }
 
 # join all test files seperated by space. pytest runs multiple test files in following format pytest test1.py test2.py test3.py

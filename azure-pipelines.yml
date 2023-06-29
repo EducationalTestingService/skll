@@ -42,13 +42,13 @@ jobs:
   - script: |
       CALL activate sklldev
       echo $(pytestfiles)
-      nosetests --logging-level=WARNING --with-xunit $(pytestfiles)
+      nose2 -s tests $(pytestfiles)
     displayName: 'Run tests'
     continueOnError: true
 
   - task: PublishTestResults@2
     displayName: 'Publish Test Results'
     inputs:
-      testResultsFiles: 'nosetests.xml'
+      testResultsFiles: 'junit.xml'
       testRunTitle: 'SKLL tests'
     condition: succeededOrFailed()
