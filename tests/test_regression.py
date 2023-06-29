@@ -10,20 +10,11 @@ Run tests with regression learners.
 
 import math
 import re
+import unittest
 import warnings
 from itertools import chain, product
 
 import numpy as np
-from nose.tools import (
-    assert_almost_equal,
-    assert_false,
-    assert_greater,
-    assert_less,
-    assert_true,
-    eq_,
-    ok_,
-    raises,
-)
 from numpy.testing import assert_allclose, assert_array_equal
 from scipy.stats import pearsonr
 from sklearn.exceptions import ConvergenceWarning
@@ -43,750 +34,719 @@ from tests.utils import (
 )
 
 
-def setup():
-    """Create necessary directories for testing."""
-    for dir_path in [train_dir, test_dir, output_dir]:
-        dir_path.mkdir(exist_ok=True)
+class TestRegression(unittest.TestCase):
+    """Test class for regression tests."""
 
+    @classmethod
+    def setUpClass(cls):
+        """Create necessary directories for testing."""
+        for dir_path in [train_dir, test_dir, output_dir]:
+            dir_path.mkdir(exist_ok=True)
 
-def tearDown():
-    """Clean up after tests."""
-    for output_file in chain(
-        output_dir.glob("regression_fancy_output*"),
-        output_dir.glob("test_ensemble_evaluate*"),
-        output_dir.glob("test_int_labels_cv*"),
-        [train_dir / "fancy_train.jsonlines", test_dir / "fancy_test.jsonlines"],
-    ):
-        unlink(output_file)
+    @classmethod
+    def tearDownClass(cls):
+        """Clean up after tests."""
+        for output_file in chain(
+            output_dir.glob("regression_fancy_output*"),
+            output_dir.glob("test_ensemble_evaluate*"),
+            output_dir.glob("test_int_labels_cv*"),
+            [train_dir / "fancy_train.jsonlines", test_dir / "fancy_test.jsonlines"],
+        ):
+            unlink(output_file)
 
-    for file_name in [
-        "test_regression_fancy_output.cfg",
-        "test_ensemble_evaluate.cfg",
-        "test_int_labels_cv.cfg",
-    ]:
-        unlink(config_dir / file_name)
+        for file_name in [
+            "test_regression_fancy_output.cfg",
+            "test_ensemble_evaluate.cfg",
+            "test_int_labels_cv.cfg",
+        ]:
+            unlink(config_dir / file_name)
 
+    # a utility function to check rescaling for linear models
+    def check_rescaling(self, name, grid_search=False):
+        train_fs, test_fs, _ = make_regression_data(num_examples=2000, sd_noise=4, num_features=3)
 
-# a utility function to check rescaling for linear models
-def check_rescaling(name, grid_search=False):
-    train_fs, test_fs, _ = make_regression_data(num_examples=2000, sd_noise=4, num_features=3)
+        # instantiate the given learner and its rescaled counterpart
+        learner = Learner(name)
+        rescaled_learner = Learner(f"Rescaled{name}")
 
-    # instantiate the given learner and its rescaled counterpart
-    learner = Learner(name)
-    rescaled_learner = Learner(f"Rescaled{name}")
+        # train both the regular regressor and the rescaled regressor
+        # with and without using grid search
+        if grid_search:
+            learner.train(train_fs, grid_search=True, grid_objective="pearson")
+            rescaled_learner.train(train_fs, grid_search=True, grid_objective="pearson")
+        else:
+            learner.train(train_fs, grid_search=False)
+            rescaled_learner.train(train_fs, grid_search=False)
 
-    # train both the regular regressor and the rescaled regressor
-    # with and without using grid search
-    if grid_search:
-        learner.train(train_fs, grid_search=True, grid_objective="pearson")
-        rescaled_learner.train(train_fs, grid_search=True, grid_objective="pearson")
-    else:
-        learner.train(train_fs, grid_search=False)
-        rescaled_learner.train(train_fs, grid_search=False)
+        # now generate both sets of predictions on the test feature set
+        predictions = learner.predict(test_fs)
+        rescaled_predictions = rescaled_learner.predict(test_fs)
 
-    # now generate both sets of predictions on the test feature set
-    predictions = learner.predict(test_fs)
-    rescaled_predictions = rescaled_learner.predict(test_fs)
+        # ... and on the training feature set
+        train_predictions = learner.predict(train_fs)
+        rescaled_train_predictions = rescaled_learner.predict(train_fs)
 
-    # ... and on the training feature set
-    train_predictions = learner.predict(train_fs)
-    rescaled_train_predictions = rescaled_learner.predict(train_fs)
+        # make sure that both sets of correlations are close to perfectly
+        # correlated, since the only thing different is that one set has been
+        # rescaled
+        self.assertAlmostEqual(pearsonr(predictions, rescaled_predictions)[0], 1.0, places=3)
 
-    # make sure that both sets of correlations are close to perfectly
-    # correlated, since the only thing different is that one set has been
-    # rescaled
-    assert_almost_equal(pearsonr(predictions, rescaled_predictions)[0], 1.0, places=3)
+        # make sure that the standard deviation of the rescaled test set
+        # predictions is higher than the standard deviation of the regular test set
+        # predictions
+        p_std = np.std(predictions)
+        rescaled_p_std = np.std(rescaled_predictions)
+        self.assertGreater(rescaled_p_std, p_std)
 
-    # make sure that the standard deviation of the rescaled test set
-    # predictions is higher than the standard deviation of the regular test set
-    # predictions
-    p_std = np.std(predictions)
-    rescaled_p_std = np.std(rescaled_predictions)
-    assert_greater(rescaled_p_std, p_std)
+        # make sure that the standard deviation of the rescaled predictions
+        # on the TRAINING set (not the TEST) is closer to the standard
+        # deviation of the training set labels than the standard deviation
+        # of the regular predictions.
+        train_y_std = np.std(train_fs.labels)
+        train_p_std = np.std(train_predictions)
+        rescaled_train_p_std = np.std(rescaled_train_predictions)
+        self.assertLess(abs(rescaled_train_p_std - train_y_std), abs(train_p_std - train_y_std))
 
-    # make sure that the standard deviation of the rescaled predictions
-    # on the TRAINING set (not the TEST) is closer to the standard
-    # deviation of the training set labels than the standard deviation
-    # of the regular predictions.
-    train_y_std = np.std(train_fs.labels)
-    train_p_std = np.std(train_predictions)
-    rescaled_train_p_std = np.std(rescaled_train_predictions)
-    assert_less(abs(rescaled_train_p_std - train_y_std), abs(train_p_std - train_y_std))
-
-
-def test_rescaling():
-    for regressor_name in [
-        "BayesianRidge",
-        "ElasticNet",
-        "HuberRegressor",
-        "Lars",
-        "Lasso",
-        "LinearRegression",
-        "LinearSVR",
-        "RANSACRegressor",
-        "Ridge",
-        "SGDRegressor",
-        "SVR",
-        "TheilSenRegressor",
-    ]:
-        for do_grid_search in [True, False]:
-            yield check_rescaling, regressor_name, do_grid_search
-
-
-# the utility function to run the linear regession tests
-def check_linear_models(name, use_feature_hashing=False, use_rescaling=False):
-    # create a FeatureSet object with the data we want to use
-    if use_feature_hashing:
-        (train_fs, test_fs, weightdict) = make_regression_data(
-            num_examples=5000, num_features=10, use_feature_hashing=True, feature_bins=5
-        )
-    else:
-        train_fs, test_fs, weightdict = make_regression_data(num_examples=2000, num_features=3)
-
-    # create the learner
-    model_kwargs = (
-        {} if name in ["BayesianRidge", "Lars", "LinearRegression"] else {"max_iter": 500}
-    )
-    name = f"Rescaled{name}" if use_rescaling else name
-    learner = Learner(name, model_kwargs=model_kwargs)
-
-    # train it with the training feature set we created
-    # make sure to set the grid objective to pearson
-    learner.train(train_fs, grid_search=True, grid_objective="pearson")
-
-    # make sure that the weights are close to the weights
-    # that we got from make_regression_data. Take the
-    # ceiling before comparing since just comparing
-    # the ceilings should be enough to make sure nothing
-    # catastrophic happened. However, sometimes with
-    # feature hashing, the ceiling is not exactly identical
-    # so when that fails we want to check that the rounded
-    # feature values are the same. One of those two equalities
-    # _must_ be satisified.
-
-    # get the weights for this trained model
-    learned_weights = learner.model_params[0]
-
-    for feature_name in learned_weights:
-        learned_w_ceil = math.ceil(learned_weights[feature_name])
-        given_w_ceil = math.ceil(weightdict[feature_name])
-        learned_w_round = round(learned_weights[feature_name], 0)
-        given_w_round = round(weightdict[feature_name], 0)
-        ceil_equal = learned_w_ceil == given_w_ceil
-        round_equal = learned_w_round == given_w_round
-        either_equal = ceil_equal or round_equal
-        assert either_equal
-
-    # now generate the predictions on the test FeatureSet
-    predictions = learner.predict(test_fs)
-
-    # now make sure that the predictions are close to
-    # the actual test FeatureSet labels that we generated
-    # using make_regression_data. To do this, we just
-    # make sure that they are correlated with pearson > 0.95
-    cor, _ = pearsonr(predictions, test_fs.labels)
-    assert_greater(cor, 0.95)
-
-
-# the runner function for linear regression models
-def test_linear_models():
-    for regressor_name, use_feature_hashing, use_rescaling in product(
-        [
+    def test_rescaling(self):
+        for regressor_name in [
             "BayesianRidge",
             "ElasticNet",
             "HuberRegressor",
             "Lars",
             "Lasso",
             "LinearRegression",
-            "Ridge",
             "LinearSVR",
+            "RANSACRegressor",
+            "Ridge",
             "SGDRegressor",
+            "SVR",
             "TheilSenRegressor",
-        ],
-        [False, True],
-        [False, True],
-    ):
-        yield (check_linear_models, regressor_name, use_feature_hashing, use_rescaling)
+        ]:
+            for do_grid_search in [True, False]:
+                yield self.check_rescaling, regressor_name, do_grid_search
 
-
-# the utility function to run the non-linear tests
-def check_non_linear_models(name, use_feature_hashing=False, use_rescaling=False):
-    # create a FeatureSet object with the data we want to use
-    if use_feature_hashing:
-        train_fs, test_fs, _ = make_regression_data(
-            num_examples=5000, num_features=10, use_feature_hashing=True, feature_bins=5
-        )
-    else:
-        train_fs, test_fs, _ = make_regression_data(num_examples=2000, num_features=3)
-
-    # create the learner
-    if use_rescaling:
-        name = f"Rescaled{name}"
-    learner = Learner(name)
-
-    # train it with the training feature set we created
-    # make sure to set the grid objective to pearson
-    learner.train(train_fs, grid_search=True, grid_objective="pearson")
-
-    # Note that we cannot check the feature weights here
-    # since `model_params()` is not defined for non-linear
-    # kernels.
-
-    # now generate the predictions on the test FeatureSet
-    predictions = learner.predict(test_fs)
-
-    # now make sure that the predictions are close to
-    # the actual test FeatureSet labels that we generated
-    # using make_regression_data. To do this, we just
-    # make sure that they are correlated with pearson > 0.95
-    cor, _ = pearsonr(predictions, test_fs.labels)
-    assert_greater(cor, 0.95)
-
-
-# the runner function for non-linear regression models
-def test_non_linear_models():
-    for regressor_name, use_feature_hashing, use_rescaling in product(
-        ["SVR"], [False, True], [False, True]
-    ):
-        yield (check_non_linear_models, regressor_name, use_feature_hashing, use_rescaling)
-
-
-# the utility function to run the tree-based regression tests
-
-
-def check_tree_models(name, use_feature_hashing=False, use_rescaling=False):
-    # create a FeatureSet object with the data we want to use
-    if use_feature_hashing:
-        train_fs, test_fs, _ = make_regression_data(
-            num_examples=5000, num_features=10, use_feature_hashing=True, feature_bins=5
-        )
-    else:
-        train_fs, test_fs, _ = make_regression_data(num_examples=2000, num_features=3)
-
-    # create the learner
-    if use_rescaling:
-        name = f"Rescaled{name}"
-    learner = Learner(name)
-
-    # train it with the training feature set we created
-    # make sure to set the grid objective to pearson
-    learner.train(train_fs, grid_search=True, grid_objective="pearson")
-
-    # make sure that the feature importances are as expected.
-    if name.endswith("DecisionTreeRegressor"):
-        expected_feature_importances = (
-            [0.730811, 0.001834, 0.247603, 0.015241, 0.004511]
-            if use_feature_hashing
-            else [0.08926899, 0.15585068, 0.75488033]
-        )
-    else:
-        expected_feature_importances = (
-            [0.733654, 0.002528, 0.245527, 0.013664, 0.004627]
-            if use_feature_hashing
-            else [0.07974267, 0.16121895, 0.75903838]
-        )
-
-    feature_importances = learner.model.feature_importances_
-    assert_allclose(feature_importances, expected_feature_importances, atol=1e-2, rtol=0)
-
-    # now generate the predictions on the test FeatureSet
-    predictions = learner.predict(test_fs)
-
-    # now make sure that the predictions are close to
-    # the actual test FeatureSet labels that we generated
-    # using make_regression_data. To do this, we just
-    # make sure that they are correlated with pearson > 0.95
-    cor, _ = pearsonr(predictions, test_fs.labels)
-    assert_greater(cor, 0.95)
-
-
-# the runner function for tree-based regression models
-def test_tree_models():
-    for regressor_name, use_feature_hashing, use_rescaling in product(
-        ["DecisionTreeRegressor", "RandomForestRegressor"], [False, True], [False, True]
-    ):
-        yield (check_tree_models, regressor_name, use_feature_hashing, use_rescaling)
-
-
-# the utility function to run the ensemble-based regression tests
-def check_ensemble_models(name, use_feature_hashing=False, use_rescaling=False):
-    # create a FeatureSet object with the data we want to use
-    if use_feature_hashing:
-        train_fs, test_fs, _ = make_regression_data(
-            num_examples=5000, num_features=10, use_feature_hashing=True, feature_bins=5
-        )
-    else:
-        train_fs, test_fs, _ = make_regression_data(num_examples=2000, num_features=3)
-
-    # create the learner
-    if use_rescaling:
-        name = f"Rescaled{name}"
-    learner = Learner(name)
-
-    # train it with the training feature set we created
-    # make sure to set the grid objective to pearson
-    learner.train(train_fs, grid_search=True, grid_objective="pearson")
-
-    # make sure that the feature importances are as expected.
-    if name.endswith("AdaBoostRegressor"):
+    # the utility function to run the linear regession tests
+    def check_linear_models(self, name, use_feature_hashing=False, use_rescaling=False):
+        # create a FeatureSet object with the data we want to use
         if use_feature_hashing:
-            expected_feature_importances = [0.749811, 0.001373, 0.23357, 0.011691, 0.003554]
+            (train_fs, test_fs, weightdict) = make_regression_data(
+                num_examples=5000, num_features=10, use_feature_hashing=True, feature_bins=5
+            )
         else:
-            expected_feature_importances = [0.10266744, 0.18681777, 0.71051479]
-    else:
-        expected_feature_importances = (
-            [0.735756, 0.001034, 0.242734, 0.015836, 0.00464]
-            if use_feature_hashing
-            else [0.082621, 0.166652, 0.750726]
+            train_fs, test_fs, weightdict = make_regression_data(num_examples=2000, num_features=3)
+
+        # create the learner
+        model_kwargs = (
+            {} if name in ["BayesianRidge", "Lars", "LinearRegression"] else {"max_iter": 500}
         )
+        name = f"Rescaled{name}" if use_rescaling else name
+        learner = Learner(name, model_kwargs=model_kwargs)
 
-    feature_importances = learner.model.feature_importances_
-    assert_allclose(feature_importances, expected_feature_importances, atol=1e-2, rtol=0)
+        # train it with the training feature set we created
+        # make sure to set the grid objective to pearson
+        learner.train(train_fs, grid_search=True, grid_objective="pearson")
 
-    # now generate the predictions on the test FeatureSet
-    predictions = learner.predict(test_fs)
+        # make sure that the weights are close to the weights
+        # that we got from make_regression_data. Take the
+        # ceiling before comparing since just comparing
+        # the ceilings should be enough to make sure nothing
+        # catastrophic happened. However, sometimes with
+        # feature hashing, the ceiling is not exactly identical
+        # so when that fails we want to check that the rounded
+        # feature values are the same. One of those two equalities
+        # _must_ be satisified.
 
-    # now make sure that the predictions are close to
-    # the actual test FeatureSet labels that we generated
-    # using make_regression_data. To do this, we just
-    # make sure that they are correlated with pearson > 0.95
-    cor, _ = pearsonr(predictions, test_fs.labels)
-    assert_greater(cor, 0.95)
+        # get the weights for this trained model
+        learned_weights = learner.model_params[0]
 
+        for feature_name in learned_weights:
+            learned_w_ceil = math.ceil(learned_weights[feature_name])
+            given_w_ceil = math.ceil(weightdict[feature_name])
+            learned_w_round = round(learned_weights[feature_name], 0)
+            given_w_round = round(weightdict[feature_name], 0)
+            ceil_equal = learned_w_ceil == given_w_ceil
+            round_equal = learned_w_round == given_w_round
+            either_equal = ceil_equal or round_equal
+            assert either_equal
 
-# the runner function for ensemble regression models
-def test_ensemble_models():
-    for regressor_name, use_feature_hashing, use_rescaling in product(
-        ["AdaBoostRegressor", "GradientBoostingRegressor"], [False, True], [False, True]
-    ):
-        yield (check_ensemble_models, regressor_name, use_feature_hashing, use_rescaling)
+        # now generate the predictions on the test FeatureSet
+        predictions = learner.predict(test_fs)
 
+        # now make sure that the predictions are close to
+        # the actual test FeatureSet labels that we generated
+        # using make_regression_data. To do this, we just
+        # make sure that they are correlated with pearson > 0.95
+        cor, _ = pearsonr(predictions, test_fs.labels)
+        self.assertGreater(cor, 0.95)
 
-def test_ensemble_model_config_file():
-    """Test that ensemble models work via a config file."""
-    config_template_path = config_dir / "test_ensemble_evaluate.template.cfg"
-    config_path = config_dir / "test_ensemble_evaluate.cfg"
+    # the runner function for linear regression models
+    def test_linear_models(self):
+        for regressor_name, use_feature_hashing, use_rescaling in product(
+            [
+                "BayesianRidge",
+                "ElasticNet",
+                "HuberRegressor",
+                "Lars",
+                "Lasso",
+                "LinearRegression",
+                "Ridge",
+                "LinearSVR",
+                "SGDRegressor",
+                "TheilSenRegressor",
+            ],
+            [False, True],
+            [False, True],
+        ):
+            yield self.check_linear_models, regressor_name, use_feature_hashing, use_rescaling
 
-    # create and write out train and test sets
-    train_fs, test_fs, _ = make_regression_data(num_examples=2000, num_features=3)
-    train_file = train_dir / "fancy_train.jsonlines"
-    train_writer = NDJWriter(train_file, train_fs)
-    train_writer.write()
-    test_file = test_dir / "fancy_test.jsonlines"
-    test_writer = NDJWriter(test_file, test_fs)
-    test_writer.write()
+    # the utility function to run the non-linear tests
+    def check_non_linear_models(self, name, use_feature_hashing=False, use_rescaling=False):
+        # create a FeatureSet object with the data we want to use
+        if use_feature_hashing:
+            train_fs, test_fs, _ = make_regression_data(
+                num_examples=5000, num_features=10, use_feature_hashing=True, feature_bins=5
+            )
+        else:
+            train_fs, test_fs, _ = make_regression_data(num_examples=2000, num_features=3)
 
-    # create configuration file and run it
-    config = _setup_config_parser(config_template_path, validate=False)
-    config.set("Input", "train_file", str(train_dir / "fancy_train.jsonlines"))
-    config.set("Input", "test_file", str(test_dir / "fancy_test.jsonlines"))
-    config.set("Output", "results", str(output_dir))
-    config.set("Output", "logs", str(output_dir))
-    config.set("Output", "predictions", str(output_dir))
+        # create the learner
+        if use_rescaling:
+            name = f"Rescaled{name}"
+        learner = Learner(name)
 
-    with open(config_path, "w") as new_config_file:
-        config.write(new_config_file)
+        # train it with the training feature set we created
+        # make sure to set the grid objective to pearson
+        learner.train(train_fs, grid_search=True, grid_objective="pearson")
 
-    run_configuration(config_path, quiet=True, local=True)
+        # Note that we cannot check the feature weights here
+        # since `model_params()` is not defined for non-linear
+        # kernels.
 
+        # now generate the predictions on the test FeatureSet
+        predictions = learner.predict(test_fs)
 
-def test_int_labels():
-    """
-    Test that SKLL can take integer input.
+        # now make sure that the predictions are close to
+        # the actual test FeatureSet labels that we generated
+        # using make_regression_data. To do this, we just
+        # make sure that they are correlated with pearson > 0.95
+        cor, _ = pearsonr(predictions, test_fs.labels)
+        self.assertGreater(cor, 0.95)
 
-    This is just to test that SKLL can take int labels in the input
-    (rather than floats or strings).  For v1.0.0, it could not because the
-    json package doesn't know how to serialize numpy.int64 objects.
-    """
-    config_template_path = config_dir / "test_int_labels_cv.template.cfg"
-    config_path = config_dir / "test_int_labels_cv.cfg"
+    # the runner function for non-linear regression models
+    def test_non_linear_models(self):
+        for regressor_name, use_feature_hashing, use_rescaling in product(
+            ["SVR"], [False, True], [False, True]
+        ):
+            yield self.check_non_linear_models, regressor_name, use_feature_hashing, use_rescaling
 
-    config = _setup_config_parser(config_template_path, validate=False)
-    config.set("Input", "train_file", str(other_dir / "test_int_labels_cv.jsonlines"))
-    config.set("Output", "results", str(output_dir))
-    config.set("Output", "logs", str(output_dir))
-    config.set("Output", "predictions", str(output_dir))
+    # the utility method to run the tree-based regression tests
+    def check_tree_models(self, name, use_feature_hashing=False, use_rescaling=False):
+        # create a FeatureSet object with the data we want to use
+        if use_feature_hashing:
+            train_fs, test_fs, _ = make_regression_data(
+                num_examples=5000, num_features=10, use_feature_hashing=True, feature_bins=5
+            )
+        else:
+            train_fs, test_fs, _ = make_regression_data(num_examples=2000, num_features=3)
 
-    with open(config_path, "w") as new_config_file:
-        config.write(new_config_file)
+        # create the learner
+        if use_rescaling:
+            name = f"Rescaled{name}"
+        learner = Learner(name)
 
-    run_configuration(config_path, quiet=True, local=True)
+        # train it with the training feature set we created
+        # make sure to set the grid objective to pearson
+        learner.train(train_fs, grid_search=True, grid_objective="pearson")
 
+        # make sure that the feature importances are as expected.
+        if name.endswith("DecisionTreeRegressor"):
+            expected_feature_importances = (
+                [0.730811, 0.001834, 0.247603, 0.015241, 0.004511]
+                if use_feature_hashing
+                else [0.08926899, 0.15585068, 0.75488033]
+            )
+        else:
+            expected_feature_importances = (
+                [0.733654, 0.002528, 0.245527, 0.013664, 0.004627]
+                if use_feature_hashing
+                else [0.07974267, 0.16121895, 0.75903838]
+            )
 
-def test_additional_metrics():
-    """Test additional metrics in the results file for a regressor."""
-    train_fs, test_fs, _ = make_regression_data(num_examples=2000, num_features=3)
+        feature_importances = learner.model.feature_importances_
+        assert_allclose(feature_importances, expected_feature_importances, atol=1e-2, rtol=0)
 
-    # train a regression model using the train feature set
-    learner = Learner("LinearRegression")
-    learner.train(train_fs, grid_search=True, grid_objective="pearson")
+        # now generate the predictions on the test FeatureSet
+        predictions = learner.predict(test_fs)
 
-    # evaluate the trained model using the test feature set
-    results = learner.evaluate(test_fs, output_metrics=["spearman", "kendall_tau"])
+        # now make sure that the predictions are close to
+        # the actual test FeatureSet labels that we generated
+        # using make_regression_data. To do this, we just
+        # make sure that they are correlated with pearson > 0.95
+        cor, _ = pearsonr(predictions, test_fs.labels)
+        self.assertGreater(cor, 0.95)
 
-    # check that the values for the additional metrics are as expected
-    additional_scores_dict = results[-1]
-    assert_almost_equal(additional_scores_dict["spearman"], 0.9996, places=4)
-    assert_almost_equal(additional_scores_dict["kendall_tau"], 0.9847, places=4)
+    # the runner function for tree-based regression models
+    def test_tree_models(self):
+        for regressor_name, use_feature_hashing, use_rescaling in product(
+            ["DecisionTreeRegressor", "RandomForestRegressor"], [False, True], [False, True]
+        ):
+            yield self.check_tree_models, regressor_name, use_feature_hashing, use_rescaling
 
+    # the utility function to run the ensemble-based regression tests
+    def check_ensemble_models(self, name, use_feature_hashing=False, use_rescaling=False):
+        # create a FeatureSet object with the data we want to use
+        if use_feature_hashing:
+            train_fs, test_fs, _ = make_regression_data(
+                num_examples=5000, num_features=10, use_feature_hashing=True, feature_bins=5
+            )
+        else:
+            train_fs, test_fs, _ = make_regression_data(num_examples=2000, num_features=3)
 
-def test_fancy_output():
-    """Test the descriptive statistics output in the results file for a regressor."""
-    train_fs, test_fs, _ = make_regression_data(num_examples=2000, num_features=3)
+        # create the learner
+        if use_rescaling:
+            name = f"Rescaled{name}"
+        learner = Learner(name)
 
-    # train a regression model using the train feature set
-    learner = Learner("LinearRegression")
-    learner.train(train_fs, grid_search=True, grid_objective="pearson")
+        # train it with the training feature set we created
+        # make sure to set the grid objective to pearson
+        learner.train(train_fs, grid_search=True, grid_objective="pearson")
 
-    # evaluate the trained model using the test feature set
-    resultdict = learner.evaluate(test_fs)
-    actual_stats_from_api = dict(resultdict[2]["descriptive"]["actual"])
-    pred_stats_from_api = dict(resultdict[2]["descriptive"]["predicted"])
-
-    # write out the training and test feature set
-    train_file = train_dir / "fancy_train.jsonlines"
-    train_writer = NDJWriter(train_file, train_fs)
-    train_writer.write()
-    test_file = test_dir / "fancy_test.jsonlines"
-    test_writer = NDJWriter(test_file, test_fs)
-    test_writer.write()
-
-    # now get the config file template, fill it in and run it
-    # so that we can get a results file
-    config_template_path = config_dir / "test_regression_fancy_output.template.cfg"
-    config_path = fill_in_config_paths_for_fancy_output(config_template_path)
-
-    run_configuration(config_path, quiet=True, local=True)
-
-    # read in the results file and get the descriptive statistics
-    actual_stats_from_file = {}
-    pred_stats_from_file = {}
-    with open(
-        output_dir / "regression_fancy_output_train_fancy_train.jsonlines_test_"
-        "fancy_test.jsonlines_LinearRegression.results"
-    ) as resultf:
-        result_output = resultf.read().strip().split("\n")
-        for desc_stat_line in result_output[26:30]:
-            desc_stat_line = desc_stat_line.strip()
-            if not desc_stat_line:
-                continue
+        # make sure that the feature importances are as expected.
+        if name.endswith("AdaBoostRegressor"):
+            if use_feature_hashing:
+                expected_feature_importances = [0.749811, 0.001373, 0.23357, 0.011691, 0.003554]
             else:
-                m = re.search(
-                    r"([A-Za-z]+)\s+=\s+(-?[0-9]+.?[0-9]*)\s+\((actual)\),\s+"
-                    r"(-?[0-9]+.?[0-9]*)\s+\((predicted)\)",
-                    desc_stat_line,
-                )
-                stat_type, actual_value, _, pred_value, _ = m.groups()
-                actual_stats_from_file[stat_type.lower()] = float(actual_value)
-                pred_stats_from_file[stat_type.lower()] = float(pred_value)
+                expected_feature_importances = [0.10266744, 0.18681777, 0.71051479]
+        else:
+            expected_feature_importances = (
+                [0.735756, 0.001034, 0.242734, 0.015836, 0.00464]
+                if use_feature_hashing
+                else [0.082621, 0.166652, 0.750726]
+            )
 
-    for stat_type in actual_stats_from_api:
-        assert_almost_equal(
-            actual_stats_from_file[stat_type], actual_stats_from_api[stat_type], places=4
-        )
+        feature_importances = learner.model.feature_importances_
+        assert_allclose(feature_importances, expected_feature_importances, atol=1e-2, rtol=0)
 
-        assert_almost_equal(
-            pred_stats_from_file[stat_type], pred_stats_from_api[stat_type], places=4
-        )
+        # now generate the predictions on the test FeatureSet
+        predictions = learner.predict(test_fs)
 
+        # now make sure that the predictions are close to
+        # the actual test FeatureSet labels that we generated
+        # using make_regression_data. To do this, we just
+        # make sure that they are correlated with pearson > 0.95
+        cor, _ = pearsonr(predictions, test_fs.labels)
+        self.assertGreater(cor, 0.95)
 
-def check_adaboost_regression(base_estimator):
-    train_fs, test_fs, _ = make_regression_data(num_examples=2000, sd_noise=4, num_features=3)
+    # the runner function for ensemble regression models
+    def test_ensemble_models(self):
+        for regressor_name, use_feature_hashing, use_rescaling in product(
+            ["AdaBoostRegressor", "GradientBoostingRegressor"], [False, True], [False, True]
+        ):
+            yield self.check_ensemble_models, regressor_name, use_feature_hashing, use_rescaling
 
-    # train an AdaBoostRegressor on the training data and evalute on the
-    # testing data
-    learner = Learner("AdaBoostRegressor", model_kwargs={"estimator": base_estimator})
-    learner.train(train_fs, grid_search=False)
+    def test_ensemble_model_config_file(self):
+        """Test that ensemble models work via a config file."""
+        config_template_path = config_dir / "test_ensemble_evaluate.template.cfg"
+        config_path = config_dir / "test_ensemble_evaluate.cfg"
 
-    # now generate the predictions on the test set
-    predictions = learner.predict(test_fs)
+        # create and write out train and test sets
+        train_fs, test_fs, _ = make_regression_data(num_examples=2000, num_features=3)
+        train_file = train_dir / "fancy_train.jsonlines"
+        train_writer = NDJWriter(train_file, train_fs)
+        train_writer.write()
+        test_file = test_dir / "fancy_test.jsonlines"
+        test_writer = NDJWriter(test_file, test_fs)
+        test_writer.write()
 
-    # now make sure that the predictions are close to
-    # the actual test FeatureSet labels that we generated
-    # using make_regression_data. To do this, we just
-    # make sure that they are correlated
-    cor, _ = pearsonr(predictions, test_fs.labels)
-    assert_greater(cor, 0.95)
+        # create configuration file and run it
+        config = _setup_config_parser(config_template_path, validate=False)
+        config.set("Input", "train_file", str(train_dir / "fancy_train.jsonlines"))
+        config.set("Input", "test_file", str(test_dir / "fancy_test.jsonlines"))
+        config.set("Output", "results", str(output_dir))
+        config.set("Output", "logs", str(output_dir))
+        config.set("Output", "predictions", str(output_dir))
 
+        with open(config_path, "w") as new_config_file:
+            config.write(new_config_file)
 
-def test_adaboost_regression():
-    for base_estimator_name in ["DecisionTreeRegressor", "SGDRegressor", "SVR"]:
-        yield check_adaboost_regression, base_estimator_name
+        run_configuration(config_path, quiet=True, local=True)
 
+    def test_int_labels(self):
+        """
+        Test that SKLL can take integer input.
 
-def check_ransac_regression(base_estimator, pearson_value):
-    train_fs, test_fs, _ = make_regression_data(num_examples=2000, sd_noise=4, num_features=3)
+        This is just to test that SKLL can take int labels in the input
+        (rather than floats or strings).  For v1.0.0, it could not because the
+        json package doesn't know how to serialize numpy.int64 objects.
+        """
+        config_template_path = config_dir / "test_int_labels_cv.template.cfg"
+        config_path = config_dir / "test_int_labels_cv.cfg"
 
-    # train a RANSACRegressor on the training data and evalute on the
-    # testing data
-    model_kwargs = {"estimator": base_estimator, "min_samples": 4} if base_estimator else {}
-    learner = Learner("RANSACRegressor", model_kwargs=model_kwargs)
-    learner.train(train_fs, grid_search=False)
+        config = _setup_config_parser(config_template_path, validate=False)
+        config.set("Input", "train_file", str(other_dir / "test_int_labels_cv.jsonlines"))
+        config.set("Output", "results", str(output_dir))
+        config.set("Output", "logs", str(output_dir))
+        config.set("Output", "predictions", str(output_dir))
 
-    # now generate the predictions on the test set
-    predictions = learner.predict(test_fs)
+        with open(config_path, "w") as new_config_file:
+            config.write(new_config_file)
 
-    # now make sure that the predictions are close to
-    # the actual test FeatureSet labels that we generated
-    # using make_regression_data. To do this, we just
-    # make sure that they are correlated and the value
-    # of the correlation is as expected
-    cor, _ = pearsonr(predictions, test_fs.labels)
-    assert_greater(cor, pearson_value)
+        run_configuration(config_path, quiet=True, local=True)
 
+    def test_additional_metrics(self):
+        """Test additional metrics in the results file for a regressor."""
+        train_fs, test_fs, _ = make_regression_data(num_examples=2000, num_features=3)
 
-def test_ransac_regression():
-    for base_estimator_name, pearson_value in zip(
-        [None, "SGDRegressor", "DecisionTreeRegressor", "SVR"], [0.95, 0.95, 0.75, 0.64]
-    ):
-        yield check_ransac_regression, base_estimator_name, pearson_value
+        # train a regression model using the train feature set
+        learner = Learner("LinearRegression")
+        learner.train(train_fs, grid_search=True, grid_objective="pearson")
 
+        # evaluate the trained model using the test feature set
+        results = learner.evaluate(test_fs, output_metrics=["spearman", "kendall_tau"])
 
-def check_bagging_regression(base_estimator, pearson_value):
-    train_fs, test_fs, _ = make_regression_data(num_examples=2000, sd_noise=4, num_features=3)
+        # check that the values for the additional metrics are as expected
+        additional_scores_dict = results[-1]
+        self.assertAlmostEqual(additional_scores_dict["spearman"], 0.9996, places=4)
+        self.assertAlmostEqual(additional_scores_dict["kendall_tau"], 0.9847, places=4)
 
-    # train a RANSACRegressor on the training data and evaluate on the
-    # testing data
-    model_kwargs = {"estimator": base_estimator} if base_estimator else {}
-    learner = Learner("BaggingRegressor", model_kwargs=model_kwargs)
-    learner.train(train_fs, grid_search=False)
+    def test_fancy_output(self):
+        """Test the descriptive statistics output in the results file for a regressor."""
+        train_fs, test_fs, _ = make_regression_data(num_examples=2000, num_features=3)
 
-    # now generate the predictions on the test set
-    predictions = learner.predict(test_fs)
+        # train a regression model using the train feature set
+        learner = Learner("LinearRegression")
+        learner.train(train_fs, grid_search=True, grid_objective="pearson")
 
-    # now make sure that the predictions are close to
-    # the actual test FeatureSet labels that we generated
-    # using make_regression_data. To do this, we just
-    # make sure that they are correlated and the value
-    # of the correlation is as expected
-    cor, _ = pearsonr(predictions, test_fs.labels)
-    assert_greater(cor, pearson_value)
+        # evaluate the trained model using the test feature set
+        resultdict = learner.evaluate(test_fs)
+        actual_stats_from_api = dict(resultdict[2]["descriptive"]["actual"])
+        pred_stats_from_api = dict(resultdict[2]["descriptive"]["predicted"])
 
+        # write out the training and test feature set
+        train_file = train_dir / "fancy_train.jsonlines"
+        train_writer = NDJWriter(train_file, train_fs)
+        train_writer.write()
+        test_file = test_dir / "fancy_test.jsonlines"
+        test_writer = NDJWriter(test_file, test_fs)
+        test_writer.write()
 
-def test_bagging_regression():
-    for base_estimator_name, pearson_value in zip(
-        [None, "SGDRegressor", "DecisionTreeRegressor", "SVR"], [0.95, 0.95, 0.95, 0.9]
-    ):
-        yield check_bagging_regression, base_estimator_name, pearson_value
+        # now get the config file template, fill it in and run it
+        # so that we can get a results file
+        config_template_path = config_dir / "test_regression_fancy_output.template.cfg"
+        config_path = fill_in_config_paths_for_fancy_output(config_template_path)
 
+        run_configuration(config_path, quiet=True, local=True)
 
-def test_hist_gradient_boosting_regression():
-    train_fs, test_fs, _ = make_regression_data(num_examples=2000, sd_noise=4, num_features=3)
+        # read in the results file and get the descriptive statistics
+        actual_stats_from_file = {}
+        pred_stats_from_file = {}
+        with open(
+            output_dir / "regression_fancy_output_train_fancy_train.jsonlines_test_"
+            "fancy_test.jsonlines_LinearRegression.results"
+        ) as resultf:
+            result_output = resultf.read().strip().split("\n")
+            for desc_stat_line in result_output[26:30]:
+                desc_stat_line = desc_stat_line.strip()
+                if not desc_stat_line:
+                    continue
+                else:
+                    m = re.search(
+                        r"([A-Za-z]+)\s+=\s+(-?[0-9]+.?[0-9]*)\s+\((actual)\),\s+"
+                        r"(-?[0-9]+.?[0-9]*)\s+\((predicted)\)",
+                        desc_stat_line,
+                    )
+                    stat_type, actual_value, _, pred_value, _ = m.groups()
+                    actual_stats_from_file[stat_type.lower()] = float(actual_value)
+                    pred_stats_from_file[stat_type.lower()] = float(pred_value)
 
-    # train a RANSACRegressor on the training data and evaluate on the
-    # testing data
-    learner = Learner("HistGradientBoostingRegressor")
-    learner.train(train_fs, grid_search=False)
+        for stat_type in actual_stats_from_api:
+            self.assertAlmostEqual(
+                actual_stats_from_file[stat_type], actual_stats_from_api[stat_type], places=4
+            )
 
-    # now generate the predictions on the test set
-    predictions = learner.predict(test_fs)
+            self.assertAlmostEqual(
+                pred_stats_from_file[stat_type], pred_stats_from_api[stat_type], places=4
+            )
 
-    # now make sure that the predictions are close to
-    # the actual test FeatureSet labels that we generated
-    # using make_regression_data. To do this, we just
-    # make sure that they are correlated and the value
-    # of the correlation is as expected
-    cor, _ = pearsonr(predictions, test_fs.labels)
-    assert_greater(cor, 0.98)
+    def check_adaboost_regression(self, base_estimator):
+        train_fs, test_fs, _ = make_regression_data(num_examples=2000, sd_noise=4, num_features=3)
 
-
-def check_mlp_regression(use_rescaling=False):
-    train_fs, test_fs, _ = make_regression_data(num_examples=500, sd_noise=4, num_features=5)
-
-    # train an MLPRegressor on the training data and evalute on the
-    # testing data
-    name = "MLPRegressor" if use_rescaling else "RescaledMLPRegressor"
-    learner = Learner(name)
-    # we don't want to see any convergence warnings during the grid search
-    with warnings.catch_warnings():
-        warnings.filterwarnings("ignore", category=ConvergenceWarning)
+        # train an AdaBoostRegressor on the training data and evalute on the
+        # testing data
+        learner = Learner("AdaBoostRegressor", model_kwargs={"estimator": base_estimator})
         learner.train(train_fs, grid_search=False)
 
-    # now generate the predictions on the test set
-    predictions = learner.predict(test_fs)
+        # now generate the predictions on the test set
+        predictions = learner.predict(test_fs)
 
-    # now make sure that the predictions are close to
-    # the actual test FeatureSet labels that we generated
-    # using make_regression_data. To do this, we just
-    # make sure that they are correlated
-    cor, _ = pearsonr(predictions, test_fs.labels)
-    assert_greater(cor, 0.98)
+        # now make sure that the predictions are close to
+        # the actual test FeatureSet labels that we generated
+        # using make_regression_data. To do this, we just
+        # make sure that they are correlated
+        cor, _ = pearsonr(predictions, test_fs.labels)
+        self.assertGreater(cor, 0.95)
 
+    def test_adaboost_regression(self):
+        for base_estimator_name in ["DecisionTreeRegressor", "SGDRegressor", "SVR"]:
+            yield self.check_adaboost_regression, base_estimator_name
 
-def test_mlp_regression():
-    yield check_mlp_regression, False
-    yield check_mlp_regression, True
+    def check_ransac_regression(self, base_estimator, pearson_value):
+        train_fs, test_fs, _ = make_regression_data(num_examples=2000, sd_noise=4, num_features=3)
 
+        # train a RANSACRegressor on the training data and evalute on the
+        # testing data
+        model_kwargs = {"estimator": base_estimator, "min_samples": 4} if base_estimator else {}
+        learner = Learner("RANSACRegressor", model_kwargs=model_kwargs)
+        learner.train(train_fs, grid_search=False)
 
-def check_dummy_regressor_predict(model_args, train_labels, expected_output):
-    # create hard-coded featuresets with the given labels
-    train_fs = FeatureSet(
-        "regression_train",
-        [f"TrainExample{i}" for i in range(20)],
-        labels=train_labels,
-        features=[{"feature": i} for i in range(20)],
-    )
+        # now generate the predictions on the test set
+        predictions = learner.predict(test_fs)
 
-    test_fs = FeatureSet(
-        "regression_test",
-        [f"TestExample{i}" for i in range(10)],
-        features=[{"feature": i} for i in range(20, 30)],
-    )
+        # now make sure that the predictions are close to
+        # the actual test FeatureSet labels that we generated
+        # using make_regression_data. To do this, we just
+        # make sure that they are correlated and the value
+        # of the correlation is as expected
+        cor, _ = pearsonr(predictions, test_fs.labels)
+        self.assertGreater(cor, pearson_value)
 
-    # Ensure predictions are as expectedfor the given strategy
-    learner = Learner("DummyRegressor", model_kwargs=model_args)
-    learner.train(train_fs, grid_search=False)
-    predictions = learner.predict(test_fs)
-    eq_(np.array_equal(expected_output, predictions), True)
+    def test_ransac_regression(self):
+        for base_estimator_name, pearson_value in zip(
+            [None, "SGDRegressor", "DecisionTreeRegressor", "SVR"], [0.95, 0.95, 0.75, 0.64]
+        ):
+            yield self.check_ransac_regression, base_estimator_name, pearson_value
 
+    def check_bagging_regression(self, base_estimator, pearson_value):
+        train_fs, test_fs, _ = make_regression_data(num_examples=2000, sd_noise=4, num_features=3)
 
-def test_dummy_regressor_predict():
-    # create a hard-coded set of labels
-    prng = np.random.RandomState(123456789)
-    train_labels = prng.random_sample(20)
+        # train a RANSACRegressor on the training data and evaluate on the
+        # testing data
+        model_kwargs = {"estimator": base_estimator} if base_estimator else {}
+        learner = Learner("BaggingRegressor", model_kwargs=model_kwargs)
+        learner.train(train_fs, grid_search=False)
 
-    for model_args, expected_output in zip(
-        [
-            {"strategy": "mean"},
-            {"strategy": "median"},
-            {"strategy": "quantile", "quantile": 0.5},
-            {"strategy": "quantile", "quantile": 0.0},
-            {"strategy": "quantile", "quantile": 1.0},
-            {"strategy": "constant", "constant": 1},
-        ],
-        [
-            np.ones(10) * np.mean(train_labels),
-            np.ones(10) * np.median(train_labels),
-            np.ones(10) * np.median(train_labels),
-            np.ones(10) * np.min(train_labels),
-            np.ones(10) * np.max(train_labels),
-            np.ones(10),
-        ],
-    ):
-        yield check_dummy_regressor_predict, model_args, train_labels, expected_output
+        # now generate the predictions on the test set
+        predictions = learner.predict(test_fs)
 
+        # now make sure that the predictions are close to
+        # the actual test FeatureSet labels that we generated
+        # using make_regression_data. To do this, we just
+        # make sure that they are correlated and the value
+        # of the correlation is as expected
+        cor, _ = pearsonr(predictions, test_fs.labels)
+        self.assertGreater(cor, pearson_value)
 
-@raises(ValueError)
-def test_learner_api_rescaling_classifier():
-    """Check that rescaling fails for classifiers."""
-    _ = rescaled(LogisticRegression)
+    def test_bagging_regression(self):
+        for base_estimator_name, pearson_value in zip(
+            [None, "SGDRegressor", "DecisionTreeRegressor", "SVR"], [0.95, 0.95, 0.95, 0.9]
+        ):
+            yield self.check_bagging_regression, base_estimator_name, pearson_value
 
+    def test_hist_gradient_boosting_regression(self):
+        train_fs, test_fs, _ = make_regression_data(num_examples=2000, sd_noise=4, num_features=3)
 
-@raises(ValueError)
-def check_invalid_regression_grid_objective(learner, grid_objective):
-    """Check whether the grid objective function is valid for this regressor."""
-    (train_fs, _, _) = make_regression_data()
-    clf = Learner(learner)
-    clf.train(train_fs, grid_objective=grid_objective)
+        # train a RANSACRegressor on the training data and evaluate on the
+        # testing data
+        learner = Learner("HistGradientBoostingRegressor")
+        learner.train(train_fs, grid_search=False)
 
+        # now generate the predictions on the test set
+        predictions = learner.predict(test_fs)
 
-def test_invalid_regression_grid_objective():
-    for learner in [
-        "AdaBoostRegressor",
-        "BaggingRegressor",
-        "BayesianRidge",
-        "DecisionTreeRegressor",
-        "ElasticNet",
-        "GradientBoostingRegressor",
-        "HistGradientBoostingRegressor",
-        "HuberRegressor",
-        "KNeighborsRegressor",
-        "Lars",
-        "Lasso",
-        "LinearRegression",
-        "MLPRegressor",
-        "RandomForestRegressor",
-        "RANSACRegressor",
-        "Ridge",
-        "LinearSVR",
-        "SVR",
-        "SGDRegressor",
-        "TheilSenRegressor",
-    ]:
-        for metric in CLASSIFICATION_ONLY_METRICS:
-            yield check_invalid_regression_grid_objective, learner, metric
+        # now make sure that the predictions are close to
+        # the actual test FeatureSet labels that we generated
+        # using make_regression_data. To do this, we just
+        # make sure that they are correlated and the value
+        # of the correlation is as expected
+        cor, _ = pearsonr(predictions, test_fs.labels)
+        self.assertGreater(cor, 0.98)
 
+    def check_mlp_regression(self, use_rescaling=False):
+        train_fs, test_fs, _ = make_regression_data(num_examples=500, sd_noise=4, num_features=5)
 
-@raises(ValueError)
-def check_invalid_regression_metric(learner, metric, by_itself=False):
-    """Check that invalid metrics raise exceptions."""
-    (train_fs, test_fs, _) = make_regression_data()
-    clf = Learner(learner)
-    clf.train(train_fs, grid_search=False)
-    output_metrics = [metric] if by_itself else ["pearson", metric]
-    clf.evaluate(test_fs, output_metrics=output_metrics)
+        # train an MLPRegressor on the training data and evalute on the
+        # testing data
+        name = "MLPRegressor" if use_rescaling else "RescaledMLPRegressor"
+        learner = Learner(name)
+        # we don't want to see any convergence warnings during the grid search
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=ConvergenceWarning)
+            learner.train(train_fs, grid_search=False)
 
+        # now generate the predictions on the test set
+        predictions = learner.predict(test_fs)
 
-def test_invalid_regression_metric():
-    for learner in [
-        "AdaBoostRegressor",
-        "BaggingRegressor",
-        "BayesianRidge",
-        "DecisionTreeRegressor",
-        "ElasticNet",
-        "GradientBoostingRegressor",
-        "HistGradientBoostingRegressor",
-        "HuberRegressor",
-        "KNeighborsRegressor",
-        "Lars",
-        "Lasso",
-        "LinearRegression",
-        "MLPRegressor",
-        "RandomForestRegressor",
-        "RANSACRegressor",
-        "Ridge",
-        "LinearSVR",
-        "SVR",
-        "SGDRegressor",
-        "TheilSenRegressor",
-    ]:
-        for metric in CLASSIFICATION_ONLY_METRICS:
-            yield check_invalid_regression_metric, learner, metric, True
-            yield check_invalid_regression_metric, learner, metric, False
+        # now make sure that the predictions are close to
+        # the actual test FeatureSet labels that we generated
+        # using make_regression_data. To do this, we just
+        # make sure that they are correlated
+        cor, _ = pearsonr(predictions, test_fs.labels)
+        self.assertGreater(cor, 0.98)
 
+    def test_mlp_regression(self):
+        yield self.check_mlp_regression, False
+        yield self.check_mlp_regression, True
 
-def test_train_non_sparse_featureset():
-    """Test that we can train a regressor on a non-sparse featureset."""
-    train_file = other_dir / "test_int_labels_cv.jsonlines"
-    train_fs = NDJReader.for_path(train_file, sparse=False).read()
-    learner = Learner("LinearRegression")
-    learner.train(train_fs, grid_search=False)
-    ok_(hasattr(learner.model, "coef_"))
+    def check_dummy_regressor_predict(self, model_args, train_labels, expected_output):
+        # create hard-coded featuresets with the given labels
+        train_fs = FeatureSet(
+            "regression_train",
+            [f"TrainExample{i}" for i in range(20)],
+            labels=train_labels,
+            features=[{"feature": i} for i in range(20)],
+        )
 
+        test_fs = FeatureSet(
+            "regression_test",
+            [f"TestExample{i}" for i in range(10)],
+            features=[{"feature": i} for i in range(20, 30)],
+        )
 
-@raises(TypeError)
-def test_train_string_labels():
-    """Test that regression on string labels raises TypeError."""
-    train_file = other_dir / "test_int_labels_cv.jsonlines"
-    train_fs = NDJReader.for_path(train_file).read()
-    train_fs.labels = train_fs.labels.astype("str")
-    learner = Learner("LinearRegression")
-    learner.train(train_fs, grid_search=False)
+        # Ensure predictions are as expectedfor the given strategy
+        learner = Learner("DummyRegressor", model_kwargs=model_args)
+        learner.train(train_fs, grid_search=False)
+        predictions = learner.predict(test_fs)
+        self.assertEqual(np.array_equal(expected_output, predictions), True)
 
+    def test_dummy_regressor_predict(self):
+        # create a hard-coded set of labels
+        prng = np.random.RandomState(123456789)
+        train_labels = prng.random_sample(20)
 
-def test_non_negative_regression():
-    """Test that non-negative regression works as expected."""
-    # read in the example training data into a featureset
-    train_path = train_dir / "test_non_negative.jsonlines"
-    train_fs = NDJReader.for_path(train_path).read()
+        for model_args, expected_output in zip(
+            [
+                {"strategy": "mean"},
+                {"strategy": "median"},
+                {"strategy": "quantile", "quantile": 0.5},
+                {"strategy": "quantile", "quantile": 0.0},
+                {"strategy": "quantile", "quantile": 1.0},
+                {"strategy": "constant", "constant": 1},
+            ],
+            [
+                np.ones(10) * np.mean(train_labels),
+                np.ones(10) * np.median(train_labels),
+                np.ones(10) * np.median(train_labels),
+                np.ones(10) * np.min(train_labels),
+                np.ones(10) * np.max(train_labels),
+                np.ones(10),
+            ],
+        ):
+            yield self.check_dummy_regressor_predict, model_args, train_labels, expected_output
 
-    # train a regular SKLL linear regerssion learner first
-    # and check that it gets some negative weights with this data
-    skll_estimator1 = Learner("LinearRegression", min_feature_count=0)
-    skll_estimator1.train(train_fs, grid_search=False)
-    assert_true(np.any(np.where(skll_estimator1.model.coef_ < 0, True, False)))
+    def test_learner_api_rescaling_classifier(self):
+        """Check that rescaling fails for classifiers."""
+        with self.assertRaises(ValueError):
+            _ = rescaled(LogisticRegression)
 
-    # now train a non-negative linear regression learner and check
-    # that _none_ of its weights are negative with the same data
-    skll_estimator2 = Learner(
-        "LinearRegression", model_kwargs={"positive": True}, min_feature_count=0
-    )
-    skll_estimator2.train(train_fs, grid_search=False)
-    assert_false(np.any(np.where(skll_estimator2.model.coef_ < 0, True, False)))
+    def check_invalid_regression_grid_objective(self, learner, grid_objective):
+        """Check whether the grid objective function is valid for this regressor."""
+        (train_fs, _, _) = make_regression_data()
+        clf = Learner(learner)
+        with self.assertRaises(ValueError):
+            clf.train(train_fs, grid_objective=grid_objective)
 
-    # just for good measure, train a non-negative learner directly
-    # in sklearn space and check that it has the same weights
-    sklearn_estimator = LinearRegression(positive=True)
-    X, y = train_fs.features.toarray(), train_fs.labels
-    _ = sklearn_estimator.fit(X, y)
-    assert_array_equal(skll_estimator2.model.coef_, sklearn_estimator.coef_)
+    def test_invalid_regression_grid_objective(self):
+        for learner in [
+            "AdaBoostRegressor",
+            "BaggingRegressor",
+            "BayesianRidge",
+            "DecisionTreeRegressor",
+            "ElasticNet",
+            "GradientBoostingRegressor",
+            "HistGradientBoostingRegressor",
+            "HuberRegressor",
+            "KNeighborsRegressor",
+            "Lars",
+            "Lasso",
+            "LinearRegression",
+            "MLPRegressor",
+            "RandomForestRegressor",
+            "RANSACRegressor",
+            "Ridge",
+            "LinearSVR",
+            "SVR",
+            "SGDRegressor",
+            "TheilSenRegressor",
+        ]:
+            for metric in CLASSIFICATION_ONLY_METRICS:
+                yield self.check_invalid_regression_grid_objective, learner, metric
+
+    def check_invalid_regression_metric(self, learner, metric, by_itself=False):
+        """Check that invalid metrics raise exceptions."""
+        (train_fs, test_fs, _) = make_regression_data()
+        clf = Learner(learner)
+        clf.train(train_fs, grid_search=False)
+        output_metrics = [metric] if by_itself else ["pearson", metric]
+        with self.assertRaises(ValueError):
+            clf.evaluate(test_fs, output_metrics=output_metrics)
+
+    def test_invalid_regression_metric(self):
+        for learner in [
+            "AdaBoostRegressor",
+            "BaggingRegressor",
+            "BayesianRidge",
+            "DecisionTreeRegressor",
+            "ElasticNet",
+            "GradientBoostingRegressor",
+            "HistGradientBoostingRegressor",
+            "HuberRegressor",
+            "KNeighborsRegressor",
+            "Lars",
+            "Lasso",
+            "LinearRegression",
+            "MLPRegressor",
+            "RandomForestRegressor",
+            "RANSACRegressor",
+            "Ridge",
+            "LinearSVR",
+            "SVR",
+            "SGDRegressor",
+            "TheilSenRegressor",
+        ]:
+            for metric in CLASSIFICATION_ONLY_METRICS:
+                yield self.check_invalid_regression_metric, learner, metric, True
+                yield self.check_invalid_regression_metric, learner, metric, False
+
+    def test_train_non_sparse_featureset(self):
+        """Test that we can train a regressor on a non-sparse featureset."""
+        train_file = other_dir / "test_int_labels_cv.jsonlines"
+        train_fs = NDJReader.for_path(train_file, sparse=False).read()
+        learner = Learner("LinearRegression")
+        learner.train(train_fs, grid_search=False)
+        self.assertTrue(hasattr(learner.model, "coef_"))
+
+    def test_train_string_labels(self):
+        """Test that regression on string labels raises TypeError."""
+        train_file = other_dir / "test_int_labels_cv.jsonlines"
+        train_fs = NDJReader.for_path(train_file).read()
+        train_fs.labels = train_fs.labels.astype("str")
+        learner = Learner("LinearRegression")
+        with self.assertRaises(TypeError):
+            learner.train(train_fs, grid_search=False)
+
+    def test_non_negative_regression(self):
+        """Test that non-negative regression works as expected."""
+        # read in the example training data into a featureset
+        train_path = train_dir / "test_non_negative.jsonlines"
+        train_fs = NDJReader.for_path(train_path).read()
+
+        # train a regular SKLL linear regerssion learner first
+        # and check that it gets some negative weights with this data
+        skll_estimator1 = Learner("LinearRegression", min_feature_count=0)
+        skll_estimator1.train(train_fs, grid_search=False)
+        self.assertTrue(np.any(np.where(skll_estimator1.model.coef_ < 0, True, False)))
+
+        # now train a non-negative linear regression learner and check
+        # that _none_ of its weights are negative with the same data
+        skll_estimator2 = Learner(
+            "LinearRegression", model_kwargs={"positive": True}, min_feature_count=0
+        )
+        skll_estimator2.train(train_fs, grid_search=False)
+        self.assertFalse(np.any(np.where(skll_estimator2.model.coef_ < 0, True, False)))
+
+        # just for good measure, train a non-negative learner directly
+        # in sklearn space and check that it has the same weights
+        sklearn_estimator = LinearRegression(positive=True)
+        X, y = train_fs.features.toarray(), train_fs.labels
+        _ = sklearn_estimator.fit(X, y)
+        assert_array_equal(skll_estimator2.model.coef_, sklearn_estimator.coef_)

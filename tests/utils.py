@@ -1,5 +1,6 @@
 """Utility functions to make SKLL testing simpler."""
 
+
 import re
 from collections import OrderedDict
 from math import floor, log10
@@ -7,7 +8,6 @@ from pathlib import Path
 from typing import Union
 
 import numpy as np
-from nose.tools import nottest
 from numpy.random import RandomState
 from sklearn.datasets import (
     fetch_california_housing,
@@ -1176,7 +1176,6 @@ def make_california_housing_data(num_examples=None, test_size=0.2):
     return train_fs, test_fs
 
 
-@nottest
 def compute_expected_folds_for_cv_testing(featureset, num_folds=10, stratified=True, seed=None):
     """
     Compute the fold IDs expected from SKLL's ``cross_validate()`` methods.
