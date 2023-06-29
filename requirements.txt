@@ -1,7 +1,7 @@
 beautifulsoup4
 coverage
 joblib
-nose
+nose2
 numpy
 pandas
 pre-commit
