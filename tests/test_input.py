@@ -22,11 +22,16 @@ from skll.config import load_cv_folds, locate_file, parse_config_file
 from skll.data.readers import safe_float
 from skll.experiments import load_featureset
 from skll.utils.logging import close_and_remove_logger_handlers, get_skll_logger
-from tests import _my_dir, config_dir, other_dir, output_dir, test_dir, train_dir
-from tests.utils import (
+from skll.utils.testing import (
+    config_dir,
     create_jsonlines_feature_files,
     fill_in_config_options,
+    other_dir,
+    output_dir,
     remove_jsonlines_feature_files,
+    test_dir,
+    tests_dir,
+    train_dir,
     unlink,
 )
 
@@ -81,7 +86,7 @@ class TestInput(unittest.TestCase):
         config_abs_path = config_dir / "test_config_parsing_relative_path1.cfg"
         open(config_abs_path, "w").close()
         self.assertEqual(
-            locate_file(config_abs_path, _my_dir),
+            locate_file(config_abs_path, tests_dir),
             str(config_dir / "test_config_parsing_relative_path1.cfg"),
         )
 
@@ -90,7 +95,7 @@ class TestInput(unittest.TestCase):
         config_abs_path = config_dir / "test_config_parsing_relative_path2.cfg"
         config_rel_path = "configs/test_config_parsing_relative_path2.cfg"
         open(config_abs_path, "w").close()
-        self.assertEqual(locate_file(config_rel_path, _my_dir), str(config_abs_path))
+        self.assertEqual(locate_file(config_rel_path, tests_dir), str(config_abs_path))
 
     def test_locate_file_valid_paths3(self):
         """Test that `config.locate_file` works with relative/absolute paths."""
@@ -98,13 +103,13 @@ class TestInput(unittest.TestCase):
         config_rel_path = "configs/test_config_parsing_relative_path3.cfg"
         open(config_abs_path, "w").close()
         self.assertEqual(
-            locate_file(config_abs_path, _my_dir), locate_file(config_rel_path, _my_dir)
+            locate_file(config_abs_path, tests_dir), locate_file(config_rel_path, tests_dir)
         )
 
     def test_locate_file_invalid_path(self):
         """Test that `config.locate_file` raises error for paths that do not exist."""
         with self.assertRaises(IOError):
-            locate_file(test_dir / "does_not_exist.cfg", _my_dir)
+            locate_file(test_dir / "does_not_exist.cfg", tests_dir)
 
     def test_input_checking1(self):
         """Test merging featuresets with different number of examples."""

@@ -26,10 +26,14 @@ from skll.experiments import run_configuration
 from skll.learner import Learner
 from skll.learner.utils import rescaled
 from skll.utils.constants import CLASSIFICATION_ONLY_METRICS
-from tests import config_dir, other_dir, output_dir, test_dir, train_dir
-from tests.utils import (
+from skll.utils.testing import (
+    config_dir,
     fill_in_config_paths_for_fancy_output,
     make_regression_data,
+    other_dir,
+    output_dir,
+    test_dir,
+    train_dir,
     unlink,
 )
 

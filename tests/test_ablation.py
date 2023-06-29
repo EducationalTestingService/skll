@@ -13,11 +13,14 @@ import json
 import unittest
 
 from skll.experiments import run_configuration
-from tests import config_dir, output_dir, test_dir, train_dir
-from tests.utils import (
+from skll.utils.testing import (
+    config_dir,
     create_jsonlines_feature_files,
     fill_in_config_paths,
+    output_dir,
     remove_jsonlines_feature_files,
+    test_dir,
+    train_dir,
     unlink,
 )
 

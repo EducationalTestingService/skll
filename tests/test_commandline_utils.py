@@ -45,8 +45,15 @@ from skll.learner import Learner
 from skll.utils.commandline.compute_eval_from_predictions import (
     get_prediction_from_probabilities,
 )
-from tests import other_dir, output_dir, test_dir, train_dir
-from tests.utils import make_classification_data, make_regression_data, unlink
+from skll.utils.testing import (
+    make_classification_data,
+    make_regression_data,
+    other_dir,
+    output_dir,
+    test_dir,
+    train_dir,
+    unlink,
+)
 
 
 class TestCommandlineUtils(unittest.TestCase):

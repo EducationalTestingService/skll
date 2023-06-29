@@ -18,11 +18,12 @@ from sklearn.metrics import accuracy_score, f1_score, mean_squared_error
 from sklearn.model_selection import PredefinedSplit, cross_val_predict
 
 from skll.learner.voting import VotingLearner
-from tests import other_dir, output_dir
-from tests.utils import (
+from skll.utils.testing import (
     make_california_housing_data,
     make_classification_data,
     make_digits_data,
+    other_dir,
+    output_dir,
 )
 
 # define some constants needed for testing

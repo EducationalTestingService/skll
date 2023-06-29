@@ -13,7 +13,7 @@ from pathlib import Path
 from shutil import copyfile, copytree, rmtree
 
 from skll.experiments import run_configuration
-from tests import examples_dir, other_dir
+from skll.utils.testing import examples_dir, other_dir
 
 _old_titanic_dir = examples_dir / "titanic"
 _old_california_dir = examples_dir / "california"

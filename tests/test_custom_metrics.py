@@ -24,10 +24,12 @@ from skll.data import NDJReader
 from skll.experiments import run_configuration
 from skll.learner import Learner
 from skll.metrics import _CUSTOM_METRICS, register_custom_metric, use_score_func
-from tests import config_dir, other_dir, output_dir
-from tests.utils import (
+from skll.utils.testing import (
+    config_dir,
     fill_in_config_paths_for_single_file,
     make_classification_data,
+    other_dir,
+    output_dir,
     unlink,
 )
 

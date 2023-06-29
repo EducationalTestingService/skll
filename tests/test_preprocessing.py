@@ -21,8 +21,14 @@ from skll.data import FeatureSet, NDJWriter
 from skll.experiments import run_configuration
 from skll.learner import Learner
 from skll.learner.utils import SelectByMinCount
-from tests import config_dir, output_dir, test_dir, train_dir
-from tests.utils import fill_in_config_paths, unlink
+from skll.utils.testing import (
+    config_dir,
+    fill_in_config_paths,
+    output_dir,
+    test_dir,
+    train_dir,
+    unlink,
+)
 
 SCORE_OUTPUT_RE = re.compile(r"Objective Function Score \(Test\) = ([\-\d\.]+)")
 

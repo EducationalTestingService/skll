@@ -32,8 +32,15 @@ from skll.data import (
 from skll.data.readers import DictListReader
 from skll.experiments import load_featureset
 from skll.utils.commandline import skll_convert
-from tests import other_dir, output_dir, test_dir, train_dir
-from tests.utils import make_classification_data, make_regression_data, unlink
+from skll.utils.testing import (
+    make_classification_data,
+    make_regression_data,
+    other_dir,
+    output_dir,
+    test_dir,
+    train_dir,
+    unlink,
+)
 
 
 class TestFeatureset(unittest.TestCase):
