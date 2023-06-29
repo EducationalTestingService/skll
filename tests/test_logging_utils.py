@@ -18,7 +18,7 @@ from skll.utils.logging import (
     get_skll_logger,
     orig_showwarning,
 )
-from tests.utils import unlink
+from skll.utils.testing import unlink
 
 TEMP_FILES = []
 TEMP_FILE_PATHS = []

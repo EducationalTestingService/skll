@@ -15,7 +15,7 @@ from numpy.testing import assert_almost_equal
 from sklearn.metrics import fbeta_score
 
 from skll.metrics import kappa, use_score_func
-from tests import output_dir, test_dir, train_dir
+from skll.utils.testing import output_dir, test_dir, train_dir
 
 # Inputs derived from Ben Hamner's unit tests for his
 # kappa implementation as part of the ASAP competition

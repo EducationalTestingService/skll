@@ -21,8 +21,7 @@ from sklearn.pipeline import Pipeline
 from skll.learner import Learner
 from skll.learner.voting import VotingLearner
 from skll.utils.logging import close_and_remove_logger_handlers, get_skll_logger
-from tests import other_dir, output_dir
-from tests.utils import make_california_housing_data, make_digits_data
+from skll.utils.testing import make_california_housing_data, make_digits_data, other_dir, output_dir
 
 # define some constants needed for testing
 TRAIN_FS_DIGITS, TEST_FS_DIGITS = make_digits_data(use_digit_names=True)

@@ -18,11 +18,12 @@ from sklearn.model_selection import PredefinedSplit
 
 from skll.data import FeatureSet
 from skll.learner.voting import VotingLearner
-from tests import other_dir, output_dir
-from tests.utils import (
+from skll.utils.testing import (
     compute_expected_folds_for_cv_testing,
     make_california_housing_data,
     make_digits_data,
+    other_dir,
+    output_dir,
 )
 
 # define some constants needed for testing

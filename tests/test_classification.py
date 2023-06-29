@@ -47,13 +47,17 @@ from skll.utils.constants import (
     UNWEIGHTED_KAPPA_METRICS,
     WEIGHTED_KAPPA_METRICS,
 )
-from tests import config_dir, other_dir, output_dir, test_dir, train_dir
-from tests.utils import (
+from skll.utils.testing import (
+    config_dir,
     fill_in_config_options,
     fill_in_config_paths_for_single_file,
     make_classification_data,
     make_regression_data,
     make_sparse_data,
+    other_dir,
+    output_dir,
+    test_dir,
+    train_dir,
     unlink,
 )
 

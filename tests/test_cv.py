@@ -23,12 +23,15 @@ from skll.config import load_cv_folds
 from skll.data import FeatureSet
 from skll.experiments import load_featureset, run_configuration
 from skll.learner import Learner
-from tests import config_dir, other_dir, output_dir, train_dir
-from tests.utils import (
+from skll.utils.testing import (
     compute_expected_folds_for_cv_testing,
+    config_dir,
     create_jsonlines_feature_files,
     fill_in_config_paths_for_single_file,
+    other_dir,
+    output_dir,
     remove_jsonlines_feature_files,
+    train_dir,
     unlink,
 )
 

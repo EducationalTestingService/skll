@@ -18,8 +18,16 @@ from numpy.testing import assert_array_equal
 from skll.data import NDJWriter
 from skll.experiments import run_configuration
 from skll.learner import Learner
-from tests import config_dir, other_dir, output_dir, test_dir, train_dir
-from tests.utils import fill_in_config_paths, make_classification_data, unlink
+from skll.utils.testing import (
+    config_dir,
+    fill_in_config_paths,
+    make_classification_data,
+    other_dir,
+    output_dir,
+    test_dir,
+    train_dir,
+    unlink,
+)
 
 
 class TestCustomLearner(unittest.TestCase):

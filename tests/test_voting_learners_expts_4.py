@@ -18,12 +18,14 @@ from unittest.mock import DEFAULT, patch
 from skll.data import FeatureSet
 from skll.experiments import run_configuration
 from skll.learner.voting import VotingLearner
-from tests import config_dir, output_dir, train_dir
-from tests.utils import (
+from skll.utils.testing import (
     BoolDict,
+    config_dir,
     create_jsonlines_feature_files,
     fill_in_config_options_for_voting_learners,
+    output_dir,
     remove_jsonlines_feature_files,
+    train_dir,
 )
 
 

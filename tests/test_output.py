@@ -33,16 +33,9 @@ from skll.experiments.output import _compute_ylimits_for_featureset
 from skll.learner import Learner
 from skll.utils.constants import VALID_TASKS
 from skll.utils.logging import close_and_remove_logger_handlers, get_skll_logger
-from tests import (
-    _my_dir,
+from skll.utils.testing import (
     backward_compatibility_dir,
     config_dir,
-    other_dir,
-    output_dir,
-    test_dir,
-    train_dir,
-)
-from tests.utils import (
     create_jsonlines_feature_files,
     fill_in_config_options,
     fill_in_config_paths,
@@ -50,7 +43,12 @@ from tests.utils import (
     make_classification_data,
     make_digits_data,
     make_regression_data,
+    other_dir,
+    output_dir,
     remove_jsonlines_feature_files,
+    test_dir,
+    tests_dir,
+    train_dir,
     unlink,
 )
 
@@ -61,7 +59,7 @@ class TestOutput(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """Create necessary directories for testing."""
-        for dir_path in [test_dir, train_dir, output_dir, _my_dir / "evaluate"]:
+        for dir_path in [test_dir, train_dir, output_dir, tests_dir / "evaluate"]:
             dir_path.mkdir(exist_ok=True)
 
         # create jsonlines feature files
