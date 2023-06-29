@@ -5,7 +5,7 @@ import re
 from collections import OrderedDict
 from math import floor, log10
 from pathlib import Path
-from typing import Union
+from typing import Any, Dict
 
 import numpy as np
 from numpy.random import RandomState
@@ -21,7 +21,16 @@ from sklearn.utils import shuffle as sk_shuffle
 
 from skll.config import _setup_config_parser, fix_json
 from skll.data import FeatureSet, NDJWriter
-from tests import _my_dir, config_dir, other_dir, output_dir, test_dir, train_dir
+from skll.types import PathOrStr
+
+tests_dir = Path(__file__).resolve().parent.parent.parent / "tests"
+config_dir = tests_dir / "configs"
+backward_compatibility_dir = tests_dir / "backward_compatibility"
+examples_dir = tests_dir.parent / "examples"
+output_dir = tests_dir / "output"
+other_dir = tests_dir / "other"
+train_dir = tests_dir / "train"
+test_dir = tests_dir / "test"
 
 
 class BoolDict(dict):
@@ -32,13 +41,13 @@ class BoolDict(dict):
         return super().get(key, False)
 
 
-def unlink(file_path: Union[str, Path]):
+def unlink(file_path: PathOrStr):
     """
     Remove a file path if it exists.
 
     Parameters
     ----------
-    file_path : Union[str, Path]
+    file_path : :class:`skll.types.PathOrStr`
         File path to remove.
     """
     file_path = Path(file_path)
@@ -46,7 +55,7 @@ def unlink(file_path: Union[str, Path]):
         file_path.unlink()
 
 
-def fill_in_config_paths(config_template_path):
+def fill_in_config_paths(config_template_path: PathOrStr):
     """
     Fill paths in given configuration file template.
 
@@ -54,7 +63,7 @@ def fill_in_config_paths(config_template_path):
 
     Parameters
     ----------
-    config_template_path : Union[str, Path]
+    config_template_path : :class:`skll.types.PathOrStr`
         The path to the template configuration file.
 
     Returns
@@ -95,7 +104,7 @@ def fill_in_config_paths(config_template_path):
 
     # set up custom learner path, if relevant
     custom_learner_path = config.get("Input", "custom_learner_path")
-    custom_learner_abs_path = _my_dir / custom_learner_path
+    custom_learner_abs_path = tests_dir / custom_learner_path
     config.set("Input", "custom_learner_path", str(custom_learner_abs_path))
 
     config_prefix = re.search(r"^(.*)\.template\.cfg", str(config_template_path)).groups()[0]
@@ -108,7 +117,11 @@ def fill_in_config_paths(config_template_path):
 
 
 def fill_in_config_paths_for_single_file(
-    config_template_path, train_file, test_file, train_directory="", test_directory=""
+    config_template_path: PathOrStr,
+    train_file: str,
+    test_file: str,
+    train_directory: str = "",
+    test_directory: str = "",
 ):
     """
     Fill in input file and directory paths in given configuration template.
@@ -118,7 +131,7 @@ def fill_in_config_paths_for_single_file(
 
     Parameters
     ----------
-    config_template_path : Union[str, Path]
+    config_template_path : :class:`skll.types.PathOrStr`
         Path to the template configuration file.
     train_file : str
         Name of the training data file.
@@ -184,14 +197,17 @@ def fill_in_config_paths_for_single_file(
 
 
 def fill_in_config_options(
-    config_template_path, values_to_fill_dict, sub_prefix, good_probability_option=False
+    config_template_path: PathOrStr,
+    values_to_fill_dict: Dict[str, Any],
+    sub_prefix: str,
+    good_probability_option: bool = False,
 ):
     """
     Fill in configuration options in the given template file.
 
     Parameters
     ----------
-    config_template_path : Union[str, Path]
+    config_template_path : :class:`skll.types.PathOrStr`
         Path to the template configuration file.
     values_to_fill_dict : Dict[str, Any]
         Dictionary containing the options to fille the keys and the
@@ -199,10 +215,9 @@ def fill_in_config_options(
     sub_prefix : str
         The sub-prefix to add to the name when creating
         the filled configuration file on disk.
-    good_probability_option : bool, optional
+    good_probability_option : bool, default=False
         Whether to add the "probability" option in the correct
         section or an incorrect section.
-        Defaults to ``False``.
 
     Returns
     -------
@@ -291,7 +306,7 @@ def fill_in_config_options(
     return new_config_path
 
 
-def fill_in_config_paths_for_fancy_output(config_template_path):
+def fill_in_config_paths_for_fancy_output(config_template_path: PathOrStr):
     """
     Fill in the template for more comprehensive ("fancier") output.
 
@@ -300,7 +315,7 @@ def fill_in_config_paths_for_fancy_output(config_template_path):
 
     Parameters
     ----------
-    config_template_path : Union[str, Path]
+    config_template_path : :class:`skll.types.PathOrStr`
         Path to the template configuration file.
 
     Returns
@@ -328,7 +343,9 @@ def fill_in_config_paths_for_fancy_output(config_template_path):
     return new_config_path
 
 
-def fill_in_config_options_for_voting_learners(learner_type, task, options_dict):  # noqa: C901
+def fill_in_config_options_for_voting_learners(
+    learner_type: str, task: str, options_dict: BoolDict
+):  # noqa: C901
     """
     Fill in values specific to voting learners in the given template.
 
@@ -530,13 +547,13 @@ def fill_in_config_options_for_voting_learners(learner_type, task, options_dict)
     )
 
 
-def create_jsonlines_feature_files(path):
+def create_jsonlines_feature_files(path: PathOrStr):
     """
     Create dummy jsonlines feature files and save them under ``path``.
 
     Parameters
     ----------
-    path : Union[str, Path]
+    path : :class:`skll.types.PathOrStr`
         Full path under which to save the created feature files.
     """
     # convert to Path object
@@ -590,13 +607,13 @@ def create_jsonlines_feature_files(path):
         writer.write()
 
 
-def remove_jsonlines_feature_files(path: Union[str, Path]):
+def remove_jsonlines_feature_files(path: PathOrStr):
     """
     Remove all files created by ``create_jsonlines_feature_files()``.
 
     Parameters
     ----------
-    path : Union[str, Path]
+    path : :class:`skll.types.PathOrStr`
         Path to directory in which jsonlines files reside.
     """
     for i in range(6):
@@ -1121,7 +1138,6 @@ def make_california_housing_data(num_examples=None, test_size=0.2):
         examples.
     """
     # load the housing data
-    other_dir = str(_my_dir / "other")
     housing = fetch_california_housing(
         data_home=other_dir, download_if_missing=False, as_frame=True
     )
