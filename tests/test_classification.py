@@ -1357,7 +1357,7 @@ class TestClassification(unittest.TestCase):
                         metric_name, y_fold_test_indices, sklearn_fold_test_labels
                     )
 
-                # 5. The only ones left are the weighted kapps;
+                # 5. The only ones left are the weighted kappas;
                 #    these require contiguous ints or floats
                 elif metric_name in WEIGHTED_KAPPA_METRICS:
                     if contiguous_ints_or_floats(label_array):
