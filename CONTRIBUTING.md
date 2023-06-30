@@ -82,7 +82,7 @@ How to contribute
 9. Once you are done with your changes (including any new tests), run the tests
    locally:
 
-         $ nosetests
+         $ nose2 -s tests
 
 10. After making sure all tests pass, you are ready to push your branch/fork to GitHub with:
 
@@ -98,24 +98,35 @@ review.
 We recommended that you check that your contribution complies with the
 following rules before submitting a pull request:
 
--  All methods and functions should have informative docstrings.
+- All methods and functions should have informative docstrings.
 
--  All existing tests should pass when everything is rebuilt from scratch. You
-   should be able to see this by running ``nosetests`` locally, or looking at the Gitlab CI build status after you create your pull request.
+- All existing tests should pass when everything is rebuilt from scratch. You
+should be able to see this by running ``nose2 -s tests`` locally, or looking at
+the Gitlab CI build status after you create your pull request.
 
--  All new functionality must be covered by unit tests.
+- All new functionality must be covered by unit tests.
 
--  Every pull request description should contain a link to the issue that it is
-   trying to address. This is easily done by just typing `#` and then picking the issue from the dropdown. If the issue is not visible in the first set of results, type a few characters from the issue title and the dropdown should update.
+- Every pull request description should contain a link to the issue that it is
+trying to address. This is easily done by just typing `#` and then picking the
+issue from the dropdown. If the issue is not visible in the first set of
+results, type a few characters from the issue title and the dropdown should
+update.
 
--  Address any PEP8 issues pointed out by the `pep8speaks` bot that comments on
-   your PR after you submit it. The *same* comment will update after you make make any further commits so refer to it after every commit. You may want to install a linter in your development environment so that you can fix any PEP8 issues while you write your code. We generally ignore E501 messages about lines longer than 100 characters.
+- Address any PEP8 issues pointed out by the `pep8speaks` bot that comments on
+your PR after you submit it. The *same* comment will update after you make make
+any further commits so refer to it after every commit. You may want to install
+a linter in your development environment so that you can fix any PEP8 issues
+while you write your code. We generally ignore E501 messages about lines longer
+than 100 characters.
 
 - You may need to add new tests if the code coverage after merging your branch
-  will be lower than the current `main`. This will be reported by the `codecov` bot once you submit your PR.
+will be lower than the current `main`. This will be reported by the `codecov`
+bot once you submit your PR.
 
 After submitting a pull request, it is recommended to add at least 2-3 reviewers to
-review it. See [Requesting a pull request review](https://help.github.com/en/articles/requesting-a-pull-request-review) for more details.
+review it. See [Requesting a pull request
+review](https://help.github.com/en/articles/requesting-a-pull-request-review)
+for more details.
 
 
 Easy Issues
