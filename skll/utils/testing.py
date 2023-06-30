@@ -5,7 +5,7 @@ import re
 from collections import OrderedDict
 from math import floor, log10
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 from numpy.random import RandomState
@@ -55,7 +55,7 @@ def unlink(file_path: PathOrStr):
         file_path.unlink()
 
 
-def fill_in_config_paths(config_template_path: PathOrStr):
+def fill_in_config_paths(config_template_path: PathOrStr) -> Path:
     """
     Fill paths in given configuration file template.
 
@@ -107,7 +107,9 @@ def fill_in_config_paths(config_template_path: PathOrStr):
     custom_learner_abs_path = tests_dir / custom_learner_path
     config.set("Input", "custom_learner_path", str(custom_learner_abs_path))
 
-    config_prefix = re.search(r"^(.*)\.template\.cfg", str(config_template_path)).groups()[0]
+    config_prefix_match = re.search(r"^(.*)\.template\.cfg", str(config_template_path))
+    assert config_prefix_match is not None
+    config_prefix = config_prefix_match.groups()[0]
     new_config_path = Path(f"{config_prefix}.cfg")
 
     with open(new_config_path, "w") as new_config_file:
@@ -122,7 +124,7 @@ def fill_in_config_paths_for_single_file(
     test_file: str,
     train_directory: str = "",
     test_directory: str = "",
-):
+) -> Path:
     """
     Fill in input file and directory paths in given configuration template.
 
@@ -187,7 +189,9 @@ def fill_in_config_paths_for_single_file(
         if folds_file:
             config.set("Input", "folds_file", str(train_dir / folds_file))
 
-    config_prefix = re.search(r"^(.*)\.template\.cfg", str(config_template_path)).groups()[0]
+    config_prefix_match = re.search(r"^(.*)\.template\.cfg", str(config_template_path))
+    assert config_prefix_match is not None
+    config_prefix = config_prefix_match.groups()[0]
     new_config_path = Path(f"{config_prefix}.cfg")
 
     with open(new_config_path, "w") as new_config_file:
@@ -201,7 +205,7 @@ def fill_in_config_options(
     values_to_fill_dict: Dict[str, Any],
     sub_prefix: str,
     good_probability_option: bool = False,
-):
+) -> Path:
     """
     Fill in configuration options in the given template file.
 
@@ -297,7 +301,9 @@ def fill_in_config_options(
                 value = str(values_to_fill_dict[param_name])
                 config.set(section, param_name, value)
 
-    config_prefix = re.search(r"^(.*)\.template\.cfg", str(config_template_path)).groups()[0]
+    config_prefix_match = re.search(r"^(.*)\.template\.cfg", str(config_template_path))
+    assert config_prefix_match is not None
+    config_prefix = config_prefix_match.groups()[0]
     new_config_path = Path(f"{config_prefix}_{sub_prefix}.cfg")
 
     with open(new_config_path, "w") as new_config_file:
@@ -306,7 +312,7 @@ def fill_in_config_options(
     return new_config_path
 
 
-def fill_in_config_paths_for_fancy_output(config_template_path: PathOrStr):
+def fill_in_config_paths_for_fancy_output(config_template_path: PathOrStr) -> Path:
     """
     Fill in the template for more comprehensive ("fancier") output.
 
@@ -334,7 +340,9 @@ def fill_in_config_paths_for_fancy_output(config_template_path: PathOrStr):
     config.set("Output", "logs", str(output_dir))
     config.set("Output", "predictions", str(output_dir))
 
-    config_prefix = re.search(r"^(.*)\.template\.cfg", str(config_template_path)).groups()[0]
+    config_prefix_match = re.search(r"^(.*)\.template\.cfg", str(config_template_path))
+    assert config_prefix_match is not None
+    config_prefix = config_prefix_match.groups()[0]
     new_config_path = Path(f"{config_prefix}.cfg")
 
     with open(new_config_path, "w") as new_config_file:
@@ -345,7 +353,7 @@ def fill_in_config_paths_for_fancy_output(config_template_path: PathOrStr):
 
 def fill_in_config_options_for_voting_learners(
     learner_type: str, task: str, options_dict: BoolDict
-):  # noqa: C901
+) -> Tuple:
     """
     Fill in values specific to voting learners in the given template.
 
@@ -384,11 +392,12 @@ def fill_in_config_options_for_voting_learners(
     custom_learner = ""
     objectives = None
     output_metrics = []
-    model_kwargs_list = None
-    param_grid_list = None
+    model_kwargs_list: Optional[List[Dict[str, Any]]] = None
+    param_grid_list: Optional[List[Dict[str, Any]]] = None
     sampler_list = None
     num_cv_folds = learning_curve_cv_folds = 10
     cv_seed = 123456789
+    fixed_parameters: List[Dict[str, Any]]
     learning_curve_train_sizes = [0.1, 0.325, 0.55, 0.775, 1.0]
     if learner_type == "classifier":
         learner_name = "VotingClassifier"
