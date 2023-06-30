@@ -10,6 +10,7 @@ tested comprehensively in ``test_voting_learners_api_4.py``.
 :author: Nitin Madnani (nmadnani@ets.org)
 :organization: ETS
 """
+import logging
 import unittest
 from itertools import product
 from pathlib import Path
@@ -117,7 +118,11 @@ class TestVotingLearnersExptsFour(unittest.TestCase):
         # `VotingLearner` mocked so that we can check that things were called
         # as expected without actually needing to train any models
         with patch.multiple(VotingLearner, save=DEFAULT, model=DEFAULT, create=True) as mocks:
+            # NOTE: disable all logging around `run_experiment()` since it's
+            # pretty noisy and exceeds the log limit for gitlab CI builds
+            logging.disable()
             run_configuration(config_path, quiet=True, local=True)
+            logging.disable(logging.NOTSET)
 
             # check that init was called the expected number of times;
             # if we are not doing grid search, everything is only called once
