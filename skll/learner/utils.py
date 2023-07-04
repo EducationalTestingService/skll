@@ -876,14 +876,14 @@ def rescaled(cls):
         """
         Get kwargs for superclass and add new kwargs.
 
-        This is adapted from scikit-learns's ``BaseEstimator`` class.
+        This is adapted from scikit-learn's ``BaseEstimator`` class.
         It gets the kwargs for the superclass's init method and adds the
         kwargs for newly added ``__init__()`` method.
 
         Parameters
         ----------
         class_x
-            The the superclass from which to retrieve param names.
+            The superclass from which to retrieve param names.
 
         Returns
         -------
@@ -926,10 +926,10 @@ def rescaled(cls):
             pass
 
         # now get the additional rescaling arguments
-        rescale_args = inspect.getargspec(class_x.__init__)[0]
+        rescale_args = list(inspect.signature(class_x.__init__).parameters.keys())
 
         # Remove 'self'
-        rescale_args.pop(0)
+        rescale_args.remove("self")
 
         # add the rescaling arguments to the original arguments and sort
         args += rescale_args
