@@ -8,6 +8,7 @@ Metrics that can be used to evaluate the performance of learners.
 :organization: ETS
 """
 
+import copy
 import sys
 from importlib import import_module
 from inspect import signature
@@ -16,14 +17,16 @@ from typing import Optional, Union
 
 import numpy as np
 from scipy.stats import kendalltau, pearsonr, spearmanr
-from sklearn.metrics import confusion_matrix, f1_score, make_scorer
-from sklearn.metrics._scorer import _SCORERS
+from sklearn.metrics import (
+    confusion_matrix,
+    f1_score,
+    fbeta_score,
+    get_scorer,
+    get_scorer_names,
+    make_scorer,
+)
 
 from skll.types import PathOrStr
-
-# a set that will hold the names of any custom metrics;
-# this is a private variable only meant for internal use
-_CUSTOM_METRICS = set()
 
 
 def kappa(
@@ -270,11 +273,11 @@ def register_custom_metric(custom_metric_path: PathOrStr, custom_metric_name: st
 
     # once we know that the module name is okay, we need to make sure
     # that the metric function name is also okay
-    if custom_metric_name in _SCORERS:
+    if custom_metric_name in get_scorer_names() or custom_metric_name in _CUSTOM_METRICS:
         raise NameError(
             f"a metric called '{custom_metric_name}' already "
-            f"exists in SKLL; rename the metric function "
-            f"in {custom_metric_module_name}.py and try again."
+            f"exists; rename the metric function in "
+            f"{custom_metric_module_name}.py and try again."
         )
 
     # dynamically import the module unless we have already done it
@@ -303,9 +306,7 @@ def register_custom_metric(custom_metric_path: PathOrStr, custom_metric_name: st
                 make_scorer_kwargs.update({make_scorer_kwarg: parameter_value})
 
     # make the scorer function with the extracted keyword arguments
-    # and add it to the `CUSTOM_METRICS` set
-    _SCORERS[f"{custom_metric_name}"] = make_scorer(metric_func, **make_scorer_kwargs)
-    _CUSTOM_METRICS.add(custom_metric_name)
+    _CUSTOM_METRICS[f"{custom_metric_name}"] = make_scorer(metric_func, **make_scorer_kwargs)
 
     return metric_func
 
@@ -332,5 +333,36 @@ def use_score_func(func_name: str, y_true: np.ndarray, y_pred: np.ndarray) -> fl
     float
         The scored result from the given scorer.
     """
-    scorer = _SCORERS[func_name]
+    try:
+        scorer = get_scorer(func_name)
+    except ValueError:
+        scorer = _CUSTOM_METRICS[func_name]
+
     return scorer._sign * scorer._score_func(y_true, y_pred, **scorer._kwargs)
+
+
+# a dictionary that maps pre-defined custom metric names to their scorer functions
+# this is a private variable only meant for internal use
+_PREDEFINED_CUSTOM_METRICS = {
+    "f1_score_micro": make_scorer(f1_score, average="micro"),
+    "f1_score_macro": make_scorer(f1_score, average="macro"),
+    "f1_score_weighted": make_scorer(f1_score, average="weighted"),
+    "f1_score_least_frequent": make_scorer(f1_score_least_frequent),
+    "f05": make_scorer(fbeta_score, beta=0.5, average="binary"),
+    "f05_score_micro": make_scorer(fbeta_score, beta=0.5, average="micro"),
+    "f05_score_macro": make_scorer(fbeta_score, beta=0.5, average="macro"),
+    "f05_score_weighted": make_scorer(fbeta_score, beta=0.5, average="weighted"),
+    "pearson": make_scorer(correlation, corr_type="pearson"),
+    "spearman": make_scorer(correlation, corr_type="spearman"),
+    "kendall_tau": make_scorer(correlation, corr_type="kendall_tau"),
+    "unweighted_kappa": make_scorer(kappa),
+    "quadratic_weighted_kappa": make_scorer(kappa, weights="quadratic"),
+    "linear_weighted_kappa": make_scorer(kappa, weights="linear"),
+    "qwk_off_by_one": make_scorer(kappa, weights="quadratic", allow_off_by_one=True),
+    "lwk_off_by_one": make_scorer(kappa, weights="linear", allow_off_by_one=True),
+    "uwk_off_by_one": make_scorer(kappa, allow_off_by_one=True),
+}
+
+# now create a new dictionary that contains all of the above metrics but
+# will also contain any user-defined custom metrics
+_CUSTOM_METRICS = copy.deepcopy(_PREDEFINED_CUSTOM_METRICS)

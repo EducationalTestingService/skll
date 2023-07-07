@@ -50,7 +50,7 @@ from sklearn.model_selection import (
 )
 
 from skll.data import FeatureSet
-from skll.metrics import _CUSTOM_METRICS, use_score_func
+from skll.metrics import _CUSTOM_METRICS, _PREDEFINED_CUSTOM_METRICS, use_score_func
 from skll.types import (
     ComputeEvalMetricsResults,
     ConfusionMatrix,
@@ -619,9 +619,10 @@ def get_acceptable_classification_metrics(label_array: np.ndarray) -> Set[str]:
         if contiguous_ints_or_floats(label_array):
             acceptable_metrics.update(WEIGHTED_KAPPA_METRICS)
 
-    # if there are any custom metrics registered, include them too
-    if len(_CUSTOM_METRICS) > 0:
-        acceptable_metrics.update(_CUSTOM_METRICS)
+    # if there are any user-defined custom metrics registered, include them too
+    user_defined_metrics = set(_CUSTOM_METRICS) - set(_PREDEFINED_CUSTOM_METRICS)
+    if len(user_defined_metrics) > 0:
+        acceptable_metrics.update(user_defined_metrics)
 
     return acceptable_metrics
 
@@ -637,9 +638,10 @@ def get_acceptable_regression_metrics() -> Set[str]:
         | CORRELATION_METRICS
     )
 
-    # if there are any custom metrics registered, include them too
-    if len(_CUSTOM_METRICS) > 0:
-        acceptable_metrics.update(_CUSTOM_METRICS)
+    # if there are any user-defined custom metrics registered, include them too
+    user_defined_metrics = set(_CUSTOM_METRICS) - set(_PREDEFINED_CUSTOM_METRICS)
+    if len(user_defined_metrics) > 0:
+        acceptable_metrics.update(user_defined_metrics)
 
     return acceptable_metrics
 

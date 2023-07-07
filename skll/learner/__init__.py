@@ -55,7 +55,7 @@ from sklearn.linear_model import (
     TheilSenRegressor,
 )
 from sklearn.linear_model._base import LinearModel
-from sklearn.metrics import make_scorer
+from sklearn.metrics import get_scorer_names, make_scorer
 from sklearn.model_selection import GridSearchCV
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor  # noqa: F401
@@ -70,7 +70,7 @@ from sklearn.utils.multiclass import type_of_target
 from skll.data import FeatureSet
 from skll.data.dict_vectorizer import DictVectorizer
 from skll.data.readers import safe_float
-from skll.metrics import _SCORERS
+from skll.metrics import _CUSTOM_METRICS
 from skll.types import (
     CrossValidateTaskResults,
     EvaluateTaskResults,
@@ -949,7 +949,7 @@ class Learner(object):
                 new_grid_objective = f"{grid_objective}_probs"
                 metrics_module = import_module("skll.metrics")
                 metric_func = getattr(metrics_module, "correlation")
-                _SCORERS[new_grid_objective] = make_scorer(
+                _CUSTOM_METRICS[new_grid_objective] = make_scorer(
                     metric_func, corr_type=grid_objective, needs_proba=True
                 )
                 grid_objective = new_grid_objective
@@ -1089,14 +1089,24 @@ class Learner(object):
                 folds = kfold.split(examples.features, examples.labels, fold_groups)
 
             # limit the number of grid_jobs to be no higher than five or the
-            # number of cores for the machine, whichever is lower; we set
-            # `error_score` to "raise" since we want scikit-learn to explicitly
-            # raise an exception if the estimator fails to fit for any reason
+            # number of cores for the machine, whichever is lower
             final_grid_jobs = min(final_grid_jobs, cpu_count(), MAX_CONCURRENT_PROCESSES)
+
+            # look up the scorer function in SKLL's custom metrics if the metric
+            # is not provided by scikit-learn itself
+            assert grid_objective is not None
+            final_grid_objective = (
+                grid_objective
+                if grid_objective in get_scorer_names()
+                else _CUSTOM_METRICS[grid_objective]
+            )
+
+            # we set `error_score` to "raise" since we want scikit-learn to explicitly
+            # raise an exception if the estimator fails to fit for any reason
             grid_searcher = GridSearchCV(
                 estimator,
                 param_grid,
-                scoring=grid_objective,
+                scoring=final_grid_objective,
                 cv=folds,
                 n_jobs=final_grid_jobs,
                 error_score="raise",
@@ -1118,7 +1128,7 @@ class Learner(object):
         # objectives and probability outputs
         if "old_grid_objective" in locals():
             grid_objective = old_grid_objective
-            del _SCORERS[new_grid_objective]
+            del _CUSTOM_METRICS[new_grid_objective]
 
         # store a scikit-learn Pipeline in the `pipeline` attribute
         # composed of a copy of the vectorizer, the selector,
