@@ -251,7 +251,6 @@ class Writer(object):
         ------
         NotImplementedError
         """
-        __import__("ipdb").sset_trace()
         raise NotImplementedError
 
     def _write_data(self, feature_set, output_file, filter_features):
@@ -273,7 +272,6 @@ class Writer(object):
         ------
         NotImplementedError
         """
-        __import__("ipdb").sset_trace()
         raise NotImplementedError
 
     def _get_column_names_and_indexes(
