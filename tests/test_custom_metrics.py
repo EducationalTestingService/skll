@@ -17,7 +17,6 @@ from numpy.testing import (
     assert_raises_regex,
 )
 from sklearn.metrics import fbeta_score
-from sklearn.metrics._scorer import _SCORERS
 
 import skll.metrics
 from skll.data import NDJReader
@@ -76,29 +75,15 @@ class TestCustomMetrics(unittest.TestCase):
             except AttributeError:
                 pass
 
-            try:
-                del _SCORERS[metric_name]
-            except KeyError:
-                pass
+            # remove any metric functions from _CUSTOM_METRICS
+            if metric_name in _CUSTOM_METRICS:
+                del _CUSTOM_METRICS[metric_name]
 
         for module_name in ["custom_metrics", "custom_metrics2"]:
             try:
                 del sys.modules[module_name]
             except KeyError:
                 pass
-
-        # remove any metric functions from _CUSTOM_METRICS
-        _CUSTOM_METRICS.difference_update(
-            [
-                "f075_macro",
-                "ratio_of_ones",
-                "f06_micro",
-                "one_minus_precision",
-                "one_minus_f1_macro",
-                "fake_prob_meltric",
-                "fake_prob_metric_multiclass",
-            ]
-        )
 
     def test_register_custom_metric_load_one(self):
         """Test loading a single custom metric."""
@@ -108,12 +93,10 @@ class TestCustomMetrics(unittest.TestCase):
 
         # make sure that this metric is now registered with SKLL
         assert "f075_macro" in _CUSTOM_METRICS
-        assert "f075_macro" in _SCORERS
 
         # make sure that the other metric in that same file
         # is _not_ registered with SKLL since we didn't ask for it
         assert "ratio_of_ones" not in _CUSTOM_METRICS
-        assert "ratio_of_ones" not in _SCORERS
 
     def test_register_custom_metric_load_both(self):
         """Test loading two custom metrics from one file."""
@@ -124,9 +107,7 @@ class TestCustomMetrics(unittest.TestCase):
 
         # now make sure that both are registered
         assert "f075_macro" in _CUSTOM_METRICS
-        assert "f075_macro" in _SCORERS
         assert "ratio_of_ones" in _CUSTOM_METRICS
-        assert "ratio_of_ones" in _SCORERS
 
     def test_register_custom_metric_load_different_files(self):
         """Test loading two custom metrics from two files."""
@@ -138,9 +119,7 @@ class TestCustomMetrics(unittest.TestCase):
 
         # make sure both are registered
         assert "f075_macro" in _CUSTOM_METRICS
-        assert "f075_macro" in _SCORERS
         assert "f06_micro" in _CUSTOM_METRICS
-        assert "f06_micro" in _SCORERS
 
     def test_reregister_same_metric_same_session(self):
         """Test loading custom metric again in same session."""
@@ -475,7 +454,7 @@ class TestCustomMetrics(unittest.TestCase):
         learner1 = Learner("LinearSVC")
         assert_raises_regex(
             AttributeError,
-            r"has no attribute 'predict_proba'",
+            r"has none of the following attributes: predict_proba",
             learner1.train,
             train_fs,
             grid_objective="fake_prob_metric",
@@ -503,7 +482,7 @@ class TestCustomMetrics(unittest.TestCase):
         # this should fail as expected
         assert_raises_regex(
             AttributeError,
-            r"has no attribute 'predict_proba'",
+            r"has none of the following attributes: predict_proba",
             run_configuration,
             config_path,
             local=True,
