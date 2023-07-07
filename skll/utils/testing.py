@@ -1148,7 +1148,7 @@ def make_california_housing_data(num_examples=None, test_size=0.2):
     """
     # load the housing data
     housing = fetch_california_housing(
-        data_home=other_dir, download_if_missing=False, as_frame=True
+        data_home=str(other_dir), download_if_missing=False, as_frame=True
     )
     df_housing = housing.frame
 
