@@ -23,12 +23,12 @@ Note that these keyword arguments are identical to the keyword arguments for the
 In short, custom metric functions take two required positional arguments (order matters) and three optional keyword arguments. Here's a simple example of a custom metric function: F\ :sub:`β` with β=0.75 defined in a file called ``custom.py``.
 
 .. code-block:: python
-   :caption: custom.py
+  :caption: custom.py
 
-    from sklearn.metrics import fbeta_score
+  from sklearn.metrics import fbeta_score
 
-    def f075(y_true, y_pred):
-        return fbeta_score(y_true, y_pred, beta=0.75)
+  def f075(y_true, y_pred):
+      return fbeta_score(y_true, y_pred, beta=0.75)
 
 
 Obviously, you may write much more complex functions that aren't directly
@@ -73,7 +73,7 @@ assumes that the file ``custom.py`` above is located in the same directory.
    [Output]
    metrics = ['roc_auc']
    probability = true
-   log = output
+   logs = output
    results = output
    predictions = output
    models = output
