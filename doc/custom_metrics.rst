@@ -115,7 +115,7 @@ is located in the current directory.
 As with configuration files, custom metric functions can be used for
 both training as well as evaluation with the API.
 
-.. note::
+.. important::
 
     1. When using the API, if you have multiple metric functions defined in a
        Python source file, you must register each one individually using
@@ -124,13 +124,14 @@ both training as well as evaluation with the API.
        same Python session, it will raise a ``NameError``. Therefore, if you
        edit your custom metric, you must start a new Python session to be able
        to see the changes.
-
-.. warning::
-
-    1. When using a configuration file or the API, if the names of any of your
+    3. When using the API, if the names of any of your
        custom metric functions conflict with names of :ref:`metrics <objectives>`
        that already exist in either SKLL or scikit-learn, it will raise a
        ``NameError``. You should rename the metric function in that case.
-    2. Unlike for the built-in metrics, SKLL does not check whether your custom
+    4. When using a configuration file, if your custom metric name conflicts
+       with names of :ref:`metrics <objectives>` that already exist in either
+       SKLL or scikit-learn, it will be silently ignored in favor of the
+       already existing metric.
+    5. Unlike for the built-in metrics, SKLL does not check whether your custom
        metric function is appropriate for classification or regression. You
        must make that decision for yourself.
