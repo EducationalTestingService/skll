@@ -1,6 +1,6 @@
 # License: BSD 3 clause
 """
-Easily run common common scikit-learn experiments with pre-generated features.
+Easily run common scikit-learn experiments with pre-generated features.
 
 :author: Nitin Madnani (nmadnani@ets.org)
 :author: Dan Blanchard (dblanchard@ets.org)
