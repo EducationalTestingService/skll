@@ -95,7 +95,7 @@ csv/tsv
 ^^^^^^^
 
 A simple comma or tab-delimited format. SKLL underlyingly uses
-[pandas](https://pandas.pydata.org) to read these files which is
+`pandas <https://pandas.pydata.org>`__ to read these files which is
 extremely fast but at the cost of some extra memory consumption.
 
 When using this file format, the following restrictions apply:
@@ -294,7 +294,7 @@ with :ref:`featuresets <featuresets>`.
 
 learners
 """"""""
-List of scikit-learn models to be used in the experiment. Acceptable values
+List of ``scikit-learn`` models to be used in the experiment. Acceptable values
 are described below.  Custom learners can also be specified. See
 :ref:`custom_learner_path <custom_learner_path>`.
 
@@ -351,7 +351,7 @@ Regressors:
     *   **SGDRegressor**: `Stochastic Gradient Descent Regression <https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDRegressor.html>`__
     *   **SVR**: `Support Vector Regression using LibSVM <https://scikit-learn.org/stable/modules/generated/sklearn.svm.SVR.html#sklearn.svm.SVR>`__
     *   **TheilSenRegressor**: `Theil-Sen Regression <https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.TheilSenRegressor.html#sklearn.linear_model.TheilSenRegressor>`__. Requires dense feature array; sparse features will be automatically converted to dense when using this learner.
-    *   **VotingRegressor**: `Prediction voting regressor for unfitted estimators. <https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.VotingClassifier.html>`__. Using this learner requires specifying the underlying estimators using the ``estimator_names`` fixed parameter in the :ref:`fixed_parameters <fixed_parameters>` list. The following additional fixed parameters can also be supplied in this list:
+    *   **VotingRegressor**: `Prediction voting regressor for unfitted estimators <https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.VotingClassifier.html>`__. Using this learner requires specifying the underlying estimators using the ``estimator_names`` fixed parameter in the :ref:`fixed_parameters <fixed_parameters>` list. The following additional fixed parameters can also be supplied in this list:
 
         *   ``estimator_fixed_parameters`` which takes a list of dictionaries to fix any parameters in the underlying learners to desired values,
         *   ``estimator_param_grids`` which takes a list of dictionaries specifying the possible list of parameters to search for every underlying learner,
@@ -463,9 +463,9 @@ imported dynamically.  This is only required if a custom learner is specified
 in the list of :ref:`learners`.
 
 All Custom learners must implement the ``fit`` and
-``predict`` methods. Custom classifiers must either (a) inherit from an existing scikit-learn classifier, or (b) inherit from both `sklearn.base.BaseEstimator <https://scikit-learn.org/stable/modules/generated/sklearn.base.BaseEstimator.html>`__. *and* from `sklearn.base.ClassifierMixin <https://scikit-learn.org/stable/modules/generated/sklearn.base.ClassifierMixin.html>`__.
+``predict`` methods. Custom classifiers must either (a) inherit from an existing ``scikit-learn`` classifier, or (b) inherit from both `sklearn.base.BaseEstimator <https://scikit-learn.org/stable/modules/generated/sklearn.base.BaseEstimator.html>`__. *and* from `sklearn.base.ClassifierMixin <https://scikit-learn.org/stable/modules/generated/sklearn.base.ClassifierMixin.html>`__.
 
-Similarly, Custom regressors must either (a) inherit from an existing scikit-learn regressor, or (b) inherit from both `sklearn.base.BaseEstimator <https://scikit-learn.org/stable/modules/generated/sklearn.base.BaseEstimator.html>`__. *and* from `sklearn.base.RegressorMixin <https://scikit-learn.org/stable/modules/generated/sklearn.base.RegressorMixin.html>`__.
+Similarly, Custom regressors must either (a) inherit from an existing ``scikit-learn`` regressor, or (b) inherit from both `sklearn.base.BaseEstimator <https://scikit-learn.org/stable/modules/generated/sklearn.base.BaseEstimator.html>`__. *and* from `sklearn.base.RegressorMixin <https://scikit-learn.org/stable/modules/generated/sklearn.base.RegressorMixin.html>`__.
 
 Learners that require dense matrices should implement a method ``requires_dense``
 that returns ``True``.
@@ -494,14 +494,14 @@ across replicates.
 Note that this seed is only used for shuffling the data before splitting it
 into folds. The shuffling happens automatically when doing
 :ref:`grid search <grid_search>` or if :ref:`shuffle <shuffle>` is explicitly
-set to ``True``. Defaults to 123456789.
+set to ``True``. Defaults to ``123456789``.
 
 .. _feature_hasher:
 
 feature_hasher *(Optional)*
 """""""""""""""""""""""""""
 
-If "true", this enables a high-speed, low-memory vectorizer that uses
+If ``True``, this enables a high-speed, low-memory vectorizer that uses
 feature hashing for converting feature dictionaries into NumPy arrays
 instead of using a
 `DictVectorizer <https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.DictVectorizer.html>`__.  This flag will drastically
@@ -555,7 +555,7 @@ will be munged together to make names.
 .. _folds_file:
 
 folds_file *(Optional)*
-""""""""""""""""""""""""""""""
+"""""""""""""""""""""""
 
 Path to a csv file specifying the mapping of instances in the training data
 to folds. This can be specified when the :ref:`task` is either ``train`` or
@@ -600,7 +600,7 @@ learner in :ref:`learners` list. Any empty ones will be ignored
 there is a potential for conflict with specified/default parameter grids
 and fixed parameters.
 
-The default fixed parameters (beyond those that scikit-learn sets) are:
+The default fixed parameters (beyond those that ``scikit-learn`` sets) are:
 
 AdaBoostClassifier and AdaBoostRegressor
     .. code-block:: python
@@ -650,14 +650,14 @@ LinearSVC and LinearSVR
 LogisticRegression
     .. code-block:: python
 
-            {'max_iter': 1000, multi_class': 'auto', random_state': 123456789, 'solver': 'liblinear'}
+       {'max_iter': 1000, 'multi_class': 'auto', 'random_state': 123456789, 'solver': 'liblinear'}
 
     .. note:: The regularization ``penalty`` used by default is ``"l2"``. However, ``"l1"``, ``"elasticnet"``, and ``"none"`` (no regularization) are also available. There is a dependency between the ``penalty`` and the ``solver``. For example, the ``"elasticnet"`` penalty can *only* be used in conjunction with the ``"saga"`` solver. See more information in the ``scikit-learn`` documentation `here <https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html>`__.
 
 MLPClassifier and MLPRegressor:
     .. code-block:: python
 
-       {'learning_rate': 'invscaling', max_iter': 500}
+       {'learning_rate': 'invscaling', 'max_iter': 500}
 
 RandomForestClassifier and RandomForestRegressor
     .. code-block:: python
@@ -677,17 +677,17 @@ Ridge and RidgeClassifier
 SVC and SVR
     .. code-block:: python
 
-           {'cache_size': 1000, 'gamma': 'scale'}
+       {'cache_size': 1000, 'gamma': 'scale'}
 
 SGDClassifier
     .. code-block:: python
 
-           {'loss': 'log', 'max_iter': 1000, random_state': 123456789, 'tol': 1e-3}
+       {'loss': 'log', 'max_iter': 1000, 'random_state': 123456789, 'tol': 1e-3}
 
 SGDRegressor
     .. code-block:: python
 
-           {'max_iter': 1000, 'random_state': 123456789, 'tol': 1e-3}
+       {'max_iter': 1000, 'random_state': 123456789, 'tol': 1e-3}
 
 TheilSenRegressor
     .. code-block:: python
@@ -778,7 +778,7 @@ and  specifying ``[10, 100]`` for ``learning_curve_cv_folds_list`` will
 tell SKLL to use 10 cross-validation folds at each point of the SVC curve and
 100 cross-validation folds at each point of the logistic regression curve. Although
 more folds will generally yield more reliable results, smaller number of folds
-may be better for learners that are slow to train. Defaults to 10 for
+may be better for learners that are slow to train. Defaults to ``10`` for
 each learner.
 
 .. _learning_curve_train_sizes:
@@ -787,6 +787,7 @@ learning_curve_train_sizes *(Optional)*
 """"""""""""""""""""""""""""""""""""""""""
 
 List of floats or integers representing relative or absolute numbers
+of training examples that will be used to generate the learning curve
 of training examples that will be used to generate the learning curve
 respectively. If the type is float, it is regarded as a fraction of
 the maximum size of the training set (that is determined by the selected
@@ -835,7 +836,7 @@ sampler_parameters *(Optional)*
 dict containing parameters you want to have fixed for  the ``sampler``.
 Any empty ones will be ignored (and the defaults will be used).
 
-The default fixed parameters (beyond those that scikit-learn sets) are:
+The default fixed parameters (beyond those that ``scikit-learn`` sets) are:
 
 Nystroem
     .. code-block:: python
@@ -936,7 +937,7 @@ SKLL provides the following metrics but you can also write your own :ref:`custom
     *   **accuracy**: Overall `accuracy <https://scikit-learn.org/stable/modules/generated/sklearn.metrics.accuracy_score.html>`__
     *   **average_precision**: `Area under PR curve <https://scikit-learn.org/stable/modules/generated/sklearn.metrics.average_precision_score.html>`__ . To use this metric, :ref:`probability <probability>` must be set to ``True``. (*Binary classification only*).
     *   **balanced_accuracy**: A version of accuracy `specifically designed <https://scikit-learn.org/stable/modules/generated/sklearn.metrics.balanced_accuracy_score.html#sklearn.metrics.balanced_accuracy_score>`__ for imbalanced binary and multi-class scenarios.
-    *   **f1**: The default scikit-learn |F1 link|_
+    *   **f1**: The default ``scikit-learn`` |F1 link|_
         (F\ :sub:`1` of the positive class for binary classification, or the weighted average F\ :sub:`1` for multiclass classification)
     *   **f1_score_macro**: Macro-averaged |F1 link|_
     *   **f1_score_micro**: Micro-averaged |F1 link|_
@@ -944,12 +945,12 @@ SKLL provides the following metrics but you can also write your own :ref:`custom
     *   **f1_score_least_frequent**: F\ :sub:`1` score of the least frequent
         class. The least frequent class may vary from fold to fold for certain
         data distributions.
-    *   **f05**: The default scikit-learn |F05 link|_
+    *   **f05**: The default ``scikit-learn`` |F05 link|_
         (F\ :sub:`β=0.5` of the positive class for binary classification, or the weighted average F\ :sub:`β=0.5` for multiclass classification)
     *   **f05_score_macro**: Macro-averaged |F05 link|_
     *   **f05_score_micro**: Micro-averaged |F05 link|_
     *   **f05_score_weighted**: Weighted average |F05 link|_
-    *   **jaccard**: The default |Jaccard link|_  from scikit-learn for binary classification.
+    *   **jaccard**: The default |Jaccard link|_  from ``scikit-learn`` for binary classification.
     *   **jaccard_macro**: Macro-averaged |Jaccard link|_
     *   **jaccard_micro**: Micro-averaged |Jaccard link|_
     *   **jaccard_weighted**: Weighted average |Jaccard link|_
@@ -957,7 +958,7 @@ SKLL provides the following metrics but you can also write your own :ref:`custom
     *   **linear_weighted_kappa**: `Linear weighted kappa <http://www.vassarstats.net/kappaexp.html>`__. (*Contiguous integer labels only*).
     *   **lwk_off_by_one**: Same as ``linear_weighted_kappa``, but all
         ranking differences are discounted by one. (*Contiguous integer labels only*).
-    *   **neg_log_loss**: The negative of the classification `log loss <https://scikit-learn.org/stable/modules/generated/sklearn.metrics.log_loss.html>`__ . Since scikit-learn `recommends <https://scikit-learn.org/stable/modules/model_evaluation.html#common-cases-predefined-values>`__ using negated loss functions as scorer functions, SKLL does the same for the sake of consistency. To use this metric, :ref:`probability <probability>` must be set to ``True``.
+    *   **neg_log_loss**: The negative of the classification `log loss <https://scikit-learn.org/stable/modules/generated/sklearn.metrics.log_loss.html>`__ . Since ``scikit-learn`` `recommends <https://scikit-learn.org/stable/modules/model_evaluation.html#common-cases-predefined-values>`__ using negated loss functions as scorer functions, SKLL does the same for the sake of consistency. To use this metric, :ref:`probability <probability>` must be set to ``True``.
     *   **pearson**: `Pearson correlation <https://en.wikipedia.org/wiki/Pearson_product-moment_correlation_coefficient>`__ . For binary classification and with :ref:`probability <probability>` set to ``True``, the probabilities for the positive class will be used to compute the correlation values. In all other cases, the labels are used. (*Integer labels only*).
     *   **precision**: |Precision link|_ for binary classification
     *   **precision_macro**: Macro-averaged |Precision link|_
@@ -999,9 +1000,9 @@ SKLL provides the following metrics but you can also write your own :ref:`custom
     *   **lwk_off_by_one**: Same as ``linear_weighted_kappa``, but all
         ranking differences are discounted by one.
     *   **max_error**: The `maximum residual error <https://scikit-learn.org/stable/modules/generated/sklearn.metrics.max_error.html#sklearn.metrics.max_error>`__.
-    *   **neg_mean_absolute_error**: The negative of the `mean absolute error <https://scikit-learn.org/stable/modules/generated/sklearn.metrics.mean_absolute_error.html#sklearn.metrics.mean_absolute_error>`__ regression loss. Since scikit-learn `recommends <https://scikit-learn.org/stable/modules/model_evaluation.html#common-cases-predefined-values>`__ using negated loss functions as scorer functions, SKLL does the same for the sake of consistency.
-    *   **neg_mean_squared_error**: The negative of the `mean squared error <https://scikit-learn.org/stable/modules/generated/sklearn.metrics.mean_squared_error.html>`__ regression loss. Since scikit-learn `recommends <https://scikit-learn.org/stable/modules/model_evaluation.html#common-cases-predefined-values>`__ using negated loss functions as scorer functions, SKLL does the same for the sake of consistency.
-    *   **neg_root_mean_squared_error**: The negative of the `mean squared error <https://scikit-learn.org/stable/modules/generated/sklearn.metrics.mean_squared_error.html>`__ regression loss, with ``squared`` set to False. Since scikit-learn `recommends <https://scikit-learn.org/stable/modules/model_evaluation.html#common-cases-predefined-values>`__ using negated loss functions as scorer functions, SKLL does the same for the sake of consistency.
+    *   **neg_mean_absolute_error**: The negative of the `mean absolute error <https://scikit-learn.org/stable/modules/generated/sklearn.metrics.mean_absolute_error.html#sklearn.metrics.mean_absolute_error>`__ regression loss. Since ``scikit-learn`` `recommends <https://scikit-learn.org/stable/modules/model_evaluation.html#common-cases-predefined-values>`__ using negated loss functions as scorer functions, SKLL does the same for the sake of consistency.
+    *   **neg_mean_squared_error**: The negative of the `mean squared error <https://scikit-learn.org/stable/modules/generated/sklearn.metrics.mean_squared_error.html>`__ regression loss. Since ``scikit-learn`` `recommends <https://scikit-learn.org/stable/modules/model_evaluation.html#common-cases-predefined-values>`__ using negated loss functions as scorer functions, SKLL does the same for the sake of consistency.
+    *   **neg_root_mean_squared_error**: The negative of the `mean squared error <https://scikit-learn.org/stable/modules/generated/sklearn.metrics.mean_squared_error.html>`__ regression loss, with ``squared`` set to False. Since ``scikit-learn`` `recommends <https://scikit-learn.org/stable/modules/model_evaluation.html#common-cases-predefined-values>`__ using negated loss functions as scorer functions, SKLL does the same for the sake of consistency.
     *   **pearson**: `Pearson correlation <https://en.wikipedia.org/wiki/Pearson_product-moment_correlation_coefficient>`__
     *   **quadratic_weighted_kappa**: Quadratic weighted kappa (any floating point values are rounded to ints)
     *   **qwk_off_by_one**: Same as ``quadratic_weighted_kappa``, but all
@@ -1286,7 +1287,7 @@ pipeline *(Optional)*
 """""""""""""""""""""
 
 Whether or not the final learner object should contain a ``pipeline``
-attribute that contains a scikit-learn `Pipeline <https://scikit-learn.org/stable/modules/generated/sklearn.pipeline.Pipeline.html>`__ object composed
+attribute that contains a ``scikit-learn`` `Pipeline <https://scikit-learn.org/stable/modules/generated/sklearn.pipeline.Pipeline.html>`__ object composed
 of copies of each of the following steps of training the learner:
 
     * feature vectorization (`vectorizer`)
@@ -1299,13 +1300,13 @@ The strings in the parentheses represent the name given to each
 step in the pipeline.
 
 The goal of this attribute is to allow better interoperability
-between SKLL learner objects and scikit-learn. The user can
+between SKLL learner objects and ``scikit-learn``. The user can
 train the model in SKLL and then further tweak or analyze
-the pipeline in scikit-learn, if needed. Each component of the
+the pipeline in ``scikit-learn``, if needed. Each component of the
 pipeline is a (deep) copy of the component that was fit as part
 of the SKLL model training process. We use copies since we do
 not want the  original SKLL model to be affected if the user
-modifies the components of the pipeline in scikit-learn space.
+modifies the components of the pipeline in ``scikit-learn`` space.
 
 Here's an example of how to use this attribute.
 
@@ -1534,7 +1535,7 @@ log files have the usual job prefix as described above whereas the experiment
 log file is simply named ``<EXPERIMENT>.log``.
 
 While the job-level log files contain messages that pertain to the specific
-characteristics of the job (e.g., warnings from scikit-learn pertaining to
+characteristics of the job (e.g., warnings from ``scikit-learn`` pertaining to
 the specific learner), the experiment-level log file will contain logging
 messages that pertain to the overall experiment and configuration file (e.g.,
 an incorrect option specified in the configuration file). The  messages in all
