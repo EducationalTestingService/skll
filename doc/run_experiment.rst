@@ -350,7 +350,6 @@ Regressors:
     *   **Ridge**: `Ridge Regression <https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Ridge.html#sklearn.linear_model.Ridge>`__
     *   **SGDRegressor**: `Stochastic Gradient Descent Regression <https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDRegressor.html>`__
     *   **SVR**: `Support Vector Regression using LibSVM <https://scikit-learn.org/stable/modules/generated/sklearn.svm.SVR.html#sklearn.svm.SVR>`__
-<<<<<<< HEAD
     *   **TheilSenRegressor**: `Theil-Sen Regression <https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.TheilSenRegressor.html#sklearn.linear_model.TheilSenRegressor>`__. Requires dense feature array; sparse features will be automatically converted to dense when using this learner.
     *   **VotingRegressor**: `Prediction voting regressor for unfitted estimators <https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.VotingClassifier.html>`__. Using this learner requires specifying the underlying estimators using the ``estimator_names`` fixed parameter in the :ref:`fixed_parameters <fixed_parameters>` list. The following additional fixed parameters can also be supplied in this list:
 
@@ -1001,7 +1000,6 @@ SKLL provides the following metrics but you can also write your own :ref:`custom
     *   **lwk_off_by_one**: Same as ``linear_weighted_kappa``, but all
         ranking differences are discounted by one.
     *   **max_error**: The `maximum residual error <https://scikit-learn.org/stable/modules/generated/sklearn.metrics.max_error.html#sklearn.metrics.max_error>`__.
-<<<<<<< HEAD
     *   **neg_mean_absolute_error**: The negative of the `mean absolute error <https://scikit-learn.org/stable/modules/generated/sklearn.metrics.mean_absolute_error.html#sklearn.metrics.mean_absolute_error>`__ regression loss. Since ``scikit-learn`` `recommends <https://scikit-learn.org/stable/modules/model_evaluation.html#common-cases-predefined-values>`__ using negated loss functions as scorer functions, SKLL does the same for the sake of consistency.
     *   **neg_mean_squared_error**: The negative of the `mean squared error <https://scikit-learn.org/stable/modules/generated/sklearn.metrics.mean_squared_error.html>`__ regression loss. Since ``scikit-learn`` `recommends <https://scikit-learn.org/stable/modules/model_evaluation.html#common-cases-predefined-values>`__ using negated loss functions as scorer functions, SKLL does the same for the sake of consistency.
     *   **neg_root_mean_squared_error**: The negative of the `mean squared error <https://scikit-learn.org/stable/modules/generated/sklearn.metrics.mean_squared_error.html>`__ regression loss, with ``squared`` set to False. Since ``scikit-learn`` `recommends <https://scikit-learn.org/stable/modules/model_evaluation.html#common-cases-predefined-values>`__ using negated loss functions as scorer functions, SKLL does the same for the sake of consistency.
