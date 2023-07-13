@@ -1,6 +1,7 @@
 """Utility functions to make SKLL testing simpler."""
 
 
+import os
 import re
 from collections import OrderedDict
 from math import floor, log10
@@ -23,7 +24,10 @@ from skll.config import _setup_config_parser, fix_json
 from skll.data import FeatureSet, NDJWriter
 from skll.types import PathOrStr
 
-tests_dir = Path(__file__).resolve().parent.parent.parent / "tests"
+if env_test_dir := os.getenv("TESTDIR"):
+    tests_dir = Path(env_test_dir) / "tests"
+else:
+    tests_dir = Path(__file__).resolve().parent.parent.parent / "tests"
 config_dir = tests_dir / "configs"
 backward_compatibility_dir = tests_dir / "backward_compatibility"
 examples_dir = tests_dir.parent / "examples"
