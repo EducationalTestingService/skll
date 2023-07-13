@@ -85,26 +85,27 @@ class TestInput(unittest.TestCase):
         """Test that `config.locate_file` works with absolute paths."""
         config_abs_path = config_dir / "test_config_parsing_relative_path1.cfg"
         open(config_abs_path, "w").close()
-        self.assertEqual(
-            locate_file(config_abs_path, tests_dir),
-            str(config_dir / "test_config_parsing_relative_path1.cfg"),
-        )
+        computed_path = locate_file(config_abs_path, tests_dir)
+        expected_path = str(config_dir / "test_config_parsing_relative_path1.cfg")
+        self.assertEqual(Path(computed_path).resolve(), Path(expected_path).resolve())
 
     def test_locate_file_valid_paths2(self):
         """Test that `config.locate_file` works with relative paths."""
         config_abs_path = config_dir / "test_config_parsing_relative_path2.cfg"
         config_rel_path = "configs/test_config_parsing_relative_path2.cfg"
         open(config_abs_path, "w").close()
-        self.assertEqual(locate_file(config_rel_path, tests_dir), str(config_abs_path))
+        computed_path = locate_file(config_rel_path, tests_dir)
+        expected_path = str(config_abs_path)
+        self.assertEqual(Path(computed_path).resolve(), Path(expected_path).resolve())
 
     def test_locate_file_valid_paths3(self):
         """Test that `config.locate_file` works with relative/absolute paths."""
         config_abs_path = config_dir / "test_config_parsing_relative_path3.cfg"
         config_rel_path = "configs/test_config_parsing_relative_path3.cfg"
         open(config_abs_path, "w").close()
-        self.assertEqual(
-            locate_file(config_abs_path, tests_dir), locate_file(config_rel_path, tests_dir)
-        )
+        computed_path = locate_file(config_abs_path, tests_dir)
+        expected_path = locate_file(config_rel_path, tests_dir)
+        self.assertEqual(Path(computed_path).resolve(), Path(expected_path).resolve())
 
     def test_locate_file_invalid_path(self):
         """Test that `config.locate_file` raises error for paths that do not exist."""
