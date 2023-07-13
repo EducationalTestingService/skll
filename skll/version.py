@@ -1,6 +1,8 @@
 # License: BSD 3 clause
 """
-This module exists solely for version information so I only have to change it
+Define version number.
+
+This module exists solely for version information so we only have to change it
 in one place. Based on the suggestion `here. <http://bit.ly/16LbuJF>`_
 
 :author: Dan Blanchard (dblanchard@ets.org)
@@ -8,5 +10,5 @@ in one place. Based on the suggestion `here. <http://bit.ly/16LbuJF>`_
 :organization: ETS
 """
 
-__version__ = "3.2.0"
+__version__ = "4.0.0"
 VERSION = tuple(int(x) for x in __version__.split("."))
