@@ -1,6 +1,6 @@
 package:
   name: skll
-  version: 3.2
+  version: 4.0
 
 source:
   path: ../../../skll
@@ -12,15 +12,6 @@ build:
     - cd $SRC_DIR
     - "{{ PYTHON }} -m pip install . --no-deps -vv"
   entry_points:
-    - compute_eval_from_predictions = skll.utils.commandline.compute_eval_from_predictions:main
-    - filter_features = skll.utils.commandline.filter_features:main
-    - generate_predictions = skll.utils.commandline.generate_predictions:main
-    - join_features = skll.utils.commandline.join_features:main
-    - plot_learning_curves = skll.utils.commandline.plot_learning_curves:main
-    - print_model_weights = skll.utils.commandline.print_model_weights:main
-    - run_experiment = skll.utils.commandline.run_experiment:main
-    - skll_convert = skll.utils.commandline.skll_convert:main
-    - summarize_results = skll.utils.commandline.summarize_results:main
     - compute_eval_from_predictions = skll.utils.commandline.compute_eval_from_predictions:main
     - filter_features = skll.utils.commandline.filter_features:main
     - generate_predictions = skll.utils.commandline.generate_predictions:main
@@ -43,10 +34,11 @@ requirements:
     - numpy
     - pandas
     - ruamel.yaml
-    - scikit-learn >=1.2.0,<1.3.0
+    - scikit-learn >=1.3.0,<1.4.0
     - scipy
     - seaborn
     - tabulate
+    - typing_extensions
 
 test:
   # Python imports
