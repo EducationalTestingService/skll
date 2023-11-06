@@ -22,7 +22,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import ruamel.yaml as yaml
+from ruamel.yaml import YAML
 import seaborn as sns
 
 from skll.types import FoldMapping, PathOrStr
@@ -638,6 +638,7 @@ def _write_summary_file(result_json_paths: List[str], output_file: IO[str], abla
     # Map from feature set names to all features in them
     all_features = defaultdict(set)
     logger = get_skll_logger("experiment")
+    yaml = YAML(typ='safe', pure=True)
     for json_path_str in result_json_paths:
         json_path = Path(json_path_str)
         if not json_path.exists():
@@ -654,7 +655,7 @@ def _write_summary_file(result_json_paths: List[str], output_file: IO[str], abla
                 featureset_name = obj[0]["featureset_name"]
                 if ablation != 0 and "_minus_" in featureset_name:
                     parent_set = featureset_name.split("_minus_", 1)[0]
-                    all_features[parent_set].update(yaml.safe_load(obj[0]["featureset"]))
+                    all_features[parent_set].update(yaml.load(obj[0]["featureset"]))
                 learner_result_dicts.extend(obj)
 
     # Build and write header
@@ -671,7 +672,7 @@ def _write_summary_file(result_json_paths: List[str], output_file: IO[str], abla
         if ablation != 0:
             parent_set = featureset_name.split("_minus_", 1)[0]
             ablated_features = all_features[parent_set].difference(
-                yaml.safe_load(lrd["featureset"])
+                yaml.load(lrd["featureset"])
             )
             lrd["ablated_features"] = ""
             if ablated_features:
