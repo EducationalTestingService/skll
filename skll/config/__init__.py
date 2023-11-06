@@ -18,8 +18,8 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 import numpy as np
-
 from ruamel.yaml import YAML
+
 from skll.data.readers import safe_float
 from skll.types import ClassMap, FoldMapping, LabelType, PathOrStr
 from skll.utils.constants import (
@@ -153,7 +153,7 @@ class SKLLConfigParser(configparser.ConfigParser):
         super(SKLLConfigParser, self).__init__(defaults=defaults)
         self._required_options = required
         self._section_mapping = correct_section_mapping
-        
+
     def _find_invalid_options(self) -> Set[str]:
         """
         Find the set of invalid options specified by the user.
@@ -610,7 +610,8 @@ def parse_config_file(
         raise ValueError(
             "Configuration file does not contain list of learners " "in [Input] section."
         )
-    yaml = YAML(typ='safe', pure=True)
+
+    yaml = YAML(typ="safe", pure=True)
     learners = yaml.load(fix_json(learners_string))
 
     if len(learners) == 0:
@@ -805,7 +806,7 @@ def parse_config_file(
 
     # Get class mapping dictionary if specified
     class_map_string = config.get("Input", "class_map")
-    yaml = YAML(typ='safe', pure=True)
+    yaml = YAML(typ="safe", pure=True)
     original_class_map = yaml.load(fix_json(class_map_string))
     if original_class_map:
         # Change class_map to map from originals to replacements instead of

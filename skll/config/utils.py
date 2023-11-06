@@ -186,7 +186,7 @@ def _parse_and_validate_metrics(metrics: str, option_name: str, logger=None) -> 
 
     # make sure the given metrics data type is a list
     # and parse it correctly
-    yaml = YAML(typ='safe', pure=True)
+    yaml = YAML(typ="safe", pure=True)
     metrics = yaml.load(fix_json(metrics))
     if not isinstance(metrics, list):
         raise TypeError(f"{option_name} should be a list, not a " f"{type(metrics)}.")

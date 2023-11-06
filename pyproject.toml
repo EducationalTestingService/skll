@@ -8,3 +8,4 @@ select = ["D", "E", "F", "I"]
 ignore = ["D212"]
 line-length = 100
 target-version = "py38"
+fix = true
