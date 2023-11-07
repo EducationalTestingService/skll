@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 import numpy as np
-import ruamel.yaml as yaml
+from ruamel.yaml import YAML
 
 from skll.data.readers import safe_float
 from skll.types import ClassMap, FoldMapping, LabelType, PathOrStr
@@ -610,7 +610,9 @@ def parse_config_file(
         raise ValueError(
             "Configuration file does not contain list of learners " "in [Input] section."
         )
-    learners = yaml.safe_load(fix_json(learners_string))
+
+    yaml = YAML(typ="safe", pure=True)
+    learners = yaml.load(fix_json(learners_string))
 
     if len(learners) == 0:
         raise ValueError(
@@ -630,7 +632,7 @@ def parse_config_file(
     custom_metric_path = locate_file(config.get("Input", "custom_metric_path"), config_dir)
 
     # get the featuresets
-    featuresets = yaml.safe_load(config.get("Input", "featuresets"))
+    featuresets = yaml.load(config.get("Input", "featuresets"))
 
     # ensure that featuresets is either a list of features or a list of lists
     # of features
@@ -641,7 +643,7 @@ def parse_config_file(
             f"specified: {featuresets}"
         )
 
-    featureset_names = yaml.safe_load(fix_json(config.get("Input", "featureset_names")))
+    featureset_names = yaml.load(fix_json(config.get("Input", "featureset_names")))
 
     # ensure that featureset_names is a list of strings, if specified
     if featureset_names:
@@ -658,7 +660,7 @@ def parse_config_file(
     # learners. If it's not specified, then we just assume
     # that we are using 10 folds for each learner.
     learning_curve_cv_folds_list_string = config.get("Input", "learning_curve_cv_folds_list")
-    learning_curve_cv_folds_list = yaml.safe_load(fix_json(learning_curve_cv_folds_list_string))
+    learning_curve_cv_folds_list = yaml.load(fix_json(learning_curve_cv_folds_list_string))
     if len(learning_curve_cv_folds_list) == 0:
         learning_curve_cv_folds_list = [10] * len(learners)
     else:
@@ -679,7 +681,7 @@ def parse_config_file(
     # floats (proportions). If it's not specified, then we just
     # assume that we are using np.linspace(0.1, 1.0, 5).
     learning_curve_train_sizes_string = config.get("Input", "learning_curve_train_sizes")
-    learning_curve_train_sizes = yaml.safe_load(fix_json(learning_curve_train_sizes_string))
+    learning_curve_train_sizes = yaml.load(fix_json(learning_curve_train_sizes_string))
     if len(learning_curve_train_sizes) == 0:
         learning_curve_train_sizes = np.linspace(0.1, 1.0, 5).tolist()
     else:
@@ -698,9 +700,9 @@ def parse_config_file(
     # do we need to shuffle the training data
     do_shuffle = config.getboolean("Input", "shuffle")
 
-    fixed_parameter_list = yaml.safe_load(fix_json(config.get("Input", "fixed_parameters")))
-    fixed_sampler_parameters = yaml.safe_load(fix_json(config.get("Input", "sampler_parameters")))
-    param_grid_list = yaml.safe_load(fix_json(config.get("Tuning", "param_grids")))
+    fixed_parameter_list = yaml.load(fix_json(config.get("Input", "fixed_parameters")))
+    fixed_sampler_parameters = yaml.load(fix_json(config.get("Input", "sampler_parameters")))
+    param_grid_list = yaml.load(fix_json(config.get("Tuning", "param_grids")))
 
     # read and normalize the value of `pos_label`
     pos_label_string = safe_float(config.get("Tuning", "pos_label"))
@@ -804,7 +806,8 @@ def parse_config_file(
 
     # Get class mapping dictionary if specified
     class_map_string = config.get("Input", "class_map")
-    original_class_map = yaml.safe_load(fix_json(class_map_string))
+    yaml = YAML(typ="safe", pure=True)
+    original_class_map = yaml.load(fix_json(class_map_string))
     if original_class_map:
         # Change class_map to map from originals to replacements instead of
         # from replacement to list of originals
