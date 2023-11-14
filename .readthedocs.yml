@@ -14,7 +14,10 @@ formats: all
 
 # Optionally set the version of Python and requirements required to build your docs
 python:
-  version: "3.8"
   install:
     - requirements: doc/requirements.txt
-  system_packages: true
+
+build:
+  os: "ubuntu-22.04"
+  tools:
+    python: "3.8"
