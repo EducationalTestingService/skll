@@ -10,5 +10,5 @@ in one place. Based on the suggestion `here. <http://bit.ly/16LbuJF>`_
 :organization: ETS
 """
 
-__version__ = "4.0.0"
+__version__ = "4.0.1"
 VERSION = tuple(int(x) for x in __version__.split("."))
