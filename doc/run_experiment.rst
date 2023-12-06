@@ -1400,6 +1400,27 @@ Whether to save the predictions from the individual estimators underlying a
 :ref:`predictions <predictions>` must be set.
 Defaults to ``False``.
 
+wandb_credentials *(Optional)*
+""""""""""""""""""""""""""""""
+To enable logging metrics and artifacts to `Weights & Biases <https://wandb.ai/>`__, specify
+a dictionary as follows:
+
+.. code-block:: python
+
+    {'wandb_entity': 'your_entity_name', 'wandb_project': 'your_project_name'}
+
+
+``wandb_entity`` can be a user name or the name of a team or organization.
+``wandb_project`` is the name of the project to which this experiment will be logged.
+If a project by this name does not already exist, it will be created.
+
+.. important::
+    1. Both `wandb_entity` and `wandb_project` must be specified. If any of them is missing, logging to W&B will not be enabled.
+    2. Before using Weights & Biases for the first time, users should log in and provide their API key as described in
+       `W&B Quickstart guidelines <https://docs.wandb.ai/quickstart#2-log-in-to-wb>`__.
+    3. Note that when using W&B logging, the skll run may take significantly longer due to the network traffic being
+       sent to W&B.
+
 
 .. _run_experiment:
 

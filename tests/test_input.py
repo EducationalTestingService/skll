@@ -837,7 +837,7 @@ class TestInput(unittest.TestCase):
 
         configuration = parse_config_file(config_path)
         do_grid_search, grid_objectives = configuration[14:16]
-        output_metrics = configuration[-2]
+        output_metrics = configuration[45]
 
         self.assertEqual(do_grid_search, False)
         self.assertEqual(grid_objectives, [])
@@ -1471,7 +1471,7 @@ class TestInput(unittest.TestCase):
             config_template_path, values_to_fill_dict, "learning_curve_metrics_and_no_objectives"
         )
         configuration = parse_config_file(config_path)
-        output_metrics = configuration[-2]
+        output_metrics = configuration[45]
 
         self.assertEqual(output_metrics, ["accuracy", "unweighted_kappa"])
 
@@ -1495,7 +1495,7 @@ class TestInput(unittest.TestCase):
 
         configuration = parse_config_file(config_path)
         grid_objectives = configuration[15]
-        output_metrics = configuration[-2]
+        output_metrics = configuration[45]
 
         self.assertEqual(output_metrics, ["accuracy"])
         self.assertEqual(grid_objectives, [])
@@ -1737,7 +1737,7 @@ class TestInput(unittest.TestCase):
         )
 
         configuration = parse_config_file(config_path)
-        save_votes = configuration[-1]
+        save_votes = configuration[46]
 
         self.assertEqual(save_votes, False)
 
@@ -1764,7 +1764,7 @@ class TestInput(unittest.TestCase):
         )
 
         configuration = parse_config_file(config_path)
-        save_votes = configuration[-1]
+        save_votes = configuration[46]
 
         self.assertEqual(save_votes, True)
 
@@ -1790,3 +1790,57 @@ class TestInput(unittest.TestCase):
 
         with self.assertRaises(KeyError):
             parse_config_file(config_path)
+
+    def test_config_parsing_default_wandb_credentials(self):
+        """Test that config parsing works as expected for default `wandb_credentials`values."""
+        values_to_fill_dict = {
+            "experiment_name": "config_parsing",
+            "task": "evaluate",
+            "train_directory": train_dir,
+            "test_directory": test_dir,
+            "featuresets": "[['f1', 'f2', 'f3']]",
+            "fixed_parameters": '[{"estimator_names": ["SVC", "LogisticRegression", "MultinomialNB"]}]',
+            "learners": "['VotingClassifier']",
+            "objectives": "['accuracy']",
+            "logs": output_dir,
+            "results": output_dir,
+        }
+
+        config_template_path = config_dir / "test_config_parsing.template.cfg"
+
+        config_path = fill_in_config_options(
+            config_template_path, values_to_fill_dict, "default_value_save_votes"
+        )
+
+        configuration = parse_config_file(config_path)
+        wandb_credentials = configuration[47]
+
+        self.assertEqual({}, wandb_credentials)
+
+    def test_config_parsing_set_wandb_values(self):
+        """Test that config parsing works as expected for default `wandb_entity` and `wandb_project` values."""
+        values_to_fill_dict = {
+            "experiment_name": "config_parsing",
+            "task": "evaluate",
+            "train_directory": train_dir,
+            "test_directory": test_dir,
+            "featuresets": "[['f1', 'f2', 'f3']]",
+            "fixed_parameters": '[{"estimator_names": ["SVC", "LogisticRegression", "MultinomialNB"]}]',
+            "learners": "['VotingClassifier']",
+            "objectives": "['accuracy']",
+            "logs": output_dir,
+            "results": output_dir,
+            "wandb_credentials": '{"wandb_entity": "wandb_entity", "wandb_project": "wandb_project"}',
+        }
+
+        config_template_path = config_dir / "test_config_parsing.template.cfg"
+
+        config_path = fill_in_config_options(
+            config_template_path, values_to_fill_dict, "default_value_save_votes"
+        )
+
+        configuration = parse_config_file(config_path)
+        wandb_credentials = configuration[47]
+
+        self.assertEqual(wandb_credentials["wandb_entity"], "wandb_entity")
+        self.assertEqual(wandb_credentials["wandb_project"], "wandb_project")

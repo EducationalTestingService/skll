@@ -12,3 +12,4 @@ seaborn
 sphinx_rtd_theme==1.2.0
 tabulate
 typing_extensions
+wandb

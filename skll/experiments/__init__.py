@@ -36,6 +36,7 @@ from skll.types import (
 from skll.utils.logging import close_and_remove_logger_handlers, get_skll_logger
 from skll.version import __version__
 
+from ..utils.wandb import WandbLogger
 from .input import load_featureset
 from .output import (
     _print_fancy_output,
@@ -716,12 +717,17 @@ def run_configuration(
             learning_curve_train_sizes,
             output_metrics,
             save_votes,
+            wandb_credentials,
         ) = parse_config_file(config_file, log_level=log_level)
 
         # get the main experiment logger that will already have been
         # created by the configuration parser so we don't need anything
         # except the name `experiment`.
         logger = get_skll_logger("experiment")
+        wandb_logger = WandbLogger(wandb_credentials)
+        wandb_logger.log_configuration(
+            {"experiment_name": experiment_name, "task": task, "learners": learners}
+        )
 
         # Check if we have gridmap
         if not local and not _HAVE_GRIDMAP:

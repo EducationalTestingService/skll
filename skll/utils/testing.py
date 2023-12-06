@@ -291,6 +291,7 @@ def fill_in_config_options(
             "save_cv_folds",
             "save_cv_models",
             "save_votes",
+            "wandb_credentials",
         ],
     }
 
