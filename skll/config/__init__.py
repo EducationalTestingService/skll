@@ -867,11 +867,12 @@ def parse_config_file(
     # be specified to enable W&B logging
     wandb_credentials = yaml.load(fix_json(config.get("Output", "wandb_credentials")))
     if wandb_credentials:
-        if "wandb_entity" not in wandb_credentials and "wandb_project" not in wandb_credentials:
+        if "wandb_entity" not in wandb_credentials or "wandb_project" not in wandb_credentials:
             logger.warning(
                 "Logging to W&B is not enabled! "
                 "Please specify both wandb_entity and wandb_project"
             )
+            wandb_credentials = {}
 
     #####################
     # 4. Tuning section #
