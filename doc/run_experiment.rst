@@ -1418,7 +1418,7 @@ If a project by this name does not already exist, it will be created.
     1. Both `wandb_entity` and `wandb_project` must be specified. If any of them is missing, logging to W&B will not be enabled.
     2. Before using Weights & Biases for the first time, users should log in and provide their API key as described in
        `W&B Quickstart guidelines <https://docs.wandb.ai/quickstart#2-log-in-to-wb>`__.
-    3. Note that when using W&B logging, the skll run may take significantly longer due to the network traffic being
+    3. Note that when using W&B logging, a SKLL run may take significantly longer due to the network traffic being
        sent to W&B.
 
 

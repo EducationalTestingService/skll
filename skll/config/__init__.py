@@ -869,8 +869,8 @@ def parse_config_file(
     if wandb_credentials:
         if "wandb_entity" not in wandb_credentials or "wandb_project" not in wandb_credentials:
             logger.warning(
-                "Logging to W&B is not enabled! "
-                "Please specify both wandb_entity and wandb_project"
+                "Logging to W&B not enabled "
+                "since either `wandb_entity` or `wandb_project` is not specified!"
             )
             wandb_credentials = {}
 
