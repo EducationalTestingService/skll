@@ -97,6 +97,7 @@ class SKLLConfigParser(configparser.ConfigParser):
             "train_file": "",
             "use_folds_file_for_grid_search": "True",
             "save_votes": "False",
+            "wandb_credentials": "{}",
         }
 
         correct_section_mapping = {
@@ -144,6 +145,7 @@ class SKLLConfigParser(configparser.ConfigParser):
             "train_file": "Input",
             "use_folds_file_for_grid_search": "Tuning",
             "save_votes": "Output",
+            "wandb_credentials": "Output",
         }
 
         # make sure that the defaults dictionary and the
@@ -324,6 +326,7 @@ def parse_config_file(
     List[Number],
     List[str],
     bool,
+    Optional[Dict[str, str]],
 ]:
     """
     Parse a SKLL experiment configuration file with the given path.
@@ -507,6 +510,9 @@ def parse_config_file(
 
     save_votes : bool
         Whether to save the individual predictions from voting learners.
+
+    wandb_credentials : Dict[str,str]
+        A dictionary holding W&B entity and project name, if logging to W&B is enabled.
 
     Raises
     ------
@@ -857,6 +863,17 @@ def parse_config_file(
     # learner estimators?
     save_votes = config.getboolean("Output", "save_votes")
 
+    # get wandb credentials if specified. Both entity and project must
+    # be specified to enable W&B logging
+    wandb_credentials = yaml.load(fix_json(config.get("Output", "wandb_credentials")))
+    if wandb_credentials:
+        if "wandb_entity" not in wandb_credentials or "wandb_project" not in wandb_credentials:
+            logger.warning(
+                "Logging to W&B not enabled "
+                "since either `wandb_entity` or `wandb_project` is not specified!"
+            )
+            wandb_credentials = {}
+
     #####################
     # 4. Tuning section #
     #####################
@@ -1070,6 +1087,7 @@ def parse_config_file(
         learning_curve_train_sizes,
         output_metrics,
         save_votes,
+        wandb_credentials,
     )
 
 

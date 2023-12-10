@@ -16,6 +16,7 @@ from ast import literal_eval
 from collections import defaultdict
 from itertools import chain, product
 from pathlib import Path
+from unittest.mock import Mock, patch
 
 import numpy as np
 import pandas as pd
@@ -1281,3 +1282,50 @@ class TestOutput(unittest.TestCase):
         learner.train(fs, grid_search=False)
         with self.assertRaises(ValueError):
             learner.get_feature_names_out()
+
+    @patch("wandb.init")
+    def test_wandb_logging_enabled(self, mock_wandb_init):
+        """Test that metrics are logged to wandb when enabled."""
+        # make a simple config file with wandb credentials
+        values_to_fill_dict = {
+            "experiment_name": "test_wandb",
+            "train_directory": train_dir,
+            "task": "train",
+            "grid_search": "false",
+            "objectives": "['f1_score_micro']",
+            "learners": "['LogisticRegression']",
+            "featuresets": "[['test_input_3examples_1', 'test_input_3examples_2']]",
+            "featureset_names": "['feature_hasher']",
+            "suffix": ".jsonlines",
+            "logs": output_dir,
+            "models": output_dir,
+            "feature_hasher": "true",
+            "hasher_features": "4",
+            "wandb_credentials": '{"wandb_entity": "wandb_entity",'
+            ' "wandb_project": "wandb_project"}',
+        }
+
+        config_template_path = config_dir / "test_wandb.template.cfg"
+
+        config_path = fill_in_config_options(config_template_path, values_to_fill_dict, "wandb")
+        mock_wandb_run = Mock()
+        mock_wandb_init.return_value = mock_wandb_run
+        # run the experiment
+        print(config_path)
+        run_configuration(config_path, quiet=True, local=True)
+        mock_wandb_init.assert_called_with(project="wandb_project", entity="wandb_entity")
+        mock_wandb_run.config.update.assert_called_with(
+            {"experiment_name": "test_wandb", "task": "train", "learners": ["LogisticRegression"]}
+        )
+
+        # test if it throws any warning
+        logfile_path = (
+            output_dir / "test_warning_multiple_featuresets_feature_hasher_LogisticRegression.log"
+        )
+        with open(logfile_path) as f:
+            warning_pattern = re.compile(
+                r"Since there are multiple feature files, feature hashing applies"
+                r" to each specified feature file separately."
+            )
+            matches = re.findall(warning_pattern, f.read())
+            self.assertEqual(len(matches), 1)
