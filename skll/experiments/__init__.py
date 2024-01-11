@@ -245,6 +245,7 @@ def _classify_featureset(args: Dict[str, Any]) -> List[Dict[str, Any]]:
             )
 
             train_set_size = len(train_examples.ids)
+
             if not train_examples.has_labels:
                 raise ValueError("Training examples do not have labels")
 
@@ -345,6 +346,7 @@ def _classify_featureset(args: Dict[str, Any]) -> List[Dict[str, Any]]:
         # create a list of dictionaries of the results information
         learner_result_dict_base = {
             "experiment_name": experiment_name,
+            "job_name": job_name,
             "train_set_name": train_set_name,
             "train_set_size": train_set_size,
             "test_set_name": test_set_name,
@@ -491,6 +493,7 @@ def _classify_featureset(args: Dict[str, Any]) -> List[Dict[str, Any]]:
                 # save model, if asked
                 if model_path:
                     learner.save(modelfile)
+                    learner_result_dict_base["model_file"] = str(modelfile)
 
             # print out the model parameters; note that for
             # voting learners, we exclude the parameters for
@@ -533,6 +536,9 @@ def _classify_featureset(args: Dict[str, Any]) -> List[Dict[str, Any]]:
                     class_labels=False,
                     **extra_kwargs,
                 )
+                learner_result_dict_base[
+                    "predictions_file"
+                ] = f"{prediction_prefix}_predictions.tsv"
 
         end_timestamp = datetime.datetime.now()
         learner_result_dict_base["end_timestamp"] = end_timestamp.strftime("%d %b %Y %H:%M:%S.%f")
@@ -582,13 +588,12 @@ def _classify_featureset(args: Dict[str, Any]) -> List[Dict[str, Any]]:
         else:
             if results_path:
                 results_json_path = Path(results_path) / f"{job_name}.results.json"
-
                 assert len(grid_scores) == 1
                 assert len(grid_search_cv_results_dicts) == 1
-                grid_search_cv_results_dict: Dict[str, Any] = {"grid_score": grid_scores[0]}
-                grid_search_cv_results_dict[
-                    "grid_search_cv_results"
-                ] = grid_search_cv_results_dicts[0]
+                grid_search_cv_results_dict: Dict[str, Any] = {
+                    "grid_score": grid_scores[0],
+                    "grid_search_cv_results": grid_search_cv_results_dicts[0],
+                }
                 grid_search_cv_results_dict.update(learner_result_dict_base)
                 # write out the result dictionary to a json file
                 with open(results_json_path, "w") as json_file:
@@ -724,10 +729,10 @@ def run_configuration(
         # created by the configuration parser so we don't need anything
         # except the name `experiment`.
         logger = get_skll_logger("experiment")
-        wandb_logger = WandbLogger(wandb_credentials)
-        wandb_logger.log_configuration(
-            {"experiment_name": experiment_name, "task": task, "learners": learners}
-        )
+
+        # init WandbLogger. If W&B credentials are not specified,
+        # logging to wandb will not be performed.
+        wandb_logger = WandbLogger(wandb_credentials, str(config_file))
 
         # Check if we have gridmap
         if not local and not _HAVE_GRIDMAP:
@@ -823,29 +828,33 @@ def run_configuration(
             grid_objectives = output_metrics
 
         # if there were no grid objectives provided, just set it to
-        # a list containing a single None so as to allow the parallelization
-        # to proceeed and to pass the correct default value of grid_objective
+        # a list containing a single None to allow the parallelization
+        # to proceed and to pass the correct default value of grid_objective
         # down to _classify_featureset().
         grid_objectives_extra: Union[List[str], List[None]]
         grid_objectives_extra = [None] if not grid_objectives else grid_objectives
 
+        job_results = []
         # Run each featureset-learner-objective combination
         for featureset, featureset_name in zip(featuresets, featureset_names):
             for learner_num, learner_name in enumerate(learners):
                 for grid_objective in grid_objectives_extra:
-                    # for the individual job name, we need to add the feature set name
-                    # and the learner name
-                    if grid_objective is None or len(grid_objectives_extra) == 1:
-                        job_name_components = [experiment_name, featureset_name, learner_name]
-                    else:
-                        job_name_components = [
-                            experiment_name,
-                            featureset_name,
-                            learner_name,
-                            grid_objective,
-                        ]
+                    # The individual job name is built from the experiment name, featureset,
+                    # learner and objective. To keep the job name as compact as possible,
+                    # it only includes components that have multiple values in this run.
+                    job_name_components = [experiment_name]
+                    if len(featuresets) > 1:
+                        job_name_components.append(featureset_name)
+                    if grid_objective is not None and len(grid_objectives_extra) > 1:
+                        job_name_components.append(grid_objective)
+                    if len(learners) > 1:
+                        job_name_components.append(learner_name)
 
                     job_name = "_".join(job_name_components)
+
+                    wandb_logger.log_summary(job_name, "featureset name", featureset_name)
+                    wandb_logger.log_summary(job_name, "learner name", learner_name)
+                    wandb_logger.log_summary(job_name, "grid objective", grid_objective)
 
                     # change the prediction prefix to include the feature set
                     prediction_prefix = str(Path(prediction_dir) / job_name)
@@ -869,7 +878,7 @@ def run_configuration(
                         )
                         continue
 
-                    # create job if we're doing things on the grid
+                    # create args for classification job
                     job_args: Dict[str, Any] = {}
                     job_args["experiment_name"] = experiment_name
                     job_args["task"] = task
@@ -930,6 +939,7 @@ def run_configuration(
                     job_args["learning_curve_train_sizes"] = learning_curve_train_sizes
 
                     if not local:
+                        # add to job list if we're doing things on the grid
                         jobs.append(
                             Job(
                                 _classify_featureset,
@@ -944,7 +954,7 @@ def run_configuration(
                             )
                         )
                     else:
-                        _classify_featureset(job_args)
+                        job_results.append(_classify_featureset(job_args))
 
         # Call get_skll_logger again after _classify_featureset
         # calls are finished so that any warnings that may
@@ -960,20 +970,44 @@ def run_configuration(
                 job_results = process_jobs(jobs, white_list=hosts)
             _check_job_results(job_results)
 
-        # write out the summary results file
-        if (task == "cross_validate" or task == "evaluate") and write_summary:
-            summary_file_name = f"{experiment_name}_summary.tsv"
-            with open(Path(results_path) / summary_file_name, "w", newline="") as output_file:
-                _write_summary_file(result_json_paths, output_file, ablation=ablation)
+        # process output and log to wandb
+        if task == "predict":
+            for job_result in job_results:
+                task_result = job_result[0]  # predict outputs a single dict
+                wandb_logger.log_predict_results(task_result)
+
+        elif task == "train":
+            for job_result in job_results:
+                wandb_logger.log_train_results(job_result[0])
+
+        elif task == "cross_validate" or task == "evaluate":
+            if write_summary:
+                # write out the summary results file
+                summary_file_name = f"{experiment_name}_summary.tsv"
+                with open(Path(results_path) / summary_file_name, "w", newline="") as output_file:
+                    _write_summary_file(result_json_paths, output_file, ablation=ablation)
+
+            for job_res_list in job_results:
+                for res_dict in job_res_list:
+                    wandb_logger.log_evaluation_results(res_dict)
+
         elif task == "learning_curve":
+            # write out the summary file
             output_file_name = f"{experiment_name}_summary.tsv"
             output_file_path = Path(results_path) / output_file_name
             with open(output_file_path, "w", newline="") as output_file:
                 _write_learning_curve_file(result_json_paths, output_file)
 
             # generate the actual plot if we have the requirements installed
-            generate_learning_curve_plots(experiment_name, results_path, output_file_path)
+            plot_paths = generate_learning_curve_plots(
+                experiment_name, results_path, output_file_path
+            )
 
+            for plot_path in plot_paths:
+                wandb_logger.log_plot(plot_path)
+
+            for job_res_list in job_results:
+                wandb_logger.log_learning_curve_results(job_res_list[0])
     finally:
         # Close/remove any logger handlers
         close_and_remove_logger_handlers(get_skll_logger("experiment"))

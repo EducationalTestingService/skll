@@ -90,7 +90,7 @@ def _generate_learning_curve_score_plots(
     experiment_name: str,
     output_dir: PathOrStr,
     rotate_labels: bool = False,
-) -> None:
+) -> List[str]:
     """
     Generate learning curve score plots, one per featureset.
 
@@ -113,10 +113,15 @@ def _generate_learning_curve_score_plots(
         Path to the output directory for the plots.
     rotate_labels : bool, default=False
         Whether to rotate the x-axis labels for the training data size.
+
+    Returns
+    -------
+    List[str]
+        A list of paths of the generated plots
     """
     # convert output dir to a path
     output_dir = Path(output_dir)
-
+    plot_paths = []
     # set up and draw the actual learning curve figures, one for
     # each of the featuresets
     for fs_name, df_fs in df_scores.groupby("featureset_name"):
@@ -205,9 +210,13 @@ def _generate_learning_curve_score_plots(
                                 frameon=True,
                             )
             g.fig.tight_layout(w_pad=1)
-            plt.savefig(output_dir / f"{experiment_name}_{fs_name}.png", dpi=300)
+            plot_file_path = output_dir / f"{experiment_name}_{fs_name}.png"
+            plt.savefig(plot_file_path, dpi=300)
             # explicitly close figure to save memory
             plt.close(fig)
+            plot_paths.append(str(plot_file_path))
+
+    return plot_paths
 
 
 def _generate_learning_curve_time_plots(
@@ -216,7 +225,7 @@ def _generate_learning_curve_time_plots(
     experiment_name: str,
     output_dir: PathOrStr,
     rotate_labels: bool = False,
-) -> None:
+) -> List[str]:
     """
     Generate learning curve time plots, one per featureset.
 
@@ -237,10 +246,15 @@ def _generate_learning_curve_time_plots(
         Path to the output directory for the plots.
     rotate_labels : bool, default=False
         Whether to rotate the x-axis labels for the training data size.
+
+    Returns
+    -------
+     List[str]
+        A list of paths of the generated plots
     """
     # convert output dir to a path
     output_dir = Path(output_dir)
-
+    plot_paths = []
     # set up and draw the actual learning curve figures, one for
     # each of the featuresets
     for fs_name, df_fs in df_times.groupby("featureset_name"):
@@ -290,15 +304,19 @@ def _generate_learning_curve_time_plots(
                 )
 
             g.fig.tight_layout(w_pad=1)
-            plt.savefig(output_dir / f"{experiment_name}_{fs_name}_times.png", dpi=300)
+            plot_file_path = output_dir / f"{experiment_name}_{fs_name}_times.png"
+            plt.savefig(plot_file_path, dpi=300)
 
             # explicitly close figure to save memory
             plt.close(fig)
+            plot_paths.append(str(plot_file_path))
+
+    return plot_paths
 
 
 def generate_learning_curve_plots(
     experiment_name: str, output_dir: PathOrStr, learning_curve_tsv_file: PathOrStr
-) -> None:
+) -> List[str]:
     """
     Generate learning curves using the TSV output file from a learning curve experiment.
 
@@ -312,6 +330,11 @@ def generate_learning_curve_plots(
         Path to the output directory for the plots.
     learning_curve_tsv_file : :class:`skll.types.PathOrStr`
         The path to the learning curve TSV file.
+
+    Returns
+    -------
+    List[str]
+        A list of paths of the generated plots
     """
     # convert output_dir to Path object
     output_dir = Path(output_dir)
@@ -395,7 +418,7 @@ def generate_learning_curve_plots(
     df_time_melted["learner_name"] = df_time_melted["learner_name"].astype("category")
 
     # call the function to generate the score plots first
-    _generate_learning_curve_score_plots(
+    scores_plot_paths = _generate_learning_curve_score_plots(
         df_score_melted,
         num_metrics,
         num_learners,
@@ -405,13 +428,15 @@ def generate_learning_curve_plots(
     )
 
     # now call the function to generate the time plots
-    _generate_learning_curve_time_plots(
+    time_plot_paths = _generate_learning_curve_time_plots(
         df_time_melted,
         num_learners,
         experiment_name,
         output_dir,
         rotate_labels=rotate_labels,
     )
+
+    return scores_plot_paths + time_plot_paths
 
 
 def _print_fancy_output(
@@ -473,7 +498,8 @@ def _print_fancy_output(
     print("\n", file=output_file)
 
     for lrd in learner_result_dicts:
-        print(f'Fold: {lrd["fold"]}', file=output_file)
+        if lrd["fold"]:  # otherwise it's a single results item (evaluate task)
+            print(f'Fold: {lrd["fold"]}', file=output_file)
         print(f'Model Parameters: {lrd.get("model_params", "")}', file=output_file)
         print(f'Grid Objective Score (Train) = {lrd.get("grid_score", "")}', file=output_file)
         if "result_table" in lrd:

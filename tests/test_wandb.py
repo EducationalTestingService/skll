@@ -7,6 +7,7 @@ Tests for wandb logging utility class.
 import unittest
 from unittest.mock import Mock, patch
 
+from skll.utils.testing import config_dir, fill_in_config_options
 from skll.utils.wandb import WandbLogger
 
 
@@ -29,11 +30,21 @@ class TestWandb(unittest.TestCase):
 
     def test_update_config(self):
         """Test initialization with wandb credentials specified."""
+        config_template_path = config_dir / "test_wandb.template.cfg"
+        values_to_fill_dict = {"experiment_name": "test_wandb", "task": "train"}
+        config_path = fill_in_config_options(
+            config_template_path, values_to_fill_dict, "conf_wandb"
+        )
+
         mock_wandb_run = Mock()
         with patch("skll.utils.wandb.wandb.init", return_value=mock_wandb_run) as mock_wandb_init:
             wandb_logger = WandbLogger(
-                {"wandb_entity": "wandb_entity", "wandb_project": "wandb_project"}
+                {
+                    "wandb_entity": "wandb_entity",
+                    "wandb_project": "wandb_project",
+                },
+                str(config_path),
             )
-            wandb_logger.log_configuration({"task": "train"})
+            wandb_logger.log_configuration()
             mock_wandb_init.assert_called_with(project="wandb_project", entity="wandb_entity")
             mock_wandb_run.config.update.assert_called_with({"task": "train"})
