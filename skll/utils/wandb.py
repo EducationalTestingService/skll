@@ -48,8 +48,9 @@ class WandbLogger:
 
         Returns
         -------
-        A dictionary containing all SKLL configuration fields, including default values
-        when for fields that are missing in the file.
+        Dictionary containing all SKLL configuration fields.
+
+        This also includes default values when for fields that are missing in the file.
         """
         config_parser = _setup_config_parser(config_file_path, validate=False)
         return {
