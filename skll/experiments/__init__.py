@@ -978,6 +978,7 @@ def run_configuration(
 
         elif task == "train":
             for job_result in job_results:
+                # train outputs a single dict
                 wandb_logger.log_train_results(job_result[0])
 
         elif task == "cross_validate" or task == "evaluate":
@@ -987,9 +988,9 @@ def run_configuration(
                 with open(Path(results_path) / summary_file_name, "w", newline="") as output_file:
                     _write_summary_file(result_json_paths, output_file, ablation=ablation)
 
-            for job_res_list in job_results:
-                for res_dict in job_res_list:
-                    wandb_logger.log_evaluation_results(res_dict)
+            for job_result_list in job_results:
+                for result_dict in job_result_list:
+                    wandb_logger.log_evaluation_results(result_dict)
 
         elif task == "learning_curve":
             # write out the summary file
@@ -1006,8 +1007,8 @@ def run_configuration(
             for plot_path in plot_paths:
                 wandb_logger.log_plot(plot_path)
 
-            for job_res_list in job_results:
-                wandb_logger.log_learning_curve_results(job_res_list[0])
+            for job_result_list in job_results:
+                wandb_logger.log_learning_curve_results(job_result_list[0])
     finally:
         # Close/remove any logger handlers
         close_and_remove_logger_handlers(get_skll_logger("experiment"))

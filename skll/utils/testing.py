@@ -466,7 +466,7 @@ def fill_in_config_options_for_voting_learners(
     sub_prefix = task
     featureset_name = "f0"
     train_path = train_dir / f"{featureset_name}.jsonlines"
-    job_name = f"{experiment_name}_{sub_prefix}_{featureset_name}_{learner_name}"
+    job_name = f"{experiment_name}_{sub_prefix}"
     values_to_fill_dict = {
         "experiment_name": f"{experiment_name}_{sub_prefix}",
         "train_file": str(train_path),

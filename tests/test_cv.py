@@ -30,9 +30,7 @@ from skll.utils.testing import (
     fill_in_config_paths_for_single_file,
     other_dir,
     output_dir,
-    remove_jsonlines_feature_files,
     train_dir,
-    unlink,
 )
 
 
@@ -48,34 +46,34 @@ class TestCrossValidation(unittest.TestCase):
         # create jsonlines feature files
         create_jsonlines_feature_files(train_dir)
 
-    @classmethod
-    def tearDownClass(cls):
-        """Clean up after tests."""
-        fold_file_path = other_dir / "custom_folds.csv"
-        unlink(fold_file_path)
+    # @classmethod
+    # def tearDownClass(cls):
+    #     """Clean up after tests."""
+    #     fold_file_path = other_dir / "custom_folds.csv"
+    #     unlink(fold_file_path)
 
-        config_dir_obj = config_dir
-        cfg_files = [
-            config_dir_obj / "test_save_cv_folds.cfg",
-            config_dir_obj / "test_save_cv_models.cfg",
-            config_dir_obj / "test_custom_cv_seed_classifier.cfg",
-            config_dir_obj / "test_custom_cv_seed_regressor.cfg",
-            config_dir_obj / "test_folds_file.cfg",
-            config_dir_obj / "test_folds_file_grid.cfg",
-        ]
-        for cfg_file in cfg_files:
-            unlink(cfg_file)
+    #     config_dir_obj = config_dir
+    #     cfg_files = [
+    #         config_dir_obj / "test_save_cv_folds.cfg",
+    #         config_dir_obj / "test_save_cv_models.cfg",
+    #         config_dir_obj / "test_custom_cv_seed_classifier.cfg",
+    #         config_dir_obj / "test_custom_cv_seed_regressor.cfg",
+    #         config_dir_obj / "test_folds_file.cfg",
+    #         config_dir_obj / "test_folds_file_grid.cfg",
+    #     ]
+    #     for cfg_file in cfg_files:
+    #         unlink(cfg_file)
 
-        for output_file in itertools.chain(
-            output_dir.glob("test_save_cv_folds*"),
-            output_dir.glob("test_int_labels_cv_*"),
-            output_dir.glob("test_save_cv_models*"),
-            output_dir.glob("test_custom_cv_seed*"),
-            output_dir.glob("test_folds_file*"),
-        ):
-            unlink(output_file)
+    #     for output_file in itertools.chain(
+    #         output_dir.glob("test_save_cv_folds*"),
+    #         output_dir.glob("test_int_labels_cv_*"),
+    #         output_dir.glob("test_save_cv_models*"),
+    #         output_dir.glob("test_custom_cv_seed*"),
+    #         output_dir.glob("test_folds_file*"),
+    #     ):
+    #         unlink(output_file)
 
-        remove_jsonlines_feature_files(train_dir)
+    #     remove_jsonlines_feature_files(train_dir)
 
     def make_cv_folds_data(self, num_examples_per_fold=100, num_folds=3, use_feature_hashing=False):
         """Create data for pre-specified CV folds tests with or without feature hashing."""
@@ -386,7 +384,7 @@ class TestCrossValidation(unittest.TestCase):
         config_path = fill_in_config_paths_for_single_file(template_path, train_path, None)
         run_configuration(config_path, quiet=True, local=True)
 
-        cv_model_prefix = "test_save_cv_models_train_f0.jsonlines_LogisticRegression_fold"
+        cv_model_prefix = "test_save_cv_models_fold"
         for i in range(1, 11):
             model_path = output_dir / f"{cv_model_prefix}{i}.model"
             assert model_path.exists()
