@@ -39,7 +39,7 @@ class WandbLogger:
 
     def get_config_dict(self, config_file_path: str) -> Dict[str, Any]:
         """
-        Load a configuration file into a dictionary, to be logged to W&B as a run congig.
+        Load a configuration file into a dictionary, to be logged to W&B as a run config.
 
         Parameters
         ----------
