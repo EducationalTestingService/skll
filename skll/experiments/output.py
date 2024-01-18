@@ -418,7 +418,7 @@ def generate_learning_curve_plots(
     df_time_melted["learner_name"] = df_time_melted["learner_name"].astype("category")
 
     # call the function to generate the score plots first
-    scores_plot_paths = _generate_learning_curve_score_plots(
+    score_plot_paths = _generate_learning_curve_score_plots(
         df_score_melted,
         num_metrics,
         num_learners,
@@ -436,7 +436,7 @@ def generate_learning_curve_plots(
         rotate_labels=rotate_labels,
     )
 
-    return scores_plot_paths + time_plot_paths
+    return score_plot_paths + time_plot_paths
 
 
 def _print_fancy_output(

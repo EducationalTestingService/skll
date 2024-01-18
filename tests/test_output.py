@@ -369,7 +369,7 @@ class TestOutput(unittest.TestCase):
         run_configuration(config_path, quiet=True, local=True)
 
         # now make sure that the results file was produced
-        results_file_path = output_dir / "test_fancy_xval_f0_LogisticRegression.results"
+        results_file_path = output_dir / "test_fancy_xval.results"
         self.assertTrue(results_file_path.exists())
 
         # read in all the lines and look at the lines up to where we print the "Total Time"
@@ -495,7 +495,7 @@ class TestOutput(unittest.TestCase):
 
         # now make sure that the results json file was produced
         for learner in learners:
-            results_file_name = f"{exp_name}_f0_{learner}.results.json"
+            results_file_name = f"{exp_name}_{learner}.results.json"
             actual_results_file_path = output_dir / results_file_name
             expected_results_file_path = expected_path / results_file_name
             self.assertTrue(actual_results_file_path.exists())

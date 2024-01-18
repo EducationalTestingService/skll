@@ -33,7 +33,7 @@ repos:
       - id: ruff
         args: [--line-length=100, --select, "D,E,F,I", --ignore, "D212", --per-file-ignores, "tests/test*.py:D102,tests/test*.py:D103,tests/test_input.py:E501,skll/data/featureset.py:E501,skll/learner/__init__.py:E501,skll/learner/voting.py:E501,skll/learner/utils.py:E501"]
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: 'v1.2.0'
+    rev: 'v1.8.0'
     hooks:
       - id: mypy
         args: [--ignore-missing-imports]

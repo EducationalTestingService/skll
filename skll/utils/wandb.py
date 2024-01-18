@@ -78,7 +78,7 @@ class WandbLogger:
         Log basic task info, general scores, and label-specific evaluation scores
         and confusion matrix for classification tasks.
 
-        The input is either an "evaluate" task results or a single
+        The input is either "evaluate" task results or a single
         fold results in a "cross validate" task.
 
         The metrics are logged to a section named by the job name and
@@ -94,9 +94,8 @@ class WandbLogger:
             metric_dict = {}
             task_prefix = task_results["job_name"]
             # if this is a fold's result, add fold name to the prefix.
-            if task_results.get("fold"):
-                task_prefix = f"{task_prefix}_fold_{task_results['fold']}"
-
+            if fold_num := task_results.get("fold"):
+                task_prefix = f"{task_prefix}_fold_{fold_num}"
             # log basic info and scores
             for metric in [
                 "train_set_size",
@@ -108,9 +107,9 @@ class WandbLogger:
                 metric_dict[f"{task_prefix}/{metric}"] = task_results.get(metric, "N/A")
 
             # log confusion matrix as a custom chart
-            if task_results.get("conf_matrix"):
+            if confusion_matrix := task_results.get("conf_matrix"):
                 chart = self.generate_conf_matrix_chart(
-                    task_results["conf_matrix"], sorted(task_results["label_metrics"].keys())
+                    confusion_matrix, sorted(task_results["label_metrics"].keys())
                 )
                 metric_dict[f"{task_prefix}/confusion_matrix"] = chart
                 # log Precision, recall and f-measure for each label
@@ -119,16 +118,15 @@ class WandbLogger:
                         metric_dict[f"{task_prefix}/label_{label}_{name}"] = value
 
             # log objective scores for train and test
-            if task_results.get("grid_score"):
-                metric_dict[f"{task_prefix}/grid_objective_score (train)"] = task_results[
-                    "grid_score"
-                ]
-            if task_results.get("score"):
-                metric_dict[f"{task_prefix}/objective_score (test)"] = task_results["score"]
+            if train_score := task_results.get("grid_score"):
+                metric_dict[f"{task_prefix}/grid_objective_score (train)"] = train_score
+
+            if test_score := task_results.get("score"):
+                metric_dict[f"{task_prefix}/objective_score (test)"] = test_score
 
             # log additional scores
-            if task_results.get("additional_scores"):
-                for metric, score in task_results["additional_scores"].items():
+            if additional_scores := task_results.get("additional_scores"):
+                for metric, score in additional_scores.items():
                     score = "" if np.isnan(score) else score
                     metric_dict[f"{task_prefix}/{metric}"] = score
 
@@ -138,11 +136,11 @@ class WandbLogger:
         """
         Log learning curve results to W&B, if logging to W&B is enabled.
 
-        Log basic task info as well as meand and stds of learning curve results.
+        Log basic task info as well as meand and std. devs. of learning curve results.
 
         Parameters
         ----------
-        task_results : Dict[str,Any]
+        task_results : Dict[str, Any]
             The learning curve task results.
         """
         if self.wandb_run:
@@ -171,15 +169,13 @@ class WandbLogger:
 
         Parameters
         ----------
-        task_results : Dict[str,Any]
+        task_results : Dict[str, Any]
             The learning curve task results.
         """
         if self.wandb_run:
             task_prefix = task_results["job_name"]
-            # metric_dict = {}
             for metric in ["train_set_size", "test_set_size", "model_file"]:
                 self.log_summary(task_prefix, metric, task_results.get(metric, "N/A"))
-            # self.wandb_run.log(metric_dict)
 
     def log_predict_results(self, task_results: Dict[str, Any]) -> None:
         """
@@ -189,7 +185,7 @@ class WandbLogger:
 
         Parameters
         ----------
-        task_results : Dict[str,Any]
+        task_results : Dict[str, Any]
             The learning curve task results.
         """
         if self.wandb_run:
@@ -218,7 +214,7 @@ class WandbLogger:
         Returns
         -------
         wandb.Visualize
-            a Visualize object of the confusion matrix chart
+            a `wandb.Visualize` object representing the confusion matrix chart
 
         """
         conf_matrix_data = []
@@ -231,7 +227,7 @@ class WandbLogger:
 
     def log_summary(self, task_prefix, metric_name, metric_value) -> None:
         """
-        Add a metric to the W&B run summary if logging to W&B is enabled".
+        Add a metric to the W&B run summary if logging to W&B is enabled.
 
         Parameters
         ----------

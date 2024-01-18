@@ -386,7 +386,7 @@ class TestCrossValidation(unittest.TestCase):
         config_path = fill_in_config_paths_for_single_file(template_path, train_path, None)
         run_configuration(config_path, quiet=True, local=True)
 
-        cv_model_prefix = "test_save_cv_models_train_f0.jsonlines_LogisticRegression_fold"
+        cv_model_prefix = "test_save_cv_models_fold"
         for i in range(1, 11):
             model_path = output_dir / f"{cv_model_prefix}{i}.model"
             assert model_path.exists()
