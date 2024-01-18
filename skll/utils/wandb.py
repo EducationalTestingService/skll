@@ -198,7 +198,7 @@ class WandbLogger:
             predictions_table = wandb.Table(dataframe=predictions_df, allow_mixed_types=True)
             self.wandb_run.log({f"{task_prefix}/predictions": predictions_table})
 
-    def generate_conf_matrix_chart(self, confusion_matrix, labels) -> wandb.Visualize:
+    def generate_conf_matrix_chart(self, confusion_matrix, labels) -> wandb.visualize:
         """
         Generate a wandb chart object from confusion matrix data.
 
@@ -213,8 +213,8 @@ class WandbLogger:
 
         Returns
         -------
-        wandb.Visualize
-            a `wandb.Visualize` object representing the confusion matrix chart
+        wandb.visualize
+            a `wandb.visualize` object representing the confusion matrix chart
 
         """
         conf_matrix_data = []
