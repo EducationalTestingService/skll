@@ -12,6 +12,8 @@ import pandas as pd
 import wandb
 from skll.config import _setup_config_parser
 from skll.types import PathOrStr
+from wandb.sdk.lib import RunDisabled
+from wandb.sdk.wandb_run import Run
 
 
 class WandbLogger:
@@ -29,7 +31,7 @@ class WandbLogger:
         config_file_path : str
             The path to this experiment's config file
         """
-        self.wandb_run: Optional[Union[wandb.sdk.wandb_run.Run, wandb.sdk.lib.RunDisabled]] = None
+        self.wandb_run: Optional[Union[Run, RunDisabled]] = None
         if wandb_credentials:
             self.wandb_run = wandb.init(
                 project=wandb_credentials["wandb_project"],
