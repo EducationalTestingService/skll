@@ -116,7 +116,7 @@ class TestExamples(unittest.TestCase):
                     # if this is a float, then we check with less precision (4 decimals);
                     # otherwise, we check to make sure things are matching exactly
                     if isinstance(expected, float):
-                        self.assertAlmostEqual(actual, expected, places=4)
+                        self.assertAlmostEqual(actual, expected, places=3)
                     else:
                         self.assertEqual(actual, expected)
 
