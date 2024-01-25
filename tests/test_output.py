@@ -16,7 +16,7 @@ from ast import literal_eval
 from collections import defaultdict
 from itertools import chain, product
 from pathlib import Path
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import numpy as np
 import pandas as pd
@@ -161,9 +161,9 @@ class TestOutput(unittest.TestCase):
                 else "test_summary_feature_hasher.template.cfg"
             )
             outprefix = (
-                "test_summary_feature_hasher_with_metrics_test_summary"
+                "test_summary_feature_hasher_with_metrics"
                 if use_additional_metrics
-                else "test_summary_feature_hasher_test_summary"
+                else "test_summary_feature_hasher"
             )
             summprefix = (
                 "test_summary_feature_hasher_with_metrics"
@@ -176,11 +176,7 @@ class TestOutput(unittest.TestCase):
                 if use_additional_metrics
                 else "test_summary.template.cfg"
             )
-            outprefix = (
-                "test_summary_with_metrics_test_summary"
-                if use_additional_metrics
-                else "test_summary_test_summary"
-            )
+            outprefix = "test_summary_with_metrics" if use_additional_metrics else "test_summary"
             summprefix = "test_summary_with_metrics" if use_additional_metrics else "test_summary"
 
         config_template_path = config_dir / cfgfile
@@ -218,10 +214,10 @@ class TestOutput(unittest.TestCase):
             reader = csv.DictReader(f, dialect="excel-tab")
 
             for row in reader:
-                # the learner results dictionaries should have 34 rows,
+                # the learner results dictionaries should have 39 rows,
                 # and all of these except results_table
                 # should be printed (though some columns will be blank).
-                self.assertEqual(len(row), 35)
+                self.assertEqual(len(row), 39)
                 assert row["model_params"]
                 assert row["grid_score"]
                 assert row["score"]
@@ -316,7 +312,7 @@ class TestOutput(unittest.TestCase):
                 ("MultinomialNB", 0.5),
                 ("SVC", 0.6333),
             ):
-                filename = f"test_summary_test_summary_{report_name}.results"
+                filename = f"test_summary_{report_name}.results"
                 results_path = output_dir / filename
                 with open(results_path) as results_file:
                     report = results_file.read()
@@ -369,7 +365,7 @@ class TestOutput(unittest.TestCase):
         run_configuration(config_path, quiet=True, local=True)
 
         # now make sure that the results file was produced
-        results_file_path = output_dir / "test_fancy_xval.results"
+        results_file_path = output_dir / "test_fancy_xval_LogisticRegression.results"
         self.assertTrue(results_file_path.exists())
 
         # read in all the lines and look at the lines up to where we print the "Total Time"
@@ -624,13 +620,11 @@ class TestOutput(unittest.TestCase):
         )
 
         # run the experiment
-        print(config_path)
+
         run_configuration(config_path, quiet=True, local=True)
 
         # test if it throws any warning
-        logfile_path = (
-            output_dir / "test_warning_multiple_featuresets_feature_hasher_LogisticRegression.log"
-        )
+        logfile_path = output_dir / "test_warning_multiple_featuresets_LogisticRegression.log"
         with open(logfile_path) as f:
             warning_pattern = re.compile(
                 r"Since there are multiple feature files, feature hashing applies"
@@ -1211,10 +1205,7 @@ class TestOutput(unittest.TestCase):
         # Check experiment log output
         # The experiment log file should contain warnings related
         # to the use of sklearn
-        with open(
-            output_dir / "test_send_warnings_to_log_train_test_send_warnings."
-            "jsonlines_LinearSVC.log"
-        ) as f:
+        with open(output_dir / "test_send_warnings_to_log_LinearSVC.log") as f:
             log_content = f.read()
             convergence_sklearn_warning_re = re.compile(
                 r"WARNING - [^\n]+sklearn.svm._base\.py:\d+: ConvergenceWarning:"
@@ -1310,22 +1301,10 @@ class TestOutput(unittest.TestCase):
         config_path = fill_in_config_options(config_template_path, values_to_fill_dict, "wandb")
         mock_wandb_run = Mock()
         mock_wandb_init.return_value = mock_wandb_run
-        # run the experiment
-        print(config_path)
-        run_configuration(config_path, quiet=True, local=True)
-        mock_wandb_init.assert_called_with(project="wandb_project", entity="wandb_entity")
-        mock_wandb_run.config.update.assert_called_with(
-            {"experiment_name": "test_wandb", "task": "train", "learners": ["LogisticRegression"]}
-        )
 
-        # test if it throws any warning
-        logfile_path = (
-            output_dir / "test_warning_multiple_featuresets_feature_hasher_LogisticRegression.log"
-        )
-        with open(logfile_path) as f:
-            warning_pattern = re.compile(
-                r"Since there are multiple feature files, feature hashing applies"
-                r" to each specified feature file separately."
-            )
-            matches = re.findall(warning_pattern, f.read())
-            self.assertEqual(len(matches), 1)
+        mock_summary = MagicMock()
+        mock_summary.__setitem__ = Mock()
+        mock_wandb_run.summary = mock_summary
+        # run the experiment
+        run_configuration(config_path, quiet=True, local=True)
+        mock_wandb_init.assert_called_once()

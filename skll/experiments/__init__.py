@@ -545,9 +545,9 @@ def _classify_featureset(args: Dict[str, Any]) -> List[Dict[str, Any]]:
         total_time = end_timestamp - start_timestamp
         learner_result_dict_base["total_time"] = str(total_time)
 
-        if task == "cross_validate" or task == "evaluate":
-            results_json_path = Path(results_path) / f"{job_name}.results.json"
+        results_json_path = Path(results_path) / f"{job_name}.results.json"
 
+        if task == "cross_validate" or task == "evaluate":
             res = _create_learner_result_dicts(
                 task_results, grid_scores, grid_search_cv_results_dicts, learner_result_dict_base
             )
@@ -560,7 +560,6 @@ def _classify_featureset(args: Dict[str, Any]) -> List[Dict[str, Any]]:
                 _print_fancy_output(res, output_file)
 
         elif task == "learning_curve":
-            results_json_path = Path(results_path) / f"{job_name}.results.json"
             result_dict = {}
             result_dict.update(learner_result_dict_base)
             result_dict.update(
@@ -587,7 +586,6 @@ def _classify_featureset(args: Dict[str, Any]) -> List[Dict[str, Any]]:
         # For all other tasks, i.e. train or predict
         else:
             if results_path:
-                results_json_path = Path(results_path) / f"{job_name}.results.json"
                 assert len(grid_scores) == 1
                 assert len(grid_search_cv_results_dicts) == 1
                 grid_search_cv_results_dict: Dict[str, Any] = {
@@ -729,7 +727,6 @@ def run_configuration(
         # created by the configuration parser so we don't need anything
         # except the name `experiment`.
         logger = get_skll_logger("experiment")
-
         # init WandbLogger. If W&B credentials are not specified,
         # logging to wandb will not be performed.
         wandb_logger = WandbLogger(wandb_credentials, str(config_file))
@@ -841,20 +838,23 @@ def run_configuration(
                 for grid_objective in grid_objectives_extra:
                     # The individual job name is built from the experiment name, featureset,
                     # learner and objective. To keep the job name as compact as possible,
-                    # it only includes components that have multiple values in this run.
+                    # some of the components are only included if they have multiple values
+                    # in this run.
                     job_name_components = [experiment_name]
                     if len(featuresets) > 1:
                         job_name_components.append(featureset_name)
-                    if grid_objective is not None and len(grid_objectives_extra) > 1:
+
+                    job_name_components.append(learner_name)
+
+                    if len(grid_objectives_extra) > 1 and grid_objective is not None:
                         job_name_components.append(grid_objective)
-                    if len(learners) > 1:
-                        job_name_components.append(learner_name)
 
                     job_name = "_".join(job_name_components)
 
-                    wandb_logger.log_summary(job_name, "featureset name", featureset_name)
-                    wandb_logger.log_summary(job_name, "learner name", learner_name)
-                    wandb_logger.log_summary(job_name, "grid objective", grid_objective)
+                    logger.info(f"Job name: {job_name}")
+                    wandb_logger.log_to_summary(job_name, "featureset name", featureset_name)
+                    wandb_logger.log_to_summary(job_name, "learner name", learner_name)
+                    wandb_logger.log_to_summary(job_name, "grid objective", grid_objective)
 
                     # change the prediction prefix to include the feature set
                     prediction_prefix = str(Path(prediction_dir) / job_name)
@@ -984,31 +984,30 @@ def run_configuration(
         elif task == "cross_validate" or task == "evaluate":
             if write_summary:
                 # write out the summary results file
-                summary_file_name = f"{experiment_name}_summary.tsv"
-                with open(Path(results_path) / summary_file_name, "w", newline="") as output_file:
+                summary_file_path = Path(results_path) / f"{experiment_name}_summary.tsv"
+                with open(summary_file_path, "w", newline="") as output_file:
                     _write_summary_file(result_json_paths, output_file, ablation=ablation)
+                wandb_logger.log_summary_file(summary_file_path)
 
             for job_result_list in job_results:
                 for result_dict in job_result_list:
                     wandb_logger.log_evaluation_results(result_dict)
+            wandb_logger.log_label_metric_table()
 
         elif task == "learning_curve":
             # write out the summary file
-            output_file_name = f"{experiment_name}_summary.tsv"
-            output_file_path = Path(results_path) / output_file_name
-            with open(output_file_path, "w", newline="") as output_file:
+            summary_file_path = Path(results_path) / f"{experiment_name}_summary.tsv"
+            with open(summary_file_path, "w", newline="") as output_file:
                 _write_learning_curve_file(result_json_paths, output_file)
+            wandb_logger.log_summary_file(summary_file_path)
 
             # generate the actual plot if we have the requirements installed
             plot_paths = generate_learning_curve_plots(
-                experiment_name, results_path, output_file_path
+                experiment_name, results_path, summary_file_path
             )
-
             for plot_path in plot_paths:
                 wandb_logger.log_plot(plot_path)
 
-            for job_result_list in job_results:
-                wandb_logger.log_learning_curve_results(job_result_list[0])
     finally:
         # Close/remove any logger handlers
         close_and_remove_logger_handlers(get_skll_logger("experiment"))

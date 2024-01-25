@@ -13,6 +13,7 @@ import re
 import unittest
 import warnings
 from itertools import chain, product
+from typing import List
 
 import numpy as np
 from numpy.testing import assert_allclose, assert_array_equal
@@ -444,12 +445,11 @@ class TestRegression(unittest.TestCase):
         # read in the results file and get the descriptive statistics
         actual_stats_from_file = {}
         pred_stats_from_file = {}
-        with open(
-            output_dir / "regression_fancy_output_train_fancy_train.jsonlines_test_"
-            "fancy_test.jsonlines_LinearRegression.results"
-        ) as resultf:
+        with open(output_dir / "regression_fancy_output_LinearRegression.results") as resultf:
             result_output = resultf.read().strip().split("\n")
-            for desc_stat_line in result_output[26:30]:
+            desc_stat_index = self.find_desc_stat_line(result_output)
+            # check for actual vs predicted scores in the four lines of descriptive statistics
+            for desc_stat_line in result_output[desc_stat_index : desc_stat_index + 4]:
                 desc_stat_line = desc_stat_line.strip()
                 if not desc_stat_line:
                     continue
@@ -471,6 +471,13 @@ class TestRegression(unittest.TestCase):
             self.assertAlmostEqual(
                 pred_stats_from_file[stat_type], pred_stats_from_api[stat_type], places=4
             )
+
+    def find_desc_stat_line(self, results_lines: List[str]) -> int:
+        """Find the index of first line of the descriptive statistics in the results file."""
+        for i, line in enumerate(results_lines):
+            if "Descriptive statistics" in line:
+                return i + 1
+        return -1
 
     def check_adaboost_regression(self, base_estimator):
         train_fs, test_fs, _ = make_regression_data(num_examples=2000, sd_noise=4, num_features=3)

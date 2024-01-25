@@ -41,6 +41,11 @@ class TestVotingLearnersAPITwo(unittest.TestCase):
         for dir_path in [other_dir, output_dir]:
             dir_path.mkdir(exist_ok=True)
 
+    @classmethod
+    def tearDown(cls):
+        for output_file_path in output_dir.glob("test_check_override_voting_learner_*"):
+            output_file_path.unlink()
+
     def check_evaluate(self, learner_type, with_grid_search, with_soft_voting):
         """Run checks when evaluating voting learners."""
         # to test the evaluate() method, we instantiate the SKLL voting learner,

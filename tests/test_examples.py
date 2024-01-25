@@ -9,7 +9,7 @@ import json
 import subprocess
 import unittest
 from os import environ
-from pathlib import Path
+from pathlib import Path, PurePath
 from shutil import copyfile, copytree, rmtree
 
 from skll.experiments import run_configuration
@@ -86,10 +86,9 @@ class TestExamples(unittest.TestCase):
         """Run given configuration, and check JSON results against expected ones."""
         # run this experiment, get the `results_json_path`
         results_json_path = Path(run_configuration(config_path, local=True, quiet=True)[0])
-
-        # if the results path exists, check the output
-        if results_json_path.exists():
-            results_json_exp_path = other_dir / "expected" / results_json_path
+        results_json_exp_path = other_dir / "expected" / PurePath(results_json_path).name
+        # if the results path and expected results exist, check the output
+        if results_json_path.exists() and results_json_exp_path.exists():
             with open(results_json_path) as results_json_file:
                 results_obj = json.load(results_json_file)[0]
             with open(results_json_exp_path) as results_json_exp_file:

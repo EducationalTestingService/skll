@@ -129,9 +129,7 @@ class TestPreprocessing(unittest.TestCase):
 
         run_configuration(config_path, quiet=True, local=True)
 
-        with open(
-            output_dir / "test_class_map_test_class_map_LogisticRegression.results" ".json"
-        ) as f:
+        with open(output_dir / "test_class_map_LogisticRegression.results" ".json") as f:
             outd = json.loads(f.read())
             logistic_result_score = outd[0]["accuracy"]
 
@@ -146,9 +144,7 @@ class TestPreprocessing(unittest.TestCase):
 
         run_configuration(config_path, quiet=True, local=True)
 
-        with open(
-            output_dir / "test_class_map_test_class_map_LogisticRegression.results." "json"
-        ) as f:
+        with open(output_dir / "test_class_map_LogisticRegression.results." "json") as f:
             outd = json.loads(f.read())
             logistic_result_score = outd[0]["accuracy"]
 

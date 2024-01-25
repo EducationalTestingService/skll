@@ -285,9 +285,7 @@ class TestCrossValidation(unittest.TestCase):
             self.assertEqual(len(matches), 1)
 
         # Check job log output
-        with open(
-            output_dir / "test_folds_file_logging_train_f0." "jsonlines_LogisticRegression.log"
-        ) as f:
+        with open(output_dir / "test_folds_file_logging_LogisticRegression.log") as f:
             cv_folds_pattern = re.compile(
                 r"(Task: cross_validate\n)(.+)(Cross-validating \([0-9]+ folds, seed=[0-9]+\))"
             )
@@ -305,9 +303,7 @@ class TestCrossValidation(unittest.TestCase):
         run_configuration(config_path, quiet=True, local=True)
 
         # Check job log output
-        with open(
-            output_dir / "test_folds_file_logging_train_f5." "jsonlines_LogisticRegression.log"
-        ) as f:
+        with open(output_dir / "test_folds_file_logging_LogisticRegression.log") as f:
             cv_file_pattern = re.compile(
                 r"Feature set contains IDs that are not in folds dictionary. "
                 r"Skipping those IDs."
@@ -351,9 +347,7 @@ class TestCrossValidation(unittest.TestCase):
         run_configuration(config_path, quiet=True, local=True)
 
         # Check final average results
-        with open(
-            output_dir / "test_save_cv_folds_train_f0.jsonlines_LogisticRegression.results.json"
-        ) as f:
+        with open(output_dir / "test_save_cv_folds_LogisticRegression.results.json") as f:
             result_dict = json.load(f)[10]
 
         assert_almost_equal(result_dict["accuracy"], 0.517)
@@ -386,7 +380,7 @@ class TestCrossValidation(unittest.TestCase):
         config_path = fill_in_config_paths_for_single_file(template_path, train_path, None)
         run_configuration(config_path, quiet=True, local=True)
 
-        cv_model_prefix = "test_save_cv_models_fold"
+        cv_model_prefix = "test_save_cv_models_LogisticRegression_fold"
         for i in range(1, 11):
             model_path = output_dir / f"{cv_model_prefix}{i}.model"
             assert model_path.exists()

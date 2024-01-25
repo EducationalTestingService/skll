@@ -101,9 +101,7 @@ class TestCustomLearner(unittest.TestCase):
 
         outprefix = "test_majority_class_custom_learner"
 
-        prediction_path = (
-            output_dir / f"{outprefix}_{outprefix}_MajorityClassLearner_predictions.tsv"
-        )
+        prediction_path = output_dir / f"{outprefix}_MajorityClassLearner_predictions.tsv"
         preds = self.read_predictions(prediction_path)
 
         expected = np.array([float(num_labels - 1) for _ in preds])
@@ -140,13 +138,11 @@ class TestCustomLearner(unittest.TestCase):
 
         outprefix = "test_logistic_custom_learner"
         computed_predictions_path = (
-            output_dir / f"{outprefix}_{outprefix}_CustomLogisticRegressionWrapper_predictions.tsv"
+            output_dir / f"{outprefix}_CustomLogisticRegressionWrapper_predictions.tsv"
         )
         computed_preds = self.read_predictions(computed_predictions_path)
 
-        expected_predictions_path = (
-            output_dir / f"{outprefix}_{outprefix}_LogisticRegression_predictions.tsv"
-        )
+        expected_predictions_path = output_dir / f"{outprefix}_LogisticRegression_predictions.tsv"
         expected_preds = self.read_predictions(expected_predictions_path)
 
         assert_array_equal(computed_preds, expected_preds)
@@ -184,9 +180,7 @@ class TestCustomLearner(unittest.TestCase):
         # save the predictions from disk into memory
         # and delete the predictions file
         outprefix = "test_model_custom_learner"
-        pred_file = (
-            output_dir / f"{outprefix}_{outprefix}_CustomLogisticRegressionWrapper_predictions.tsv"
-        )
+        pred_file = output_dir / f"{outprefix}_CustomLogisticRegressionWrapper_predictions.tsv"
         preds1 = self.read_predictions(pred_file)
         unlink(pred_file)
 

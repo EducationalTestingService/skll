@@ -5,13 +5,13 @@ Utility classes and functions for logging to Weights & Biases.
 """
 
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Union
 
-import numpy as np
 import pandas as pd
-import wandb
 
+import wandb
 from skll.config import _setup_config_parser
+from skll.types import PathOrStr
 
 
 class WandbLogger:
@@ -29,34 +29,14 @@ class WandbLogger:
         config_file_path : str
             The path to this experiment's config file
         """
-        self.wandb_run = None
+        self.wandb_run: Optional[Union[wandb.sdk.wandb_run.Run, wandb.sdk.lib.RunDisabled]] = None
         if wandb_credentials:
             self.wandb_run = wandb.init(
                 project=wandb_credentials["wandb_project"],
                 entity=wandb_credentials["wandb_entity"],
-                config=self.get_config_dict(config_file_path),
+                config=get_config_dict(config_file_path),
             )
-
-    def get_config_dict(self, config_file_path: str) -> Dict[str, Any]:
-        """
-        Load a configuration file into a dictionary, to be logged to W&B as a run config.
-
-        Parameters
-        ----------
-        config_file_path : str
-            Path to the config file
-
-        Returns
-        -------
-        Dictionary containing all SKLL configuration fields.
-
-        This also includes default values when for fields that are missing in the file.
-        """
-        config_parser = _setup_config_parser(config_file_path, validate=False)
-        return {
-            section: {key: val for [key, val] in config_parser.items(section)}
-            for section in config_parser.sections()
-        }
+        self.label_metrics_table: Optional[wandb.Table] = None
 
     def log_plot(self, plot_file_path: str) -> None:
         """
@@ -70,6 +50,22 @@ class WandbLogger:
         plot_name = Path(plot_file_path).stem
         if self.wandb_run:
             self.wandb_run.log({plot_name: wandb.Image(plot_file_path)})
+
+    def log_summary_file(self, summary_file_path: PathOrStr) -> None:
+        """
+        Log a task summary file to W&B if logging to W&B is enabled.
+
+        The summary is logged as a table to the wandb run.
+
+        Parameters
+        ----------
+        summary_file_path : PathOrStr
+            The path to the summary tsv file
+        """
+        if self.wandb_run:
+            summary_df = pd.read_csv(summary_file_path, sep="\t")
+            summary_table = wandb.Table(dataframe=summary_df, allow_mixed_types=True)
+            self.wandb_run.log({"Summary": summary_table})
 
     def log_evaluation_results(self, task_results: Dict[str, Any]) -> None:
         """
@@ -91,75 +87,42 @@ class WandbLogger:
             a single fold of a "cross_validate" task.
         """
         if self.wandb_run:
-            metric_dict = {}
             task_prefix = task_results["job_name"]
             # if this is a fold's result, add fold name to the prefix.
             if fold_num := task_results.get("fold"):
                 task_prefix = f"{task_prefix}_fold_{fold_num}"
-            # log basic info and scores
-            for metric in [
-                "train_set_size",
-                "test_set_size",
-                "pearson",
-                "model_params",
-                "accuracy",
-            ]:
-                metric_dict[f"{task_prefix}/{metric}"] = task_results.get(metric, "N/A")
 
             # log confusion matrix as a custom chart
             if confusion_matrix := task_results.get("conf_matrix"):
-                chart = self.generate_conf_matrix_chart(
-                    confusion_matrix, sorted(task_results["label_metrics"].keys())
+                self.log_conf_matrix_chart(
+                    task_prefix, confusion_matrix, sorted(task_results["label_metrics"].keys())
                 )
-                metric_dict[f"{task_prefix}/confusion_matrix"] = chart
+
                 # log Precision, recall and f-measure for each label
+                if not self.label_metrics_table:
+                    self.label_metrics_table = wandb.Table(
+                        columns=["Job Name", "Label", "Precision", "Recall", "F-measure"],
+                        allow_mixed_types=True,
+                    )
                 for label, label_metric_dict in task_results["label_metrics"].items():
-                    for name, value in label_metric_dict.items():
-                        metric_dict[f"{task_prefix}/label_{label}_{name}"] = value
+                    self.label_metrics_table.add_data(
+                        task_prefix,
+                        label,
+                        label_metric_dict.get("precision"),
+                        label_metric_dict.get("recall"),
+                        label_metric_dict.get("f-measure"),
+                    )
 
-            # log objective scores for train and test
-            if train_score := task_results.get("grid_score"):
-                metric_dict[f"{task_prefix}/grid_objective_score (train)"] = train_score
-
-            if test_score := task_results.get("score"):
-                metric_dict[f"{task_prefix}/objective_score (test)"] = test_score
-
-            # log additional scores
-            if additional_scores := task_results.get("additional_scores"):
-                for metric, score in additional_scores.items():
-                    score = "" if np.isnan(score) else score
-                    metric_dict[f"{task_prefix}/{metric}"] = score
-
-            self.wandb_run.log(metric_dict)
-
-    def log_learning_curve_results(self, task_results: Dict[str, Any]) -> None:
+    def log_label_metric_table(self) -> None:
         """
-        Log learning curve results to W&B, if logging to W&B is enabled.
+        Log the full label metric table to W&B, if logging to W&B is enabled.
 
-        Log basic task info as well as meand and std. devs. of learning curve results.
-
-        Parameters
-        ----------
-        task_results : Dict[str, Any]
-            The learning curve task results.
+        This table is being filled when evaluation results are logged for
+        classification learners. This method should be called after all task
+        results of a `evaluate` or `cross validate` class have been logged.
         """
-        if self.wandb_run:
-            metric_dict = {}
-            for metric in [
-                "train_set_size",
-                "test_set_size",
-                "given_curve_train_sizes",
-                "learning_curve_train_scores_means",
-                "learning_curve_test_scores_means",
-                "learning_curve_fit_times_means",
-                "learning_curve_train_scores_stds",
-                "learning_curve_test_scores_stds",
-                "learning_curve_fit_times_stds",
-                "computed_curve_train_sizes",
-            ]:
-                metric_dict[metric] = task_results.get(metric, "N/A")
-
-        self.wandb_run.log(metric_dict)
+        if self.wandb_run and self.label_metrics_table:
+            self.wandb_run.log({"classification metrics": self.label_metrics_table})
 
     def log_train_results(self, task_results: Dict[str, Any]) -> None:
         """
@@ -175,7 +138,7 @@ class WandbLogger:
         if self.wandb_run:
             task_prefix = task_results["job_name"]
             for metric in ["train_set_size", "test_set_size", "model_file"]:
-                self.log_summary(task_prefix, metric, task_results.get(metric, "N/A"))
+                self.log_to_summary(task_prefix, metric, task_results.get(metric, "N/A"))
 
     def log_predict_results(self, task_results: Dict[str, Any]) -> None:
         """
@@ -190,42 +153,39 @@ class WandbLogger:
         """
         if self.wandb_run:
             task_prefix = task_results["job_name"]
-            metric_dict = {}
             for metric in ["train_set_size", "test_set_size"]:
-                metric_dict[f"{task_prefix}/{metric}"] = task_results.get(metric, "N/A")
-            self.wandb_run.log(metric_dict)
+                self.log_to_summary(task_prefix, metric, task_results.get(metric, "N/A"))
             predictions_df = pd.read_csv(task_results["predictions_file"], sep="\t")
             predictions_table = wandb.Table(dataframe=predictions_df, allow_mixed_types=True)
             self.wandb_run.log({f"{task_prefix}/predictions": predictions_table})
 
-    def generate_conf_matrix_chart(self, confusion_matrix, labels) -> wandb.visualize:
+    def log_conf_matrix_chart(self, task_prefix, confusion_matrix, labels) -> None:
         """
-        Generate a wandb chart object from confusion matrix data.
+        Log a confusion matrix to wandb if logging to wandb is enabled.
 
-        Assumes the input task results contains a confusion matrix.
+        A chart object is created from the confusion matrix data and logged
+        to the wandb run.
+
 
         Parameters
         ----------
+        task_prefix: str
+            The task's name, to be used in the matrix name.
         confusion_matrix : List[List[int]]
             the confusion matrix values
         labels : List[str]
             label names
-
-        Returns
-        -------
-        wandb.visualize
-            a `wandb.visualize` object representing the confusion matrix chart
-
         """
-        conf_matrix_data = []
-        for i, row in enumerate(confusion_matrix):
-            for j, val in enumerate(row):
-                conf_matrix_data.append([labels[i], labels[j], val])
-        table = wandb.Table(columns=["Predicted", "Actual", "Count"], data=conf_matrix_data)
-        chart = wandb.visualize("wandb/confusion_matrix/v1", table)
-        return chart
+        if self.wandb_run:
+            conf_matrix_data = []
+            for i, row in enumerate(confusion_matrix):
+                for j, val in enumerate(row):
+                    conf_matrix_data.append([labels[i], labels[j], val])
+            table = wandb.Table(columns=["Predicted", "Actual", "Count"], data=conf_matrix_data)
+            chart = wandb.visualize("wandb/confusion_matrix/v1", table)
+            self.wandb_run.log({f"{task_prefix}/confusion_matrix": chart})
 
-    def log_summary(self, task_prefix, metric_name, metric_value) -> None:
+    def log_to_summary(self, task_prefix, metric_name, metric_value) -> None:
         """
         Add a metric to the W&B run summary if logging to W&B is enabled.
 
@@ -240,3 +200,25 @@ class WandbLogger:
         """
         if self.wandb_run:
             self.wandb_run.summary[f"{task_prefix}/{metric_name}"] = metric_value
+
+
+def get_config_dict(config_file_path: str) -> Dict[str, Any]:
+    """
+    Load a configuration file into a dictionary, to be logged to W&B as a run config.
+
+    Parameters
+    ----------
+    config_file_path : str
+        Path to the config file
+
+    Returns
+    -------
+    Dictionary containing all SKLL configuration fields.
+
+    This also includes default values when for fields that are missing in the file.
+    """
+    config_parser = _setup_config_parser(config_file_path, validate=False)
+    return {
+        section: {key: val for [key, val] in config_parser.items(section)}
+        for section in config_parser.sections()
+    }
