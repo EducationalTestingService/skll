@@ -69,7 +69,13 @@ class TestOutput(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         """Clean up after tests."""
-        for suffix in ["learning_curve", "summary", "fancy_xval", "warning_multiple_featuresets"]:
+        for suffix in [
+            "learning_curve",
+            "summary",
+            "fancy_xval",
+            "warning_multiple_featuresets",
+            "wandb",
+        ]:
             for dir_path in [train_dir, test_dir]:
                 unlink(dir_path / f"test_{suffix}.jsonlines")
 
@@ -1275,11 +1281,11 @@ class TestOutput(unittest.TestCase):
             learner.get_feature_names_out()
 
     @patch("wandb.init")
-    def test_wandb_logging_enabled(self, mock_wandb_init):
-        """Test that metrics are logged to wandb when enabled."""
+    def test_wandb_logging_enabled_train(self, mock_wandb_init):
+        """Test that metrics are logged to wandb when enabled in train task."""
         # make a simple config file with wandb credentials
         values_to_fill_dict = {
-            "experiment_name": "test_wandb",
+            "experiment_name": "test_wandb_train",
             "train_directory": train_dir,
             "task": "train",
             "grid_search": "false",
@@ -1308,3 +1314,123 @@ class TestOutput(unittest.TestCase):
         # run the experiment
         run_configuration(config_path, quiet=True, local=True)
         mock_wandb_init.assert_called_once()
+        mock_summary.__setitem__.assert_called()
+
+    @patch("wandb.init")
+    def test_wandb_logging_enabled_predict(self, mock_wandb_init):
+        """Test that metrics are logged to wandb when enabled in predict task."""
+        # make a simple config file with wandb credentials
+        values_to_fill_dict = {
+            "experiment_name": "test_wandb_predict",
+            "train_file": str(train_dir / "f0.jsonlines"),
+            "test_file": str(train_dir / "f0.jsonlines"),
+            "task": "predict",
+            "grid_search": "false",
+            "objectives": "['f1_score_micro']",
+            "learners": "['LogisticRegression']",
+            "featureset_names": "['f0']",
+            "suffix": ".jsonlines",
+            "logs": output_dir,
+            "models": output_dir,
+            "feature_hasher": "true",
+            "hasher_features": "4",
+            "wandb_credentials": '{"wandb_entity": "wandb_entity",'
+            ' "wandb_project": "wandb_project"}',
+        }
+
+        config_template_path = config_dir / "test_wandb.template.cfg"
+
+        config_path = fill_in_config_options(config_template_path, values_to_fill_dict, "wandb")
+        mock_wandb_run = Mock()
+        mock_wandb_init.return_value = mock_wandb_run
+
+        mock_summary = MagicMock()
+        mock_summary.__setitem__ = Mock()
+        mock_wandb_run.summary = mock_summary
+        # run the experiment
+        run_configuration(config_path, quiet=True, local=True)
+        mock_wandb_init.assert_called_once()
+        mock_summary.__setitem__.assert_called()
+        mock_wandb_run.log.assert_called()
+
+    @patch("wandb.init")
+    def test_wandb_logging_enabled_cross_valideate(self, mock_wandb_init):
+        """Test that metrics are logged to wandb when enabled in cross validate task."""
+        # make a simple config file with wandb credentials
+        train_path = train_dir / "f0.jsonlines"
+
+        values_to_fill_dict = {
+            "experiment_name": "test_wandb_cv",
+            "train_file": str(train_path),
+            "task": "cross_validate",
+            "grid_search": "true",
+            "objectives": "['f1_score_micro']",
+            "learners": "['LogisticRegression']",
+            "featureset_names": '["f0"]',
+            "num_cv_folds": "6",
+            "grid_search_folds": "4",
+            "suffix": ".jsonlines",
+            "logs": output_dir,
+            "models": output_dir,
+            "feature_hasher": "true",
+            "hasher_features": "4",
+            "predictions": str(output_dir),
+            "results": str(output_dir),
+            "wandb_credentials": '{"wandb_entity": "wandb_entity",'
+            ' "wandb_project": "wandb_project"}',
+        }
+
+        config_template_path = config_dir / "test_wandb.template.cfg"
+
+        config_path = fill_in_config_options(config_template_path, values_to_fill_dict, "wandb")
+        mock_wandb_run = Mock()
+        mock_wandb_init.return_value = mock_wandb_run
+
+        mock_summary = MagicMock()
+        mock_summary.__setitem__ = Mock()
+        mock_wandb_run.summary = mock_summary
+        # run the experiment
+        run_configuration(config_path, quiet=True, local=True)
+        mock_wandb_init.assert_called_once()
+        mock_summary.__setitem__.assert_called()
+        mock_wandb_run.log.assert_called()
+
+    @patch("wandb.init")
+    def test_wandb_logging_enabled_learning_curve(self, mock_wandb_init):
+        """Test that metrics are logged to wandb when enabled."""
+        # make a simple config file with wandb credentials
+        train_path = train_dir / "f0.jsonlines"
+
+        values_to_fill_dict = {
+            "experiment_name": "test_wandb_learning_curve",
+            "train_file": str(train_path),
+            "task": "learning_curve",
+            "grid_search": "true",
+            "learners": "['LogisticRegression']",
+            "featureset_names": '["f0"]',
+            "num_cv_folds": "6",
+            "grid_search_folds": "4",
+            "suffix": ".jsonlines",
+            "logs": output_dir,
+            "feature_hasher": "true",
+            "hasher_features": "4",
+            "results": str(output_dir),
+            "metrics": "['accuracy']",
+            "wandb_credentials": '{"wandb_entity": "wandb_entity",'
+            ' "wandb_project": "wandb_project"}',
+        }
+
+        config_template_path = config_dir / "test_wandb.template.cfg"
+
+        config_path = fill_in_config_options(config_template_path, values_to_fill_dict, "wandb")
+        mock_wandb_run = Mock()
+        mock_wandb_init.return_value = mock_wandb_run
+
+        mock_summary = MagicMock()
+        mock_summary.__setitem__ = Mock()
+        mock_wandb_run.summary = mock_summary
+        # run the experiment
+        run_configuration(config_path, quiet=True, local=True)
+        mock_wandb_init.assert_called_once()
+        mock_summary.__setitem__.assert_called()
+        mock_wandb_run.log.assert_called()
