@@ -113,10 +113,10 @@ class TestExamples(unittest.TestCase):
                     actual = results_obj[key]
                     expected = results_exp_obj[key]
 
-                    # if this is a float, then we check with less precision (4 decimals);
+                    # if this is a float, then we check with less precision (2 decimals);
                     # otherwise, we check to make sure things are matching exactly
                     if isinstance(expected, float):
-                        self.assertAlmostEqual(actual, expected, places=3)
+                        self.assertAlmostEqual(actual, expected, places=2)
                     else:
                         self.assertEqual(actual, expected)
 

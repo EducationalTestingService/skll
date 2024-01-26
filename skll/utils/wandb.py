@@ -119,9 +119,9 @@ class WandbLogger:
         """
         Log the full label metric table to W&B, if logging to W&B is enabled.
 
-        This table is being filled when evaluation results are logged for
+        This table is populated when evaluation results are logged for
         classification learners. This method should be called after all task
-        results of a `evaluate` or `cross validate` class have been logged.
+        results of a `evaluate` or `cross_validate` task have been logged.
         """
         if self.wandb_run and self.label_metrics_table:
             self.wandb_run.log({"classification metrics": self.label_metrics_table})
@@ -135,7 +135,7 @@ class WandbLogger:
         Parameters
         ----------
         task_results : Dict[str, Any]
-            The learning curve task results.
+            The train task results.
         """
         if self.wandb_run:
             task_prefix = task_results["job_name"]
@@ -151,7 +151,7 @@ class WandbLogger:
         Parameters
         ----------
         task_results : Dict[str, Any]
-            The learning curve task results.
+            The predict task results.
         """
         if self.wandb_run:
             task_prefix = task_results["job_name"]
@@ -168,7 +168,6 @@ class WandbLogger:
         A chart object is created from the confusion matrix data and logged
         to the wandb run.
 
-
         Parameters
         ----------
         task_prefix: str
@@ -180,9 +179,9 @@ class WandbLogger:
         """
         if self.wandb_run:
             conf_matrix_data = []
-            for i, row in enumerate(confusion_matrix):
-                for j, val in enumerate(row):
-                    conf_matrix_data.append([labels[i], labels[j], val])
+            for row_idx, row in enumerate(confusion_matrix):
+                for col_idx, cell_value in enumerate(row):
+                    conf_matrix_data.append([labels[row_idx], labels[col_idx], cell_value])
             table = wandb.Table(columns=["Predicted", "Actual", "Count"], data=conf_matrix_data)
             chart = wandb.visualize("wandb/confusion_matrix/v1", table)
             self.wandb_run.log({f"{task_prefix}/confusion_matrix": chart})

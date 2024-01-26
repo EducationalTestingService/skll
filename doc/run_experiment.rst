@@ -1697,7 +1697,7 @@ Additionally, the following output will be logged for each task:
   *   **predict**: The predictions file is logged as a table for each job separately.
   *   **evaluate**: The task summary file is logged as a table. For classification jobs,
       a confusion matrix wil be logged for each job, as well as a table that shows per-label
-      precision, recall and f-measure in each job.
+      precision, recall and f-measure for each job.
   *   **cross_validate**: The output is similar to the `evaluate` task, with a separate job
       per CV fold.
   *   **learning_curve** The summary file is logged as a table, and all learning curve plots
