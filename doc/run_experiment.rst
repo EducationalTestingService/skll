@@ -1684,26 +1684,24 @@ file using the :ref:`plot_learning_curves <plot_learning_curves>` utility script
 
 .. _output_wandb:
 
-Weights and Biases
-^^^^^^^^^^^^^^^^^^
-If logging to Weights and Biases is :ref:`enabled<wandb_credentials>`, a new
-run will be created under the specified wandb project. The full run congiguration
-will be logged, including default values for fields that were not specified by the
-user. General information, like learner, feature set and size of training and testing
-sets will be logged separately for each job in the run.
-Additionally, the following output will be logged for each task:
+Integration with Weights & Biases
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+The output of any SKLL experiment can be automatically logged to `Weights & Biases <https://wandb.ai>`. 
+Once the logging is :ref:`enabled<wandb_credentials>`, a new
+run will be created under the specified W&B project. The following is logged
+for _all_ tasks: 
+- The SKLL configuration file, including default values for fields that were left unspecified
+- The learner, feature set, and size of training and testing sets for each job in the experiment
 
+There are additional items logged depending on the task type: 
   *   **train**: The full path to the generated model file is logged in the project summary.
-  *   **predict**: The predictions file is logged as a table for each job separately.
-  *   **evaluate**: The task summary file is logged as a table. For classification jobs,
-      a confusion matrix wil be logged for each job, as well as a table that shows per-label
-      precision, recall and f-measure for each job.
-  *   **cross_validate**: The output is similar to the `evaluate` task, with a separate job
-      per CV fold.
+  *   **predict**: The predictions file is logged as a table, separately for each job in the experiment.
+  *   **evaluate**: The task summary file is logged as a table. For classification experiments, 
+      the confusion matrix as well as a table that shows per-label precision, recall and f-measure
+      are logged for each job.
+  *   **cross_validate**: Similar output logged as the `evaluate` task, with a separate job per CV fold.
   *   **learning_curve** The summary file is logged as a table, and all learning curve plots
-      are logged in the task Media section.
-
-
+      are logged as media artifacts.
 .. rubric:: Footnotes
 
 .. [#] We are considering adding support for YAML configuration files in the
