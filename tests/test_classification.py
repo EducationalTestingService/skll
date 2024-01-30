@@ -92,6 +92,7 @@ class TestClassification(unittest.TestCase):
             output_dir.glob("clf_metrics_objective_overlap*"),
             output_dir.glob("test_multinomialnb_loading*"),
             output_dir.glob("test_predict_return_and_write_predictions*"),
+            output_dir.glob("test_fancy_*"),
         ):
             unlink(path)
 
@@ -227,8 +228,7 @@ class TestClassification(unittest.TestCase):
                 )
                 _ = run_configuration(config_path, local=True, quiet=True)
                 clf = Learner.from_file(
-                    output_dir / "pos_label_via_config_train_pos_label_train."
-                    "jsonlines_LogisticRegression.model"
+                    output_dir / "pos_label_via_config_LogisticRegression.model"
                 )
 
             reverse_label_dict = {y: x for x, y in clf.label_dict.items()}
@@ -337,10 +337,7 @@ class TestClassification(unittest.TestCase):
             )
 
             _ = run_configuration(config_path, local=True, quiet=True)
-            model_file_path = (
-                output_dir / "pos_label_predict_train_pos_label_train.jsonlines"
-                "_LogisticRegression.model"
-            )
+            model_file_path = output_dir / "pos_label_predict_LogisticRegression.model"
             clf_skll = Learner.from_file(str(model_file_path))
 
         skll_predictions = clf_skll.predict(test_fs, class_labels=False)
@@ -692,28 +689,24 @@ class TestClassification(unittest.TestCase):
 
         # Check results for objective functions ["accuracy", "f1", "f05"]
         expt_prefix = "train_test_single_file"
-        train_prefix = "train_train_single_file.jsonlines"
-        test_prefix = "test_test_single_file.jsonlines"
         clf = "RandomForestClassifier"
 
         # objective function accuracy
-        accuracy_filename = (
-            f"{expt_prefix}_{train_prefix}_{test_prefix}_{clf}_accuracy.results.json"
-        )
+        accuracy_filename = f"{expt_prefix}_{clf}_accuracy.results.json"
         accuracy_result_path = output_dir / accuracy_filename
         with open(accuracy_result_path) as f:
             result_dict = json.load(f)[0]
         self.assertAlmostEqual(result_dict["score"], 0.95)
 
         # objective function f1
-        f1_filename = f"{expt_prefix}_{train_prefix}_{test_prefix}_{clf}_f1.results.json"
+        f1_filename = f"{expt_prefix}_{clf}_f1.results.json"
         f1_result_path = output_dir / f1_filename
         with open(f1_result_path) as f:
             result_dict = json.load(f)[0]
         self.assertAlmostEqual(result_dict["score"], 0.9491525423728813)
 
         # objective function f05
-        f05_filename = f"{expt_prefix}_{train_prefix}_{test_prefix}_{clf}_f05.results.json"
+        f05_filename = f"{expt_prefix}_{clf}_f05.results.json"
         f05_result_path = output_dir / f05_filename
         with open(f05_result_path) as f:
             result_dict = json.load(f)[0]
@@ -731,10 +724,8 @@ class TestClassification(unittest.TestCase):
         learner.train(train_fs, grid_search=True, grid_objective="accuracy")
 
         expt_prefix = "train_test_single_file"
-        train_prefix = "train_train_single_file.jsonlines"
-        test_prefix = "test_test_single_file_subset.jsonlines"
         clf = "RandomForestClassifier"
-        model_filename = output_dir / f"{expt_prefix}_{train_prefix}_{test_prefix}_{clf}.model"
+        model_filename = output_dir / f"{expt_prefix}_{clf}.model"
         learner.save(model_filename)
 
         # Run experiment
@@ -746,7 +737,7 @@ class TestClassification(unittest.TestCase):
         run_configuration(config_path, quiet=True, overwrite=False, local=True)
 
         # Check results
-        result_file = f"{expt_prefix}_{train_prefix}_{test_prefix}_{clf}.results.json"
+        result_file = f"{expt_prefix}_{clf}.results.json"
         with open(output_dir / result_file) as f:
             result_dict = json.load(f)[0]
         self.assertAlmostEqual(result_dict["accuracy"], 0.7333333)
@@ -1531,9 +1522,7 @@ class TestClassification(unittest.TestCase):
         results_json_path = run_configuration(config_path, local=True, quiet=True)[0]
         with open(results_json_path) as results_json_file:
             results_obj = json.load(results_json_file)[0]
-        model_file_path = (
-            output_dir / f'{experiment_name}_metric_{results_obj["learner_name"]}.model'
-        )
+        model_file_path = output_dir / f'{experiment_name}_{results_obj["learner_name"]}.model'
         clf = Learner.from_file(model_file_path)
 
         # get the value of the metric from SKLL

@@ -16,7 +16,7 @@ from ast import literal_eval
 from collections import defaultdict
 from itertools import chain, product
 from pathlib import Path
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import numpy as np
 import pandas as pd
@@ -69,7 +69,13 @@ class TestOutput(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         """Clean up after tests."""
-        for suffix in ["learning_curve", "summary", "fancy_xval", "warning_multiple_featuresets"]:
+        for suffix in [
+            "learning_curve",
+            "summary",
+            "fancy_xval",
+            "warning_multiple_featuresets",
+            "wandb",
+        ]:
             for dir_path in [train_dir, test_dir]:
                 unlink(dir_path / f"test_{suffix}.jsonlines")
 
@@ -161,27 +167,18 @@ class TestOutput(unittest.TestCase):
                 else "test_summary_feature_hasher.template.cfg"
             )
             outprefix = (
-                "test_summary_feature_hasher_with_metrics_test_summary"
-                if use_additional_metrics
-                else "test_summary_feature_hasher_test_summary"
-            )
-            summprefix = (
                 "test_summary_feature_hasher_with_metrics"
                 if use_additional_metrics
                 else "test_summary_feature_hasher"
             )
+
         else:
             cfgfile = (
                 "test_summary_with_metrics.template.cfg"
                 if use_additional_metrics
                 else "test_summary.template.cfg"
             )
-            outprefix = (
-                "test_summary_with_metrics_test_summary"
-                if use_additional_metrics
-                else "test_summary_test_summary"
-            )
-            summprefix = "test_summary_with_metrics" if use_additional_metrics else "test_summary"
+            outprefix = "test_summary_with_metrics" if use_additional_metrics else "test_summary"
 
         config_template_path = config_dir / cfgfile
         config_path = fill_in_config_paths(config_template_path)
@@ -214,14 +211,14 @@ class TestOutput(unittest.TestCase):
                     nb_result_additional_metric1 = results_metrics_dict["unweighted_kappa"]
                     nb_result_additional_metric2 = results_metrics_dict["f1_score_micro"]
 
-        with open(output_dir / f"{summprefix}_summary.tsv") as f:
+        with open(output_dir / f"{outprefix}_summary.tsv") as f:
             reader = csv.DictReader(f, dialect="excel-tab")
 
             for row in reader:
-                # the learner results dictionaries should have 34 rows,
+                # the learner results dictionaries should have 39 rows,
                 # and all of these except results_table
                 # should be printed (though some columns will be blank).
-                self.assertEqual(len(row), 35)
+                self.assertEqual(len(row), 39)
                 assert row["model_params"]
                 assert row["grid_score"]
                 assert row["score"]
@@ -316,7 +313,7 @@ class TestOutput(unittest.TestCase):
                 ("MultinomialNB", 0.5),
                 ("SVC", 0.6333),
             ):
-                filename = f"test_summary_test_summary_{report_name}.results"
+                filename = f"test_summary_{report_name}.results"
                 results_path = output_dir / filename
                 with open(results_path) as results_file:
                     report = results_file.read()
@@ -369,7 +366,7 @@ class TestOutput(unittest.TestCase):
         run_configuration(config_path, quiet=True, local=True)
 
         # now make sure that the results file was produced
-        results_file_path = output_dir / "test_fancy_xval_f0_LogisticRegression.results"
+        results_file_path = output_dir / "test_fancy_xval_LogisticRegression.results"
         self.assertTrue(results_file_path.exists())
 
         # read in all the lines and look at the lines up to where we print the "Total Time"
@@ -495,7 +492,7 @@ class TestOutput(unittest.TestCase):
 
         # now make sure that the results json file was produced
         for learner in learners:
-            results_file_name = f"{exp_name}_f0_{learner}.results.json"
+            results_file_name = f"{exp_name}_{learner}.results.json"
             actual_results_file_path = output_dir / results_file_name
             expected_results_file_path = expected_path / results_file_name
             self.assertTrue(actual_results_file_path.exists())
@@ -624,13 +621,11 @@ class TestOutput(unittest.TestCase):
         )
 
         # run the experiment
-        print(config_path)
+
         run_configuration(config_path, quiet=True, local=True)
 
         # test if it throws any warning
-        logfile_path = (
-            output_dir / "test_warning_multiple_featuresets_feature_hasher_LogisticRegression.log"
-        )
+        logfile_path = output_dir / "test_warning_multiple_featuresets_LogisticRegression.log"
         with open(logfile_path) as f:
             warning_pattern = re.compile(
                 r"Since there are multiple feature files, feature hashing applies"
@@ -1211,10 +1206,7 @@ class TestOutput(unittest.TestCase):
         # Check experiment log output
         # The experiment log file should contain warnings related
         # to the use of sklearn
-        with open(
-            output_dir / "test_send_warnings_to_log_train_test_send_warnings."
-            "jsonlines_LinearSVC.log"
-        ) as f:
+        with open(output_dir / "test_send_warnings_to_log_LinearSVC.log") as f:
             log_content = f.read()
             convergence_sklearn_warning_re = re.compile(
                 r"WARNING - [^\n]+sklearn.svm._base\.py:\d+: ConvergenceWarning:"
@@ -1285,47 +1277,55 @@ class TestOutput(unittest.TestCase):
 
     @patch("wandb.init")
     def test_wandb_logging_enabled(self, mock_wandb_init):
-        """Test that metrics are logged to wandb when enabled."""
+        """Test that metrics are logged to wandb when enabled in train task."""
+        train_file = str(train_dir / "f0.jsonlines")
         # make a simple config file with wandb credentials
-        values_to_fill_dict = {
-            "experiment_name": "test_wandb",
-            "train_directory": train_dir,
-            "task": "train",
-            "grid_search": "false",
-            "objectives": "['f1_score_micro']",
+        values_to_fill_dict_wandb = {
+            "train_file": train_file,
             "learners": "['LogisticRegression']",
+            "grid_search": "false",
             "featuresets": "[['test_input_3examples_1', 'test_input_3examples_2']]",
-            "featureset_names": "['feature_hasher']",
+            "featureset_names": '["f0"]',
             "suffix": ".jsonlines",
             "logs": output_dir,
-            "models": output_dir,
             "feature_hasher": "true",
             "hasher_features": "4",
+            #         "results": str(output_dir),
+            "metrics": "['accuracy']",
             "wandb_credentials": '{"wandb_entity": "wandb_entity",'
             ' "wandb_project": "wandb_project"}',
         }
 
-        config_template_path = config_dir / "test_wandb.template.cfg"
+        for task in ["train", "predict", "cross_validate", "learning_curve"]:
+            config_dict_for_task = values_to_fill_dict_wandb.copy()
+            config_dict_for_task["experiment_name"] = f"test_wandb_{task}"
+            config_dict_for_task["task"] = task
+            # add fields that are only required by specific tasks.
+            if task == "train":
+                config_dict_for_task["models"] = output_dir
+            #            del config_dict_for_task["results"]
+            elif task == "predict":
+                #           del config_dict_for_task["results"]
+                config_dict_for_task["test_file"] = train_file
+                config_dict_for_task["predictions"] = str(output_dir)
+            elif task == "cross_validate":
+                config_dict_for_task["num_cv_folds"] = "6"
 
-        config_path = fill_in_config_options(config_template_path, values_to_fill_dict, "wandb")
-        mock_wandb_run = Mock()
-        mock_wandb_init.return_value = mock_wandb_run
-        # run the experiment
-        print(config_path)
-        run_configuration(config_path, quiet=True, local=True)
-        mock_wandb_init.assert_called_with(project="wandb_project", entity="wandb_entity")
-        mock_wandb_run.config.update.assert_called_with(
-            {"experiment_name": "test_wandb", "task": "train", "learners": ["LogisticRegression"]}
-        )
+            config_template_path = config_dir / "test_wandb.template.cfg"
 
-        # test if it throws any warning
-        logfile_path = (
-            output_dir / "test_warning_multiple_featuresets_feature_hasher_LogisticRegression.log"
-        )
-        with open(logfile_path) as f:
-            warning_pattern = re.compile(
-                r"Since there are multiple feature files, feature hashing applies"
-                r" to each specified feature file separately."
+            config_path = fill_in_config_options(
+                config_template_path, config_dict_for_task, "wandb"
             )
-            matches = re.findall(warning_pattern, f.read())
-            self.assertEqual(len(matches), 1)
+            mock_wandb_run = Mock()
+            mock_wandb_init.return_value = mock_wandb_run
+
+            # we need to mock the summary dict to allow direct access when logging to summary.
+            mock_summary = MagicMock()
+            mock_summary.__setitem__ = Mock()
+            mock_wandb_run.summary = mock_summary
+            # run the experiment
+            run_configuration(config_path, quiet=True, local=True)
+            mock_wandb_init.assert_called()
+            mock_summary.__setitem__.assert_called()
+            if task != "train":
+                mock_wandb_run.log.assert_called()

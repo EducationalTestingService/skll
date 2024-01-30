@@ -246,10 +246,7 @@ class TestCustomMetrics(unittest.TestCase):
         # Check results for objective functions and output metrics
 
         # objective function f075_macro
-        with open(
-            output_dir / "test_custom_metrics_train_examples_train.jsonlines_test_examples_"
-            "test.jsonlines_LogisticRegression.results.json"
-        ) as f:
+        with open(output_dir / "test_custom_metrics_LogisticRegression.results.json") as f:
             result_dict = json.load(f)[0]
 
         test_objective_value = result_dict["score"]
@@ -310,10 +307,7 @@ class TestCustomMetrics(unittest.TestCase):
         # Check results for objective functions and output metrics
 
         # objective function f075_macro
-        with open(
-            output_dir / "test_custom_metrics_kappa_train_examples_train.jsonlines"
-            "_test_examples_test.jsonlines_LogisticRegression.results.json"
-        ) as f:
+        with open(output_dir / "test_custom_metrics_kappa_LogisticRegression.results.json") as f:
             result_dict = json.load(f)[0]
 
         test_objective_value = result_dict["score"]
@@ -398,10 +392,7 @@ class TestCustomMetrics(unittest.TestCase):
         run_configuration(config_path1, local=True, quiet=True)
 
         # laod the results
-        with open(
-            output_dir / "test_custom_metrics_kwargs1_train_examples_"
-            "train.jsonlines_LogisticRegression.results.json"
-        ) as f:
+        with open(output_dir / "test_custom_metrics_kwargs1_LogisticRegression.results.json") as f:
             result_dict1 = json.load(f)
             grid_score1 = result_dict1["grid_score"]
             grid_results_dict1 = result_dict1["grid_search_cv_results"]
@@ -414,10 +405,7 @@ class TestCustomMetrics(unittest.TestCase):
         run_configuration(config_path2, local=True, quiet=True)
 
         # laod the results
-        with open(
-            output_dir / "test_custom_metrics_kwargs2_train_examples_"
-            "train.jsonlines_LogisticRegression.results.json"
-        ) as f:
+        with open(output_dir / "test_custom_metrics_kwargs2_LogisticRegression.results.json") as f:
             result_dict2 = json.load(f)
             grid_score2 = result_dict2["grid_score"]
             grid_results_dict2 = result_dict2["grid_search_cv_results"]
@@ -497,11 +485,8 @@ class TestCustomMetrics(unittest.TestCase):
         # this should succeed and produce results
         run_configuration(config_path, local=True, quiet=True)
 
-        # laod the results and verify them
-        with open(
-            output_dir / "test_custom_metrics_kwargs4_train_examples_"
-            "train.jsonlines_SVC.results.json"
-        ) as f:
+        # load the results and verify them
+        with open(output_dir / "test_custom_metrics_kwargs4_SVC.results.json") as f:
             result_dict = json.load(f)
             grid_score = result_dict["grid_score"]
 

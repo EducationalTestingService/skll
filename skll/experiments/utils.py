@@ -151,9 +151,11 @@ def _create_learner_result_dicts(
             learner_result_dict["grid_search_cv_results"] = grid_search_cv_results
 
         if conf_matrix:
+            learner_result_dict["conf_matrix"] = conf_matrix
             labels = sorted(task_results[0][2].keys())
             headers = [""] + labels + ["Precision", "Recall", "F-measure"]
             rows = []
+            label_metrics = {}
             for i, actual_label in enumerate(labels):
                 conf_matrix_row = (
                     conf_matrix[i][:i] + [str([conf_matrix[i][i]])] + conf_matrix[i][i + 1 :]
@@ -162,6 +164,11 @@ def _create_learner_result_dicts(
                 label_prec = _get_stat_float(label_prf_dict, "Precision")
                 label_recall = _get_stat_float(label_prf_dict, "Recall")
                 label_f = _get_stat_float(label_prf_dict, "F-measure")
+                label_metrics[actual_label] = {
+                    "precision": label_prec,
+                    "recall": label_recall,
+                    "f-measure": label_f,
+                }
                 if not math.isnan(label_prec):
                     prec_sum_dict[actual_label] += float(label_prec)
                 if not math.isnan(label_recall):
@@ -170,7 +177,7 @@ def _create_learner_result_dicts(
                     f_sum_dict[actual_label] += float(label_f)
                 result_row = [actual_label] + conf_matrix_row + [label_prec, label_recall, label_f]
                 rows.append(result_row)
-
+            learner_result_dict["label_metrics"] = label_metrics
             result_table = tabulate(
                 rows, headers=headers, stralign="right", floatfmt=".3f", tablefmt="grid"
             )
