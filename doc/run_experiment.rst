@@ -1686,22 +1686,28 @@ file using the :ref:`plot_learning_curves <plot_learning_curves>` utility script
 
 Integration with Weights & Biases
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-The output of any SKLL experiment can be automatically logged to `Weights & Biases <https://wandb.ai>`. 
+The output of any SKLL experiment can be automatically logged to `Weights & Biases <https://wandb.ai>`__.
 Once the logging is :ref:`enabled<wandb_credentials>`, a new
 run will be created under the specified W&B project. The following is logged
-for _all_ tasks: 
+for _all_ tasks:
 - The SKLL configuration file, including default values for fields that were left unspecified
 - The learner, feature set, and size of training and testing sets for each job in the experiment
 
-There are additional items logged depending on the task type: 
+There are additional items logged depending on the task type:
   *   **train**: The full path to the generated model file is logged in the project summary.
   *   **predict**: The predictions file is logged as a table, separately for each job in the experiment.
-  *   **evaluate**: The task summary file is logged as a table. For classification experiments, 
+  *   **evaluate**: The task summary file is logged as a table. For classification experiments,
       the confusion matrix as well as a table that shows per-label precision, recall and f-measure
       are logged for each job.
   *   **cross_validate**: Similar output logged as the `evaluate` task, with a separate job per CV fold.
   *   **learning_curve** The summary file is logged as a table, and all learning curve plots
       are logged as media artifacts.
+
+As an example, see `here <https://wandb.ai/etslabs/skll_titanic_example/reports/Titanic-Example-Report--Vmlldzo2ODAzNDY1?accessToken=jd3tssj6hs8rniby0rqgeahsm9oexppjgkjj3gdiisag49a0tkx1wnak806k4xjd>`__
+a report created on Weights & Biases, from the tutorial :ref:`titanic example <titanic_example>`.
+The report contains three sections, one per SKLL task, with a subset of the output tables and metrics that were logged during for the task.
+To view the full output and create your own reports, turn on :ref:`logging to Weights and Biases<wandb_credentials>` in the configuration ``Output`` section.
+
 .. rubric:: Footnotes
 
 .. [#] We are considering adding support for YAML configuration files in the
