@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import csv
 import json
+import logging
 import math
 import sys
 from collections import defaultdict
@@ -26,7 +27,7 @@ import seaborn as sns
 from ruamel.yaml import YAML
 
 from skll.types import FoldMapping, PathOrStr
-from skll.utils.logging import get_skll_logger
+from skll.utils.logging import MatplotlibCategoryFilter, get_skll_logger
 
 # Turn off interactive plotting for matplotlib
 plt.ioff()
@@ -143,12 +144,19 @@ def _generate_learning_curve_score_plots(
                 legend_out=False,
             )
             train_color, test_color = sns.color_palette(palette="Set1", n_colors=2)
+
+            # create a filter to hide unnecessary matplotlib.category warnings
+            filter = MatplotlibCategoryFilter()
+            logging.getLogger("matplotlib.category").addFilter(filter)
+
+            # map the FacetGrid to the data
             g = g.map_dataframe(
                 sns.pointplot,
                 x="training_set_size",
                 y="value",
                 hue="variable",
-                scale=0.5,
+                markersize=2,
+                linewidth=0.8,
                 errorbar=None,
                 palette={"train_score_mean": train_color, "test_score_mean": test_color},
             )
@@ -209,7 +217,7 @@ def _generate_learning_curve_score_plots(
                                 ncol=1,
                                 frameon=True,
                             )
-            g.fig.tight_layout(w_pad=1)
+            g.figure.tight_layout(w_pad=1)
             plot_file_path = output_dir / f"{experiment_name}_{fs_name}.png"
             plt.savefig(plot_file_path, dpi=300)
             # explicitly close figure to save memory
@@ -274,13 +282,16 @@ def _generate_learning_curve_time_plots(
                 sharey=True,
                 legend_out=False,
             )
+
             g = g.map_dataframe(
                 sns.pointplot,
                 x="training_set_size",
                 y="value",
                 hue="variable",
-                scale=0.5,
+                markersize=2,
+                linewidth=0.8,
                 errorbar=None,
+                palette="dark:#1f77b4",
             )
             # compute the upper and lower
             for ax in g.axes.flat:
@@ -303,7 +314,7 @@ def _generate_learning_curve_time_plots(
                     alpha=0.1,
                 )
 
-            g.fig.tight_layout(w_pad=1)
+            g.figure.tight_layout(w_pad=1)
             plot_file_path = output_dir / f"{experiment_name}_{fs_name}_times.png"
             plt.savefig(plot_file_path, dpi=300)
 
