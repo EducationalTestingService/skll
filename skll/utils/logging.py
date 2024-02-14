@@ -16,6 +16,36 @@ orig_showwarning = warnings.showwarning
 SKLEARN_WARNINGS_RE = re.compile(re.escape(f"{sep}sklearn{sep}"))
 
 
+class MatplotlibCategoryFilter(logging.Filter):
+    """
+    Class to filter out specific log records from `matplotlib.category`.
+
+    This is useful when generating learning curves which generates unnecessary
+    log records from `matplotlib.category`. For more details, see this issue:
+    https://github.com/matplotlib/matplotlib/issues/23422
+    """
+
+    def filter(self, record):
+        """
+        Implement the filter method.
+
+        Parameters
+        ----------
+        record : logging.LogRecord
+            The log record to be filtered.
+        """
+        # Check if the log record is from matplotlib.category and contains the specific message
+        if (
+            record.name == "matplotlib.category"
+            and "Using categorical units to plot a list of strings" in record.msg
+        ):
+            # filter out this record
+            return False
+
+        # allow other records through
+        return True
+
+
 def send_sklearn_warnings_to_logger(
     logger, message, category, filename, lineno, file=None, line=None
 ):
