@@ -101,6 +101,8 @@ class TestOutput(unittest.TestCase):
 
         for path in [
             config_dir / "test_send_warnings_to_log.cfg",
+            config_dir / "test_wandb_conf_wandb.cfg",
+            config_dir / "test_wandb_wandb.cfg",
             "test_current_directory.model",
             train_dir / "test_learning_curve1.jsonlines",
             train_dir / "test_learning_curve2.jsonlines",
@@ -1290,7 +1292,6 @@ class TestOutput(unittest.TestCase):
             "logs": output_dir,
             "feature_hasher": "true",
             "hasher_features": "4",
-            #         "results": str(output_dir),
             "metrics": "['accuracy']",
             "wandb_credentials": '{"wandb_entity": "wandb_entity",'
             ' "wandb_project": "wandb_project"}',
@@ -1303,13 +1304,15 @@ class TestOutput(unittest.TestCase):
             # add fields that are only required by specific tasks.
             if task == "train":
                 config_dict_for_task["models"] = output_dir
-            #            del config_dict_for_task["results"]
             elif task == "predict":
-                #           del config_dict_for_task["results"]
                 config_dict_for_task["test_file"] = train_file
                 config_dict_for_task["predictions"] = str(output_dir)
             elif task == "cross_validate":
                 config_dict_for_task["num_cv_folds"] = "6"
+                config_dict_for_task["predictions"] = str(output_dir)
+                config_dict_for_task["results"] = str(output_dir)
+            elif task == "learning_curve":
+                config_dict_for_task["results"] = str(output_dir)
 
             config_template_path = config_dir / "test_wandb.template.cfg"
 
