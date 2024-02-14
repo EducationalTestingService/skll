@@ -4,6 +4,7 @@ Tests for SKLL logging utilities.
 :author: Nitin Madnani (nmadnani@ets.org)
 """
 
+import logging
 import re
 import sys
 import unittest
@@ -14,6 +15,7 @@ from six import StringIO
 from sklearn.metrics import roc_curve
 
 from skll.utils.logging import (
+    MatplotlibCategoryFilter,
     close_and_remove_logger_handlers,
     get_skll_logger,
     orig_showwarning,
@@ -135,3 +137,44 @@ class TestLoggingUtils(unittest.TestCase):
         LOGGERS.append(logger)
         close_and_remove_logger_handlers(logger)
         assert not logger.handlers
+
+
+class TestMatplotlibCategoryFilter(unittest.TestCase):
+    """Test class for the MatplotlibCategoryFilter."""
+
+    def setUp(self):
+        # set up the logger and add the custom filter
+        self.logger = logging.getLogger("matplotlib.category")
+        self.logger.setLevel(logging.INFO)
+        self.filter = MatplotlibCategoryFilter()
+        self.logger.addFilter(self.filter)
+
+        # set up a logging handler to capture the logs
+        self.log_capture = logging.handlers.MemoryHandler(capacity=10, target=None)
+        self.logger.addHandler(self.log_capture)
+
+    def tearDown(self):
+        # remove the filter and handler
+        self.logger.removeFilter(self.filter)
+        self.logger.removeHandler(self.log_capture)
+
+    def test_filtered_message(self):
+        # log a message that should be filtered
+        self.logger.info(
+            "Using categorical units to plot a list of strings that are all "
+            "parsable as floats or dates."
+        )
+
+        # Check that the message was filtered and not captured
+        self.assertEqual(len(self.log_capture.buffer), 0)
+
+    def test_allowed_message(self):
+        # log a message that should not be filtered
+        self.logger.info("This is a test message that should not be filtered.")
+
+        # check that the message was not filtered and captured
+        self.assertEqual(len(self.log_capture.buffer), 1)
+        self.assertEqual(
+            self.log_capture.buffer[0].getMessage(),
+            "This is a test message that should not be filtered.",
+        )
