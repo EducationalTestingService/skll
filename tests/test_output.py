@@ -1208,12 +1208,11 @@ class TestOutput(unittest.TestCase):
         # Check experiment log output
         # The experiment log file should contain warnings related
         # to the use of sklearn
-        with open(output_dir / "test_send_warnings_to_log_LinearSVC.log") as f:
+        with open(output_dir / "test_send_warnings_to_log_DummyClassifier.log") as f:
             log_content = f.read()
             convergence_sklearn_warning_re = re.compile(
-                r"WARNING - [^\n]+sklearn.svm._base\.py:\d+: ConvergenceWarning:"
-                r"Liblinear failed to converge, increase the number of iterations"
-                r"\."
+                r"WARNING - [^\n]+sklearn.metrics._classification\.py:\d+: "
+                r"UndefinedMetricWarning:Precision is ill-defined and being set to 0.0"
             )
             assert convergence_sklearn_warning_re.search(log_content) is not None
 

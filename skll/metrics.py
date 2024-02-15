@@ -298,7 +298,7 @@ def register_custom_metric(custom_metric_path: PathOrStr, custom_metric_name: st
     # extract any "special" keyword arguments from the metric function
     metric_func_parameters = signature(metric_func).parameters
     make_scorer_kwargs = {}
-    for make_scorer_kwarg in ["greater_is_better", "needs_proba", "needs_threshold"]:
+    for make_scorer_kwarg in ["greater_is_better", "response_method"]:
         if make_scorer_kwarg in metric_func_parameters:
             parameter = metric_func_parameters.get(make_scorer_kwarg)
             if parameter is not None:

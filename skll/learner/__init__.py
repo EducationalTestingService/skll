@@ -252,10 +252,12 @@ class Learner(object):
                     "produce probabilities, results will not be exactly "
                     "replicable when using SVC and probability mode."
                 )
+        elif issubclass(self._model_type, AdaBoostClassifier):
+            self._model_kwargs["algorithm"] = "SAMME"
+            self._model_kwargs["n_estimators"] = 500
         elif issubclass(
             self._model_type,
             (
-                AdaBoostClassifier,
                 AdaBoostRegressor,
                 BaggingClassifier,
                 BaggingRegressor,
@@ -268,6 +270,8 @@ class Learner(object):
             self._model_kwargs["n_estimators"] = 500
         elif issubclass(self._model_type, DummyClassifier):
             self._model_kwargs["strategy"] = "prior"
+        elif issubclass(self._model_type, (LinearSVC, LinearSVR)):
+            self._model_kwargs["dual"] = "auto"
         elif issubclass(self._model_type, SVR):
             self._model_kwargs["cache_size"] = 1000
             self._model_kwargs["gamma"] = "scale"
@@ -950,7 +954,7 @@ class Learner(object):
                 metrics_module = import_module("skll.metrics")
                 metric_func = getattr(metrics_module, "correlation")
                 _CUSTOM_METRICS[new_grid_objective] = make_scorer(
-                    metric_func, corr_type=grid_objective, needs_proba=True
+                    metric_func, corr_type=grid_objective, response_method="predict_proba"
                 )
                 grid_objective = new_grid_objective
 
