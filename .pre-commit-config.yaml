@@ -3,7 +3,7 @@
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.4.0
+    rev: v4.5.0
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
@@ -14,24 +14,24 @@ repos:
       - id: check-json
       - id: debug-statements
   - repo: https://github.com/compilerla/conventional-pre-commit
-    rev: 'v2.2.0'
+    rev: 'v3.1.0'
     hooks:
       - id: conventional-pre-commit
         stages: [commit-msg]
   - repo: https://github.com/ikamensh/flynt/
-    rev: '0.78'
+    rev: '1.0.1'
     hooks:
       - id: flynt
   - repo: https://github.com/psf/black
-    rev: 23.3.0
+    rev: 24.2.0
     hooks:
       - id: black
         args: [--line-length=100]
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: 'v0.0.264'
+    rev: 'v0.2.1'
     hooks:
       - id: ruff
-        args: [--line-length=100, --select, "D,E,F,I", --ignore, "D212", --per-file-ignores, "tests/test*.py:D102,tests/test*.py:D103,tests/test_input.py:E501,skll/data/featureset.py:E501,skll/learner/__init__.py:E501,skll/learner/voting.py:E501,skll/learner/utils.py:E501"]
+        args: [--line-length=100, --select, "D,E,F,I", --ignore, "D212", --per-file-ignores, "tests/test*.py:D,tests/test_input.py:E501,skll/data/featureset.py:E501,skll/learner/__init__.py:E501,skll/learner/voting.py:E501,skll/learner/utils.py:E501"]
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: 'v1.8.0'
     hooks:
