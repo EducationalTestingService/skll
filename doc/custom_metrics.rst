@@ -12,15 +12,27 @@ Writing Custom Metric Functions
 
 First, let's look at how to write valid custom metric functions. A valid custom metric function
 must take two array-like positional arguments: the first being the true labels or scores, and the
-second being the predicted labels or scores. This function can also take three optional keyword arguments:
+second being the predicted labels or scores. This function can also take two optional keyword arguments:
 
 1. ``greater_is_better``: a boolean keyword argument that indicates whether a higher value of the metric indicates better performance (``True``) or vice versa (``False``). The default value is ``True``.
-2. ``needs_proba``: a boolean keyword argument that indicates whether the metric function requires probability estimates. The default value is ``False``.
-3. ``needs_threshold``: a boolean keyword argument that indicates whether the metric function takes a continuous decision certainty. The default value is ``False``.
+
+2. ``response_method`` : a string keyword argument that specifies the response method to use to get predictions from an estimator. Possible values are:
+
+   - ``"predict"`` : uses estimator's `predict() <https://scikit-learn.org/stable/glossary.html#term-predict>`__ method to get class labels
+   - ``"predict_proba"`` : uses estimator's `predict_proba() <https://scikit-learn.org/stable/glossary.html#term-predict_proba>`__ method to get class probabilities
+   - ``"decision_function"`` : uses estimator's `decision_function() <https://scikit-learn.org/stable/glossary.html#term-decision_function>`__ method to get continuous decision function values
+   - If the value is a list or tuple of the above strings, it indicates that the scorer should use the first method in the list which is implemented by the estimator.
+   - If the value is ``None``, it is the same as ``"predict"``.
+
+   The default value for ``response_method`` is ``None``.
 
 Note that these keyword arguments are identical to the keyword arguments for the `sklearn.metrics.make_scorer() <https://scikit-learn.org/stable/modules/generated/sklearn.metrics.make_scorer.html#sklearn.metrics.make_scorer>`_ function and serve the same purpose.
 
-In short, custom metric functions take two required positional arguments (order matters) and three optional keyword arguments. Here's a simple example of a custom metric function: F\ :sub:`β` with β=0.75 defined in a file called ``custom.py``.
+.. important::
+
+   Previous versions of SKLL offered the ``needs_proba`` and ``needs_threshold`` keyword arguments for custom metrics but these are now deprecated in scikit-learn and replaced by the ``response_method`` keyword argument. To replicate the behavior of ``needs_proba=True``, use ``response_method="predict_proba"`` instead and to replicate ``needs_threshold=True``, use ``response_method=("decision_function", "predict_proba")`` instead.
+
+In short, custom metric functions take two required positional arguments (order matters) and two optional keyword arguments. Here's a simple example of a custom metric function: F\ :sub:`β` with β=0.75 defined in a file called ``custom.py``.
 
 .. code-block:: python
   :caption: custom.py
@@ -29,7 +41,6 @@ In short, custom metric functions take two required positional arguments (order 
 
   def f075(y_true, y_pred):
       return fbeta_score(y_true, y_pred, beta=0.75)
-
 
 Obviously, you may write much more complex functions that aren't directly
 available in scikit-learn. Once you have written your metric function, the next
