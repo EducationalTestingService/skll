@@ -4,7 +4,7 @@ stages:
   - test
 
 variables:
-  PYVERSION: "3.8"
+  PYVERSION: "3.10"
   BINDIR: "/root/sklldev/bin"
   MPLBACKEND: "Agg"
   LOGCAPTURE_LEVEL: "WARNING"
