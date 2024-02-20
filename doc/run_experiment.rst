@@ -595,10 +595,14 @@ fixed_parameters *(Optional)*
 """""""""""""""""""""""""""""
 
 List of dictionaries containing parameters you want to have fixed for each
-learner in :ref:`learners` list. Any empty ones will be ignored
-(and the defaults will be used). If :ref:`grid_search` is ``True``,
+learner in the :ref:`learners` list. Empty dictionaries will be ignored
+and the defaults will be used for these learners. If :ref:`grid_search<grid_search>` is ``True``,
 there is a potential for conflict with specified/default parameter grids
 and fixed parameters.
+
+.. note::
+    Tuples are not supported in the config file, and will lead to parsing errors.
+    Make sure to replace tuples with lists when specifying fixed parameters.
 
 The default fixed parameters (beyond those that ``scikit-learn`` sets) are:
 
@@ -720,6 +724,9 @@ TheilSenRegressor
        {'class_weight': {1: 10}}
 
     Additional examples and information can be seen `here <https://scikit-learn.org/stable/auto_examples/linear_model/plot_sgd_weighted_samples.html>`__.
+
+
+
 
 .. _hasher_features:
 
@@ -1190,12 +1197,14 @@ SVR
        {'C': [0.01, 0.1, 1.0, 10.0, 100.0]}
 
 .. note::
-    Note that learners not listed here do not have any default
-    parameter grids in SKLL either because there are no
-    hyper-parameters to tune or decisions about which parameters
-    to tune (and how) depend on the data being used for the
-    experiment and are best left up to the user.
-
+   1. Learners not listed here do not have any default
+      parameter grids in SKLL either because there are no
+      hyper-parameters to tune or decisions about which parameters
+      to tune (and how) depend on the data being used for the
+      experiment and are best left up to the user.
+   2. Tuples are not supported in the config file, and will lead to
+      parsing errors. Make sure to replace tuples with lists when
+      specifying the parameter grids.
 
 .. _pos_label:
 
