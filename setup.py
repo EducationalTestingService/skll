@@ -21,7 +21,7 @@ def requirements():
 
 setup(
     name="skll",
-    version=__version__,  # noqa: F821
+    version=__version__,  # type: ignore
     description=(
         "SciKit-Learn Laboratory makes it easier to run machine "
         "learning experiments with scikit-learn."
@@ -59,8 +59,6 @@ setup(
         "Operating System :: Unix",
         "Operating System :: MacOS",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.8",
-        "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
     ],

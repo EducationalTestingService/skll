@@ -34,7 +34,7 @@ this is in a virtual environment. For this tutorial, we will
 use `conda <https://conda.io/projects/conda/en/latest/user-guide/install/index.html>`__
 for creating our virtual environment as follows::
 
-    conda create -n skllenv -c conda-forge -c ets python=3.9 skll
+    conda create -n skllenv -c conda-forge -c ets python=3.11 skll
 
 This will create a new virtual environment named ``skllenv`` with the
 latest release of SKLL which you can then activate by running
