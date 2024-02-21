@@ -21,7 +21,7 @@ def requirements():
 
 setup(
     name="skll",
-    version=__version__,  # type: ignore
+    version=__version__,  # type: ignore # noqa: F821
     description=(
         "SciKit-Learn Laboratory makes it easier to run machine "
         "learning experiments with scikit-learn."
