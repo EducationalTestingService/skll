@@ -78,11 +78,11 @@ There are three main entry points into the SKLL codebase:
    `run_experiment <https://skll.readthedocs.io/en/latest/run_experiment.html#using-run-experiment>`__ script. When you run the command
    ``run_experiment <config_file>``, the following happens (at a high level):
 
-   -  the configuration file is handed off to the `run_configuration() <https://github.com/EducationalTestingService/skll/blob/main/skll/experiments/__init__.py#L609>`__ function in ``experiments.py``.
+   -  the configuration file is handed off to the `run_configuration() <https://github.com/EducationalTestingService/skll/blob/main/skll/experiments/__init__.py#L613>`__ function in ``experiments.py``.
 
    -  a `SKLLConfigParser <https://github.com/EducationalTestingService/skll/blob/main/skll/config/__init__.py#L44>`__ object is instantiated from ``config.py`` that parses all of the relevant fields out of the given configuration file.
 
-   -  the configuration fields are then passed to the `_classify_featureset() <https://github.com/EducationalTestingService/skll/blob/main/skll/experiments/__init__.py#L64>`__ function in ``experiments.py`` which instantiates the learners (using code from ``learner.py``), the featuresets (using code from ``reader.py`` & ``featureset.py``), and runs the experiments, collects the results, and writes them out to disk.
+   -  the configuration fields are then passed to the `_classify_featureset() <https://github.com/EducationalTestingService/skll/blob/main/skll/experiments/__init__.py#L65>`__ function in ``experiments.py`` which instantiates the learners (using code from ``learner.py``), the featuresets (using code from ``reader.py`` & ``featureset.py``), and runs the experiments, collects the results, and writes them out to disk.
 
 2. **SKLL API**. Another way to interact with SKLL is via the SKLL API directly in your Python code rather than using configuration files. For example, you could use the `Learner.from_file() <https://github.com/EducationalTestingService/skll/blob/main/skll/learner/__init__.py#L384>`__ or `VotingLearner.from_file() <https://github.com/EducationalTestingService/skll/blob/main/skll/learner/voting.py#L243>`__ methods to load saved models of those types from disk and make predictions on new data. The documentation for the SKLL API can be found `here <https://skll.readthedocs.io/en/latest/api.html>`__.
 

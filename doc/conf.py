@@ -33,7 +33,7 @@ master_doc = "index"
 
 # General information about the project.
 project = "SciKit-Learn Laboratory"
-copyright = "2012-2023, Educational Testing Service"
+copyright = "2012-2024, Educational Testing Service"
 
 # The short X.Y version.
 version = __version__
@@ -70,7 +70,7 @@ latex_elements = {
     # The paper size ('letterpaper' or 'a4paper').
     "papersize": "letterpaper",
     # The font size ('10pt', '11pt' or '12pt').
-    "pointsize": "12pt"
+    "pointsize": "12pt",
     # Additional stuff for the LaTeX preamble.
     #'preamble': '',
 }
@@ -112,4 +112,4 @@ texinfo_documents = [
 epub_title = "SciKit-Learn Laboratory"
 epub_author = "Educational Testing Service"
 epub_publisher = "Educational Testing Service"
-epub_copyright = "2012-2023, Educational Testing Service"
+epub_copyright = "2012-2024, Educational Testing Service"

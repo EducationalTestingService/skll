@@ -595,10 +595,26 @@ fixed_parameters *(Optional)*
 """""""""""""""""""""""""""""
 
 List of dictionaries containing parameters you want to have fixed for each
-learner in :ref:`learners` list. Any empty ones will be ignored
-(and the defaults will be used). If :ref:`grid_search` is ``True``,
+learner in the :ref:`learners` list. Empty dictionaries will be ignored
+and the defaults will be used for these learners. If :ref:`grid_search<grid_search>` is ``True``,
 there is a potential for conflict with specified/default parameter grids
 and fixed parameters.
+
+.. note::
+    Tuples are not supported in the config file, and will lead to parsing errors.
+    Make sure to replace tuples with lists when specifying fixed parameters.
+    As an example, consider the following parameter that's usually defined as a tuple in scikit-learn:
+
+    .. code-block:: python
+
+       {'hidden_layer_sizes': (28, 28)}
+
+    To specify it in `fixed_parameters`, use a list instead:
+
+    .. code-block:: python
+
+       {'hidden_layer_sizes': [28, 28]}
+
 
 The default fixed parameters (beyond those that ``scikit-learn`` sets) are:
 
@@ -1190,11 +1206,24 @@ SVR
        {'C': [0.01, 0.1, 1.0, 10.0, 100.0]}
 
 .. note::
-    Note that learners not listed here do not have any default
-    parameter grids in SKLL either because there are no
-    hyper-parameters to tune or decisions about which parameters
-    to tune (and how) depend on the data being used for the
-    experiment and are best left up to the user.
+   1. Learners not listed here do not have any default
+      parameter grids in SKLL either because there are no
+      hyper-parameters to tune or decisions about which parameters
+      to tune (and how) depend on the data being used for the
+      experiment and are best left up to the user.
+   2. Tuples are not supported in the config file, and will lead to parsing errors.
+      Make sure to replace tuples with lists when specifying fixed parameters.
+      As an example, consider the following parameter that's usually defined as a tuple in scikit-learn:
+
+    .. code-block:: python
+
+       {'hidden_layer_sizes': (28, 28)}
+
+    To specify it in `param_grids`, use a list instead:
+
+    .. code-block:: python
+
+       {'hidden_layer_sizes': [28, 28]}
 
 
 .. _pos_label:
