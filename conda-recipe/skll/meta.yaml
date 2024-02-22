@@ -34,11 +34,12 @@ requirements:
     - numpy<2
     - pandas
     - ruamel.yaml
-    - scikit-learn >=1.3.0,<1.4.0
+    - scikit-learn >=1.4.0,<1.5.0
     - scipy
     - seaborn
     - tabulate
     - typing_extensions
+    - wandb
 
 test:
   # Python imports
