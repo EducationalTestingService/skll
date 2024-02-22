@@ -603,13 +603,13 @@ and fixed parameters.
 .. note::
     Tuples are not supported in the config file, and will lead to parsing errors.
     Make sure to replace tuples with lists when specifying fixed parameters.
-    For example, the following parameter contains a tuple:
+    As an example, consider the following parameter that's usually defined as a tuple in scikit-learn:
 
     .. code-block:: python
 
        {'hidden_layer_sizes': (28, 28)}
 
-    To specify it in `fixed_parameter`, use a list:
+    To specify it in `fixed_parameters`, use a list instead:
 
     .. code-block:: python
 
@@ -1213,13 +1213,13 @@ SVR
       experiment and are best left up to the user.
    2. Tuples are not supported in the config file, and will lead to parsing errors.
       Make sure to replace tuples with lists when specifying fixed parameters.
-      For example, the following parameter contains a tuple:
+      As an example, consider the following parameter that's usually defined as a tuple in scikit-learn:
 
     .. code-block:: python
 
        {'hidden_layer_sizes': (28, 28)}
 
-    To specify it in `param_grids`, use a list:
+    To specify it in `param_grids`, use a list instead:
 
     .. code-block:: python
 
