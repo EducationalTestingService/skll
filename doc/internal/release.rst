@@ -7,15 +7,27 @@ This document is only meant for the project administrators, not users and develo
 
 2. In the release branch:
 
-   a. update the version numbers in ``version.py``.
+   a. Update the version numbers in ``version.py``.
 
-   b. update the conda recipe.
+   b. Make sure that `requirements.txt` only has the actual dependencies that
+      are needed to run SKLL. Any dependencies needed only for
+      development/testing (e.g., `sphinx`, `nose2` etc.) should be moved to
+      `requirements.dev`. This means that `requirements.txt` *must* be a strict
+      subset of `requirements.dev`.
 
-   c. update the documentation with any new features or details about changes.
+   c. Make sure the versions in `doc/requirements.txt` are up to date with
+      `requirements.txt` and only contains the dependencies needed to build the
+      documentation.
 
-   d. run ``make linkcheck`` on the documentation and fix any redirected/broken links.
+   d. Make sure `.readthedocs.yml` is still accurate.
 
-   e. update the README and this release documentation, if necessary.
+   e. Update the conda recipe.
+
+   f. Update the documentation with any new features or details about changes.
+
+   g. Run ``make linkcheck`` on the documentation and fix any redirected/broken links.
+
+   h. Update the README and this release documentation, if necessary.
 
 3. Build and upload the conda packages by following instructions in ``conda-recipe/README.md``.
 
