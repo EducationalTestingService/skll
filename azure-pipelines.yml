@@ -30,7 +30,7 @@ jobs:
     displayName: "Update conda"
 
   - script: |
-      conda create --name sklldev --yes --quiet -c conda-forge python=%PYTHON_VERSION% --file requirements.txt
+      conda create --name sklldev --yes --quiet -c conda-forge python=%PYTHON_VERSION% --file requirements.dev
       conda init cmd.exe
       CALL activate sklldev
       pip install -e .

@@ -1,0 +1,16 @@
+beautifulsoup4
+coverage
+joblib
+nose2
+numpy<2
+pandas
+pre-commit
+ruamel.yaml
+scikit-learn>=1.4.0,<1.5.0
+scipy
+seaborn
+sphinx
+sphinx_rtd_theme
+tabulate
+typing_extensions
+wandb
