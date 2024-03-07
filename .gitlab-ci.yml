@@ -13,7 +13,7 @@ variables:
 # set up the basic job
 .runtests:
   before_script:
-    - "conda create --prefix /root/sklldev --channel conda-forge --file requirements.txt python=${PYVERSION} curl --yes --quiet"
+    - "conda create --prefix /root/sklldev --channel conda-forge --file requirements.dev python=${PYVERSION} curl --yes --quiet"
     - /root/sklldev/bin/pip install -e .
     - /root/sklldev/bin/curl -o /root/sklldev/bin/codecov https://uploader.codecov.io/latest/linux/codecov
     - chmod +x /root/sklldev/bin/codecov

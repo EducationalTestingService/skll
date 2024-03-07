@@ -19,7 +19,7 @@ How to contribute
 
 3. Create an isolated environment for SKLL development. We recommend using the [conda](https://conda.io/en/latest/) package manager. To create a `conda` environment, run the following command in the root of the working directory:
 
-         $ conda create -n sklldev -c conda-forge --file requirements.txt python=3.11
+         $ conda create -n sklldev -c conda-forge --file requirements.dev python=3.11
 
 4. Activate the conda environment
 
@@ -52,13 +52,13 @@ How to contribute
 
          $ pre-commit run
 
-   To run the `isort` hook alone on changed files:
+   To run the `black` hook alone on changed files:
 
-         $ pre-commit run isort
+         $ pre-commit run black
 
    To run the `isort` hook alone on a given file:
 
-         $ pre-commit run isort <file-path>
+         $ pre-commit run black <file-path>
 
    Finally, the `SKIP` environment variable can be used to indicate to
    `pre-commit` that certain checks should be skipped. It can be
