@@ -28,7 +28,7 @@ repos:
       - id: black
         args: [--line-length=100]
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: 'v0.2.1'
+    rev: 'v0.3.1'
     hooks:
       - id: ruff
         args: [--line-length=100, --select, "D,E,F,I", --ignore, "D212", --per-file-ignores, "tests/test*.py:D,tests/test_input.py:E501,skll/data/featureset.py:E501,skll/learner/__init__.py:E501,skll/learner/voting.py:E501,skll/learner/utils.py:E501"]
