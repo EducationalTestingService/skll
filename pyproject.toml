@@ -1,14 +1,14 @@
 [tool.black]
 include = '\.pyi?$'
 line-length = 100
-target-version = ['py38']
+target-version = ['py311']
 
 [tool.ruff]
 extend-exclude = ["setup.py"]
 lint.select = ["D", "E", "F", "I"]
 lint.ignore = ["D212"]
 line-length = 100
-target-version = "py38"
+target-version = "py311"
 fix = true
 
 [mypy]
