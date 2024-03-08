@@ -56,7 +56,7 @@ How to contribute
 
          $ pre-commit run black
 
-   To run the `isort` hook alone on a given file:
+   To run the `black` hook alone on a given file:
 
          $ pre-commit run black <file-path>
 
