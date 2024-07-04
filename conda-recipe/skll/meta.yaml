@@ -31,7 +31,7 @@ requirements:
     - python >=3.10
     - beautifulsoup4
     - joblib
-    - numpy<2
+    - numpy
     - pandas
     - ruamel.yaml
     - scikit-learn >=1.4.0,<1.5.0

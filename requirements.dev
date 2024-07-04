@@ -2,7 +2,7 @@ beautifulsoup4
 coverage
 joblib
 nose2
-numpy<2
+numpy
 pandas
 pre-commit
 ruamel.yaml
