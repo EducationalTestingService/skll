@@ -13,4 +13,3 @@ sphinx
 sphinx_rtd_theme
 tabulate
 typing_extensions
-wandb
