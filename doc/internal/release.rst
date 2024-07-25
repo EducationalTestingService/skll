@@ -31,7 +31,7 @@ This document is only meant for the project administrators, not users and develo
 
 3. Build and upload the conda packages by following instructions in ``conda-recipe/README.md``.
 
-4. Build the PyPI source distribution using ``python setup.py sdist build``.
+4. Build the PyPI source distribution using ``python -m build``.
 
 5. Upload the source distribution to TestPyPI  using ``twine upload --repository testpypi dist/*``. You will need to have the ``twine`` package installed and set up your ``$HOME/.pypirc`` correctly. See details `here <https://packaging.python.org/en/latest/guides/using-testpypi/>`__.
 
