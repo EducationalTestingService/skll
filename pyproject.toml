@@ -1,3 +1,68 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "skll"
+dynamic = ["version", "dependencies"]
+requires-python = ">= 3.10"
+
+
+authors = [
+  {name = "Nitin Madnani ", email = "nmadnani@gmail.com"},
+]
+maintainers = [
+    {name = "Nitin Madnani ", email = "nmadnani@gmail.com"},
+    {name = "Tamar Lavee", email = "tamarlv@hotmail.com"}
+]
+
+description = "SciKit-Learn Laboratory makes it easier to run machine learning experiments with scikit-learn."
+readme = "README.rst"
+license = {file = "LICENSE.txt"}
+keywords = ["learning scikit-learn"]
+
+ classifiers= [
+        "Intended Audience :: Science/Research",
+        "Intended Audience :: Developers",
+        "License :: OSI Approved :: BSD License",
+        "Programming Language :: Python",
+        "Topic :: Software Development",
+        "Topic :: Scientific/Engineering",
+        "Operating System :: Microsoft :: Windows",
+        "Operating System :: POSIX",
+        "Operating System :: Unix",
+        "Operating System :: MacOS",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
+ ]
+
+
+[project.urls]
+Documentation = "https://skll.readthedocs.org"
+Repository = "http://github.com/EducationalTestingService/skll"
+
+[project.scripts]
+filter_features = "skll.utils.commandline.filter_features:main"
+generate_predictions = "skll.utils.commandline.generate_predictions:main"
+join_features = "skll.utils.commandline.join_features:main"
+print_model_weights = "skll.utils.commandline.print_model_weights:main"
+run_experiment = "skll.utils.commandline.run_experiment:main"
+skll_convert = "skll.utils.commandline.skll_convert:main"
+summarize_results = "skll.utils.commandline.summarize_results:main"
+compute_eval_from_predictions = "skll.utils.commandline.compute_eval_from_predictions:main"
+plot_learning_curves = "skll.utils.commandline.plot_learning_curves:main"
+
+[tool.setuptools.dynamic]
+version = {attr = "skll.version.__version__"}
+dependencies = {file = ["requirements.txt"]}
+
+[tool.setuptools.packages.find]
+where = ["."]
+exclude = ["tests", "examples"]
+namespaces = false
+
 [tool.black]
 include = '\.pyi?$'
 line-length = 100
