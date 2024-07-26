@@ -8,12 +8,12 @@ from pathlib import Path
 from typing import Any, Dict, Optional, Union
 
 import pandas as pd
-
 import wandb
-from skll.config import _setup_config_parser
-from skll.types import PathOrStr
 from wandb.sdk.lib import RunDisabled
 from wandb.sdk.wandb_run import Run
+
+from skll.config import _setup_config_parser
+from skll.types import PathOrStr
 
 
 class WandbLogger:
@@ -30,6 +30,7 @@ class WandbLogger:
             used to initialize the wandb run. If ``None``, logging to W&B will not be performed.
         config_file_path : str
             The path to this experiment's config file
+
         """
         self.wandb_run: Optional[Union[Run, RunDisabled]] = None
         if wandb_credentials:
@@ -48,6 +49,7 @@ class WandbLogger:
         ----------
         plot_file_path : str
             The full path to the plot file.
+
         """
         plot_name = Path(plot_file_path).stem
         if self.wandb_run:
@@ -63,6 +65,7 @@ class WandbLogger:
         ----------
         summary_file_path : PathOrStr
             The path to the summary tsv file
+
         """
         if self.wandb_run:
             summary_df = pd.read_csv(summary_file_path, sep="\t")
@@ -87,6 +90,7 @@ class WandbLogger:
         task_results : Dict[str,Any]
             The evaluation results of a single job of "evaluate" task or
             a single fold of a "cross_validate" task.
+
         """
         if self.wandb_run:
             task_prefix = task_results["job_name"]
@@ -136,6 +140,7 @@ class WandbLogger:
         ----------
         task_results : Dict[str, Any]
             The train task results.
+
         """
         if self.wandb_run:
             task_prefix = task_results["job_name"]
@@ -152,6 +157,7 @@ class WandbLogger:
         ----------
         task_results : Dict[str, Any]
             The predict task results.
+
         """
         if self.wandb_run:
             task_prefix = task_results["job_name"]
@@ -176,6 +182,7 @@ class WandbLogger:
             the confusion matrix values
         labels : List[str]
             label names
+
         """
         if self.wandb_run:
             conf_matrix_data = []
@@ -198,6 +205,7 @@ class WandbLogger:
             The metric name
         metric_value : Any
             The metric value
+
         """
         if self.wandb_run:
             self.wandb_run.summary[f"{task_prefix}/{metric_name}"] = metric_value
@@ -217,6 +225,7 @@ def get_config_dict(config_file_path: str) -> Dict[str, Any]:
     Dictionary containing all SKLL configuration fields.
 
     This also includes default values when for fields that are missing in the file.
+
     """
     config_parser = _setup_config_parser(config_file_path, validate=False)
     return {
