@@ -116,6 +116,7 @@ class FilteredLeaveOneGroupOut(LeaveOneGroupOut):
         A list of example IDs.
     logger : Optional[logging.Logger], default=None
         A logger instance.
+
     """
 
     def __init__(
@@ -154,6 +155,7 @@ class FilteredLeaveOneGroupOut(LeaveOneGroupOut):
             The training set indices for that split.
         test_index : numpy.ndarray
             The testing set indices for that split.
+
         """
         for train_index, test_index in super(FilteredLeaveOneGroupOut, self).split(X, y, groups):
             train_len = len(train_index)
@@ -181,6 +183,7 @@ class SelectByMinCount(SelectKBest):
     ----------
     min_count : int, default=1
         The minimum feature count to select.
+
     """
 
     def __init__(self, min_count: int = 1):
@@ -202,6 +205,7 @@ class SelectByMinCount(SelectKBest):
         Returns
         -------
         self
+
         """
         # initialize a list of counts of times each feature appears
         col_counts = [0 for _ in range(X.shape[1])]
@@ -229,6 +233,7 @@ class SelectByMinCount(SelectKBest):
         -------
         mask : numpy.ndarray
             The mask with features to keep set to True.
+
         """
         mask = np.zeros(self.scores_.shape, dtype=bool)
         mask[self.scores_ >= self.min_count] = True
@@ -253,6 +258,7 @@ def add_unseen_labels(
     Dict[:class:`skll.types.LabelType`, int]
         Dictionary mapping merged labels from both the training and test sets
         to indices.
+
     """
     # get the list of labels that were in the training set
     train_label_list = list(train_label_dict.keys())
@@ -317,6 +323,7 @@ def compute_evaluation_metrics(
         per-label PRFs, the grid search objective function score, and the
         additional evaluation metrics, if any. For regressors, the
         first two elements are ``None``.
+
     """
     # set up the logger
     logger = logger if logger else logging.getLogger(__name__)
@@ -485,6 +492,7 @@ def compute_num_folds_from_example_counts(
     ValueError
         If ``cv_folds`` is not an integer or if the training set has
         fewer than 2 examples associated with a label (for classification).
+
     """
     # get a logger if not provided
     logger = logger if logger else logging.getLogger(__name__)
@@ -540,6 +548,7 @@ def contiguous_ints_or_floats(numbers: np.ndarray) -> bool:
         If ``numbers`` does not contain integers or floating point values.
     ValueError
         If ``numbers`` is empty.
+
     """
     try:
         # make sure that number is not empty
@@ -580,6 +589,7 @@ def get_acceptable_classification_metrics(label_array: np.ndarray) -> Set[str]:
     acceptable_metrics : Set[str]
         A set of metric names that are acceptable
         for the given classification scenario.
+
     """
     # this is a classifier so the acceptable objective
     # functions definitely include those metrics that
@@ -668,6 +678,7 @@ def load_custom_learner(
     ------
     ValueError
         If the custom learner path does not end in '.py'.
+
     """
     if not custom_learner_path:
         raise ValueError(
@@ -722,6 +733,7 @@ def get_predictions(
     NotImplementedError
         If the scikit-learn model does not implement ``predict_proba()`` to
         get the class probabilities.
+
     """
     # deferred import to avoid circular dependencies
     from skll.learner.voting import VotingLearner
@@ -787,6 +799,7 @@ def rescaled(cls):
     ------
     ValueError
         If classifier cannot be rescaled (i.e. is not a regressor).
+
     """
     # If this class has already been run through the decorator, return it
     if hasattr(cls, "rescale"):
@@ -819,6 +832,7 @@ def rescaled(cls):
         Returns
         -------
         self
+
         """
         # fit a regular regression model
         orig_fit(self, X, y=y)
@@ -857,6 +871,7 @@ def rescaled(cls):
         -------
         numpy.ndarray
             The prediction results.
+
         """
         # get the unconstrained predictions
         res = orig_predict(self, X)
@@ -896,6 +911,7 @@ def rescaled(cls):
         ------
         RuntimeError
             If `varargs` exist in the scikit-learn estimator.
+
         """
         # initialize the empty list of parameter names
         args = []
@@ -952,6 +968,7 @@ def rescaled(cls):
             Whether to rescale prediction values using z-scores.
         kwargs : Dict[str, Any]
             Keyword arguments for base class.
+
         """
         # pylint: disable=W0201
         self.constrain = constrain
@@ -1006,6 +1023,7 @@ def setup_cv_fold_iterator(
         k-fold iterator
     Optional[List[str]]
         List of cross-validation groups
+
     """
     # explicitly declare the return types
     kfold: Union[FilteredLeaveOneGroupOut, KFold, StratifiedKFold]
@@ -1059,6 +1077,7 @@ def setup_cv_split_iterator(
         Iterator over the train/test featuresets
     int
         The maximum number of training samples available.
+
     """
     # seed the random number generator for replicability
     random_state = np.random.RandomState(123456789)
@@ -1122,6 +1141,7 @@ def train_and_score(
     float
         The time taken in seconds to fit the ``learner`` on
         ``train_examples``.
+
     """
     # capture the time before we train the model
     start_time = time.time()
@@ -1198,6 +1218,7 @@ def write_predictions(
         List of class labels, required if ``probability`` is ``True``.
     append : bool, default=False
         Should we append the current predictions to the file if it exists?
+
     """
     # create a new file starting with the given prefix
     prediction_file = f"{file_prefix}_predictions.tsv"
@@ -1250,6 +1271,7 @@ def _save_learner_to_disk(
         A ``Learner`` or ``VotingLearner`` instance to save to disk.
     filepath : :class:`skll.types.PathOrStr`
         The path to save the learner instance to.
+
     """
     # create the directory if it doesn't exist
     learner_dir = Path(filepath).parent
@@ -1288,6 +1310,7 @@ def _load_learner_from_disk(
     ------
     ValueError
         If the pickled version of the ``Learner`` instance is out of date.
+
     """
     skll_version, learner = joblib.load(filepath)
 

@@ -66,6 +66,7 @@ class Writer(object):
     logger : Optional[logging.Logger], default=None
         A logger instance to use to log messages instead of creating
         a new one by default.
+
     """
 
     def __init__(
@@ -128,6 +129,7 @@ class Writer(object):
         writer : :class:`skll.data.Writer`
             New instance of the Writer sub-class that is
             appropriate for the given path.
+
         """
         # Get lowercase extension for file extension checking
         # NOTE: the reason we are doing this complicated gymnastics
@@ -174,6 +176,7 @@ class Writer(object):
 
         filter_features : Optional[Set[str]], default=None
             Set of features to include in current feature file.
+
         """
         self.logger.debug(f"sub_path: {sub_path}")
         self.logger.debug(f"feature_set: {self.feat_set.name}")
@@ -226,6 +229,7 @@ class Writer(object):
 
         filter_features : Ignored
            Not used.
+
         """
         pass
 
@@ -250,6 +254,7 @@ class Writer(object):
         Raises
         ------
         NotImplementedError
+
         """
         raise NotImplementedError
 
@@ -271,6 +276,7 @@ class Writer(object):
         Raises
         ------
         NotImplementedError
+
         """
         raise NotImplementedError
 
@@ -297,6 +303,7 @@ class Writer(object):
 
         column_indexes : List[int]
             A list of the (possibly filtered) column indexes.
+
         """
         # if we're not doing filtering,
         # then just take all the feature names
@@ -367,6 +374,7 @@ class CSVWriter(Writer):
 
     pandas_kwargs : Optional[Dict[str], Any], default=None
         Arguments that will be passed directly to the `pandas` I/O reader.
+
     """
 
     def __init__(
@@ -418,6 +426,7 @@ class CSVWriter(Writer):
         ValueError
             If ID column is already used as feature.
             If label column is already used as feature.
+
         """
         # if there is no filtering, then just keep all the names
         (column_names, column_idxs) = self._get_column_names_and_indexes(
@@ -476,6 +485,7 @@ class CSVWriter(Writer):
         ValueError
             If ID column is already used as feature.
             If label column is already used as feature.
+
         """
         # create the data frame with just the features
         # from the feature set, at this point
@@ -520,6 +530,7 @@ class CSVWriter(Writer):
             If only writing a subset of the features in the
             FeatureSet to ``output_file``, these are the
             features to include in this file.
+
         """
         df = self._build_dataframe(feature_set, filter_features=filter_features)
         df.to_csv(output_file, sep=self._sep, index=self._index, **self._pandas_kwargs)
@@ -569,6 +580,7 @@ class TSVWriter(CSVWriter):
 
     pandas_kwargs : Optional[Dict[str, Any]], default=None
         Arguments that will be passed directly to the `pandas` I/O reader.
+
     """
 
     def __init__(
@@ -640,6 +652,7 @@ class ARFFWriter(Writer):
 
     kwargs : Optional[Dict[str, Any]]
         The arguments to the ``Writer`` object being instantiated.
+
     """
 
     def __init__(
@@ -687,6 +700,7 @@ class ARFFWriter(Writer):
             If only writing a subset of the features in the
             FeatureSet to ``output_file``, these are the
             features to include in this file.
+
         """
         fieldnames, _ = self._get_column_names_and_indexes(self.feat_set, filter_features)
         fieldnames.append(self.id_col)
@@ -747,6 +761,7 @@ class ARFFWriter(Writer):
 
         ValueError
             If ID column name is already used as a feature.
+
         """
         # Add class column to feat_dict (unless this is unlabeled data)
         if self.label_col not in feat_dict:
@@ -802,6 +817,7 @@ class NDJWriter(Writer):
     logger : Optional[logging.Logger], default=None
         A logger instance to use to log messages instead of creating
         a new one by default.
+
     """
 
     def __init__(
@@ -840,6 +856,7 @@ class NDJWriter(Writer):
 
         output_file : IO[str]
             The file being written to.
+
         """
         example_dict: FeatureDict = {}
         # Don't try to add class column if this is label-less data
@@ -900,6 +917,7 @@ class LibSVMWriter(Writer):
 
     label_map : Optional[Dict[str, int]], default=None
         A mapping from label strings to integers.
+
     """
 
     LIBSVM_REPLACE_DICT = {
@@ -960,6 +978,7 @@ class LibSVMWriter(Writer):
         -------
         Union[:class:`skll.types.IdType`, :class:`skll.types.LabelType`]
             The sanitized name with special characters replaced.
+
         """
         sanitized_name = name
         if isinstance(sanitized_name, str):
@@ -986,6 +1005,7 @@ class LibSVMWriter(Writer):
 
         output_file : IO[str]
             The file being written to.
+
         """
         field_values = (
             sorted(

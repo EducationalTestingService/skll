@@ -118,6 +118,7 @@ class Reader(object):
     logger : Optional[logging.Logger], default=None
         A logger instance to use to log messages instead of creating
         a new one by default.
+
     """
 
     def __init__(
@@ -177,6 +178,7 @@ class Reader(object):
         ------
         ValueError
             If file does not have a valid extension.
+
         """
         if not isinstance(path_or_list, (str, Path)):
             return DictListReader(path_or_list)
@@ -211,6 +213,7 @@ class Reader(object):
         Raises
         ------
         NotImplementedError
+
         """
         raise NotImplementedError
 
@@ -229,6 +232,7 @@ class Reader(object):
         end : str, default='\r'
             The string to put at the end of the line.  "\r" should be
             used for every update except for the final one.
+
         """
         # Print out status
         if not self.quiet:
@@ -270,6 +274,7 @@ class Reader(object):
 
         ValueError
             If the example IDs are not unique.
+
         """
         # Get labels and IDs
         ids_list: List[IdType] = []
@@ -365,6 +370,7 @@ class Reader(object):
 
         features : :class:`skll.types.FeatureDictList`
             List of feature dictionaries.
+
         """
         if df.empty:
             raise ValueError("No features found in possibly empty file " f"'{self.path_or_list}'.")
@@ -459,6 +465,7 @@ class Reader(object):
 
         ValueError
             If the example IDs are not unique.
+
         """
         self.logger.debug(f"Path: {self.path_or_list}")
 
@@ -550,6 +557,7 @@ class DictListReader(Reader):
     logger : Optional[logging.Logger], default=None
         A logger instance to use to log messages instead of creating
         a new one by default.
+
     """
 
     def read(self) -> FeatureSet:
@@ -560,6 +568,7 @@ class DictListReader(Reader):
         -------
         :class:`skll.data.FeatureSet`
             A ``FeatureSet`` representing the list of dictionaries we read in.
+
         """
         # if we are in this method, `self.path_or_list` must be a
         # list of dictionaries
@@ -698,6 +707,7 @@ class NDJReader(Reader):
         ValueError
             If IDs cannot be converted to floats, and ``ids_to_floats``
             is ``True``.
+
         """
         for example_num, line in enumerate(file):
             # Remove extraneous whitespace
@@ -789,6 +799,7 @@ class LibSVMReader(Reader):
     logger : Optional[logging.Logger], default=None
         A logger instance to use to log messages instead of creating
         a new one by default.
+
     """
 
     line_regex = re.compile(
@@ -827,6 +838,7 @@ class LibSVMReader(Reader):
             The name of the feature.
         value : Union[float, int, str]
             The value of the example.
+
         """
         name, value = pair.split(":")
         if feat_map is not None:
@@ -859,6 +871,7 @@ class LibSVMReader(Reader):
         ------
         ValueError
             If line does not look like valid libsvm format.
+
         """
         feat_map: Optional[Dict[str, str]]
         for example_num, line in enumerate(file):
@@ -952,6 +965,7 @@ class CSVReader(Reader):
 
     kwargs : Optional[Dict[str, Any]]
         Other arguments to the Reader object.
+
     """
 
     def __init__(
@@ -990,6 +1004,7 @@ class CSVReader(Reader):
 
         features : :class:`skll.types.FeatureDictList`
             The list of feature dictionaries for the feature set.
+
         """
         df = pd.read_csv(file, sep=self._sep, engine=self._engine, **self._pandas_kwargs)
         return self._parse_dataframe(
@@ -1035,6 +1050,7 @@ class TSVReader(CSVReader):
 
     kwargs : Optional[Dict[str, Any]]
         Other arguments to the Reader object.
+
     """
 
     def __init__(
@@ -1072,6 +1088,7 @@ class ARFFReader(Reader):
 
     kwargs : Optional[Dict[str, Any]]
         Other arguments to the Reader object.
+
     """
 
     def __init__(self, path_or_list: Union[PathOrStr, List[Dict[str, Any]]], **kwargs):
@@ -1101,6 +1118,7 @@ class ARFFReader(Reader):
 
         escape_char : str, default='\\'
             The escape character.
+
         """
         return next(
             csv.reader([string], delimiter=delimiter, quotechar=quote_char, escapechar=escape_char)
@@ -1125,6 +1143,7 @@ class ARFFReader(Reader):
 
         example : :class:`skll.types.FeatureDict`
             The example features in dictionary format.
+
         """
         field_names = []
         # Process ARFF header
@@ -1235,6 +1254,7 @@ def safe_float(
     Union[float, int, str]
         The text value converted to int or float, if possible. Otherwise
         it's a string.
+
     """
     # convert to str to be "Safe"!
     text = str(text)

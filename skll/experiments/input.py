@@ -72,6 +72,7 @@ def load_featureset(
     merged_set : :class:`skll.data.featureset.FeatureSet`
         A ``FeatureSet`` instance containing the specified labels, IDs, features,
         and feature vectorizer.
+
     """
     # get a logger if one was not provided
     logger = logger if logger else logging.getLogger(__name__)

@@ -31,6 +31,7 @@ def fix_json(json_string: str) -> str:
     -------
     str
         The normalized JSON string.
+
     """
     json_string = json_string.replace("True", "true")
     json_string = json_string.replace("False", "false")
@@ -63,6 +64,7 @@ def load_cv_folds(folds_file: PathOrStr, ids_to_floats=False) -> FoldMapping:
     ------
     ValueError
         If example IDs cannot be converted to floats and `ids_to_floats` is `True`.
+
     """
     with open(folds_file) as f:
         reader = csv.reader(f)
@@ -106,6 +108,7 @@ def locate_file(file_path: PathOrStr, config_dir: PathOrStr) -> str:
     ------
     FileNotFoundError
         If the file does not exist.
+
     """
     if not file_path:
         return ""
@@ -140,6 +143,7 @@ def _munge_featureset_name(name_or_list: Union[Iterable, str]) -> str:
     -------
     res : str
         name components joined with '+' if input is a list or the name itself.
+
     """
     if isinstance(name_or_list, str):
         return name_or_list
@@ -179,6 +183,7 @@ def _parse_and_validate_metrics(metrics: str, option_name: str, logger=None) -> 
 
     ValueError
         If "mean_squared_error" is specified as a metric.
+
     """
     # create a logger if one was not passed in
     if not logger:

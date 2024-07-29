@@ -80,6 +80,7 @@ def _classify_featureset(args: Dict[str, Any]) -> List[Dict[str, Any]]:
     ------
     ValueError
         If extra unknown arguments are passed to the function.
+
     """
     # Extract all the arguments.
     # (There doesn't seem to be a better way to do this since one can't specify
@@ -669,6 +670,7 @@ def run_configuration(
         If value for ``"ablation"`` is not a positive int or ``None``.
     OSError
         If the lenth of the ``FeatureSet`` name > 210.
+
     """
     try:
         # Read configuration

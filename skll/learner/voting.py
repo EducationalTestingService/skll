@@ -108,6 +108,7 @@ class VotingLearner(object):
         list and the order of the ``learner_names`` list.
     logger : Optional[logging.Logger], default=None
         A logging object. If ``None`` is passed, get logger from ``__name__``.
+
     """
 
     def __init__(
@@ -236,6 +237,7 @@ class VotingLearner(object):
         ----------
         learner_path : :class:`skll.types.PathOrStr`
             The path to save the ``VotingLearner`` instance to.
+
         """
         _save_learner_to_disk(self, learner_path)
 
@@ -257,6 +259,7 @@ class VotingLearner(object):
         -------
         learner : skll.learner.voting.VotingLearner
             The ``VotingLearner`` instance loaded from the file.
+
         """
         # use the logger that's passed in or if nothing was passed in,
         # then create a new logger
@@ -322,6 +325,7 @@ class VotingLearner(object):
             the number of grid search folds will be used.
         shuffle : bool, default=False
             Shuffle examples (e.g., for grid search CV.)
+
         """
         if param_grid_list is None:
             self._param_grids = []
@@ -443,6 +447,7 @@ class VotingLearner(object):
             name of each underlying learner as the key and the array of its
             predictions as the value. The second element is ``None`` if
             ``individual_predictions`` is set to ``False``.
+
         """
         example_ids = examples.ids
 
@@ -551,6 +556,7 @@ class VotingLearner(object):
             The confusion matrix, the overall accuracy, the per-label
             PRFs, the model parameters, the grid search objective
             function score, and the additional evaluation metrics, if any.
+
         """
         # make the prediction on the test data; note that these
         # are either class indices or class probabilities
@@ -720,6 +726,7 @@ class VotingLearner(object):
             If classification labels are not properly encoded as strings.
         ValueError
             If ``grid_search`` is ``True`` but ``grid_objective`` is ``None``.
+
         """
         # Seed the random number generator so that randomized algorithms are
         # replicable.
@@ -912,6 +919,7 @@ class VotingLearner(object):
         ------
         ValueError
             If the number of examples is less than 500.
+
         """
         # check that the number of training examples is more than the minimum
         # needed for generating a reliable learning curve

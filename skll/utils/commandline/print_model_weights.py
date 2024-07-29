@@ -32,6 +32,7 @@ def main(argv: Optional[List[str]] = None) -> None:
         List of arguments, as if specified on the command-line.
         If ``None``, ``sys.argv[1:]`` is used instead.
         Defaults to ``None``.
+
     """
     parser = argparse.ArgumentParser(
         description="Prints out the weights of a" " given model.",

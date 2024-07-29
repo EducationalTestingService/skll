@@ -164,6 +164,7 @@ class SKLLConfigParser(configparser.ConfigParser):
         -------
         invalid_options : Set[str]
             The set of invalid options specified by the user.
+
         """
         # compute a list of all the valid options
         valid_options = list(self.defaults().keys()) + self._required_options
@@ -211,6 +212,7 @@ class SKLLConfigParser(configparser.ConfigParser):
         the default value for the option  does not result in running an
         experiment with unexpected settings, this is not really a major
         problem.
+
         """
         incorrectly_specified_options = []
         multiply_specified_options = []
@@ -252,6 +254,7 @@ class SKLLConfigParser(configparser.ConfigParser):
 
         KeyError
             If any options are not defined in the appropriate sections.
+
         """
         invalid_options = self._find_invalid_options()
         if invalid_options:
@@ -522,6 +525,7 @@ def parse_config_file(
     ValueError
         If various configuration parameters are incorrectly specified,
         or cause conflicts.
+
     """
     # ensure that a path is specified
     if not config_path:
@@ -1114,6 +1118,7 @@ def _setup_config_parser(config_path: PathOrStr, validate=True) -> SKLLConfigPar
     ------
     FileNotFoundError
         If the configuration file does not exist.
+
     """
     # initialize config parser with the given defaults
     config = SKLLConfigParser()
