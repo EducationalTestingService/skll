@@ -171,6 +171,7 @@ class Learner(object):
         Path to module where a custom classifier is defined.
     logger : Optional[logging.Logger], default=None
         A logging object. If ``None`` is passed, get logger from ``__name__``.
+
     """
 
     def __init__(
@@ -402,6 +403,7 @@ class Learner(object):
         -------
         :class:`skll.learner.Learner`
             The ``Learner`` instance loaded from the file.
+
         """
         # use the logger that's passed in or if nothing was passed in,
         # then create a new logger
@@ -435,6 +437,7 @@ class Learner(object):
         ----------
         learner_path : :class:`skll.types.PathOrStr`
             The path to a saved learner object file to load.
+
         """
         del self.__dict__
         self.__dict__ = Learner.from_file(learner_path).__dict__
@@ -460,6 +463,7 @@ class Learner(object):
         -------
         Dict[str, Any]
             A dictionary of labeled weights
+
         """
         res = {}
         vocabulary = {}
@@ -509,6 +513,7 @@ class Learner(object):
         ------
         ValueError
             If the instance does not support model parameters.
+
         """
         res = {}
         intercept = {}
@@ -623,6 +628,7 @@ class Learner(object):
         ----------
         value : bool
             Whether learner should return probabilities of all labels.
+
         """
         # LinearSVC doesn't support predict_proba
         self._probability = value
@@ -653,6 +659,7 @@ class Learner(object):
         ----------
         learner_path : :class:`skll.types.PathOrStr`
             The path to save the ``Learner`` instance to.
+
         """
         _save_learner_to_disk(self, learner_path)
 
@@ -671,6 +678,7 @@ class Learner(object):
         ------
         ValueError
             If there is no default parameter grid for estimator.
+
         """
         estimator = None
         default_param_grid = None
@@ -705,6 +713,7 @@ class Learner(object):
         ValueError
             If ``self.feat_vectorizer`` is either ``None`` or a
             :class:`sklearn.feature_extraction.FeatureHasher`.
+
         """
         if isinstance(self.feat_vectorizer, DictVectorizer):
             return self.feat_vectorizer.get_feature_names_out()[self.feat_selector.get_support()]
@@ -729,6 +738,7 @@ class Learner(object):
             If labels are strings.
         TypeError
             If any features are strings.
+
         """
         # Make sure the labels for a regression task are not strings.
         if self.model_type._estimator_type == "regressor" and examples.labels is not None:
@@ -762,6 +772,7 @@ class Learner(object):
         ----------
         feat_array : numpy.ndarray
             A numpy array with features.
+
         """
         max_feat_abs = np.max(np.abs(feat_array.data))
         if max_feat_abs > 1000.0:
@@ -780,6 +791,7 @@ class Learner(object):
         ----------
         examples : :class:`skll.data.featureset.FeatureSet`
             The examples to use for training.
+
         """
         # we don't need to do this if we have already done it
         # or for regression models, so simply return.
@@ -818,6 +830,7 @@ class Learner(object):
         ----------
         examples : :class:`skll.data.featureset.FeatureSet`
             The ``FeatureSet`` instance to use for training.
+
         """
         # Check feature values and labels
         self._check_input_formatting(examples)
@@ -898,6 +911,7 @@ class Learner(object):
             If process runs out of memory converting training data to dense.
         ValueError
             If FeatureHasher is used with MultinomialNB.
+
         """
         # get the estimator type since we need it in multiple places below
         estimator_type = self.model_type._estimator_type
@@ -1232,6 +1246,7 @@ class Learner(object):
             the per-label PRFs, the model parameters, the grid search objective
             function score, and the additional evaluation metrics, if any.
             For regressors, the first two elements in the tuple are ``None``.
+
         """
         # are we in a regressor or a classifier
         estimator_type = self.model_type._estimator_type
@@ -1355,6 +1370,7 @@ class Learner(object):
         RuntimeError
             If there is a mismatch between the learner vectorizer
             and the test set vectorizer.
+
         """
         example_ids = examples.ids
 
@@ -1617,6 +1633,7 @@ class Learner(object):
             If classification labels are not properly encoded as strings.
         ValueError
             If ``grid_search`` is ``True`` but ``grid_objective`` is ``None``.
+
         """
         # Seed the random number generator so that randomized
         # algorithms are replicable
@@ -1814,6 +1831,7 @@ class Learner(object):
         ------
         ValueError
             If the number of examples is less than 500.
+
         """
         # check that the number of training examples is more than the minimum
         # needed for generating a reliable learning curve

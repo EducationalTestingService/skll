@@ -64,6 +64,7 @@ def _check_job_results(job_results: List[List[Dict[str, Any]]]) -> None:
     ----------
     job_results : List[List[Dict[str, Any]]]
         A list of job result dictionaries.
+
     """
     logger = get_skll_logger("experiment")
     logger.info("Checking job results")
@@ -101,6 +102,7 @@ def _create_learner_result_dicts(
     -------
     res : List[Dict[str, Any]]
         The results of the learners, as a list of dictionaries.
+
     """
     res = []
 
@@ -256,6 +258,7 @@ def _get_stat_float(label_result_dict: Dict[str, float], stat: str) -> float:
     -------
     float
         The value of the stat if it's in the dictionary, and NaN otherwise.
+
     """
     if stat in label_result_dict and label_result_dict[stat] is not None:
         return label_result_dict[stat]

@@ -33,8 +33,8 @@ How to contribute
          $ pre-commit install
 
    [`pre-commit`](https://pre-commit.com/) is used to run pre-commit
-   hooks, such as [`isort`](https://pycqa.github.io/isort/) and
-   [`flake8`](https://flake8.pycqa.org/en/latest/). (Check
+   hooks, such as [`ruff`](https://github.com/astral-sh/ruff) and
+   [`mypy`](https://github.com/python/mypy). (Check
    [here](./.pre-commit-config.yaml) to see a full list of pre-commit
    hooks.) If you attempt to make a commit and it fails, you will be
    able to see which hooks passed/failed and you will have an
@@ -52,13 +52,13 @@ How to contribute
 
          $ pre-commit run
 
-   To run the `black` hook alone on changed files:
+   To run the `ruff` hook alone on changed files:
 
-         $ pre-commit run black
+         $ pre-commit run ruff
 
-   To run the `black` hook alone on a given file:
+   To run the `ruff` hook alone on a given file:
 
-         $ pre-commit run black <file-path>
+         $ pre-commit run ruff --files <file-path>
 
    Finally, the `SKIP` environment variable can be used to indicate to
    `pre-commit` that certain checks should be skipped. It can be

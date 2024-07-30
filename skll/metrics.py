@@ -85,6 +85,7 @@ def kappa(
         If labels cannot be converted to int.
     ValueError
         If invalid weight scheme.
+
     """
     # Ensure that the lists are both the same length
     assert len(y_true) == len(y_pred)
@@ -190,6 +191,7 @@ def correlation(y_true: np.ndarray, y_pred: np.ndarray, corr_type: str = "pearso
     -------
     float
         correlation value if well-defined, else 0.0
+
     """
     # get the correlation function to use based on the given type
     corr_func = pearsonr
@@ -226,6 +228,7 @@ def f1_score_least_frequent(y_true: np.ndarray, y_pred: np.ndarray) -> float:
     -------
     float
         F1 score of the least frequent label.
+
     """
     least_frequent = np.bincount(y_true).argmin()
     return f1_score(y_true, y_pred, average=None)[least_frequent]
@@ -253,6 +256,7 @@ def register_custom_metric(custom_metric_path: PathOrStr, custom_metric_name: st
         with an already existing attribute in ``skll.metrics``
         or if the custom metric name conflicts with a scikit-learn
         or SKLL metric.
+
     """
     if not custom_metric_path:
         raise ValueError(
@@ -332,6 +336,7 @@ def use_score_func(func_name: str, y_true: np.ndarray, y_pred: np.ndarray) -> fl
     -------
     float
         The scored result from the given scorer.
+
     """
     try:
         scorer = get_scorer(func_name)

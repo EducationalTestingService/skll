@@ -56,6 +56,7 @@ class FeatureSet(object):
     -----
     If ids, labels, and/or features are not None, the number of rows in
     each array must be equal.
+
     """
 
     def __init__(
@@ -125,6 +126,7 @@ class FeatureSet(object):
         ----------
         value
             The value to check.
+
         """
         return value in self.ids
 
@@ -146,6 +148,7 @@ class FeatureSet(object):
         -----
         We consider feature values to be equal if any differences are in the
         sixth decimal place or higher.
+
         """
         return (
             self.ids.shape == other.ids.shape
@@ -218,6 +221,7 @@ class FeatureSet(object):
 
         ValueError
             If there are conflicting labels.
+
         """
         # Check that the sets of IDs are equal
         if set(self.ids) != set(other.ids):
@@ -335,6 +339,7 @@ class FeatureSet(object):
         ValueError
             If attempting to use features to filter a ``FeatureSet`` that
             uses a ``FeatureHasher`` vectorizer.
+
         """
         # Construct mask that indicates which examples to keep
         mask = np.ones(len(self), dtype=bool)
@@ -430,6 +435,7 @@ class FeatureSet(object):
         ValueError
             If any of the "labels", "features", or "vectorizer" attribute
             is ``None``.
+
         """
         if self.features is not None and not isinstance(self.vectorizer, DictVectorizer):
             raise ValueError(
@@ -477,6 +483,7 @@ class FeatureSet(object):
         -------
         :class:`skll.data.featureset.FeatureSet`
             A copy of ``self`` with all features in ``other`` removed.
+
         """
         new_set = deepcopy(self)
         if other.vectorizer:
@@ -492,6 +499,7 @@ class FeatureSet(object):
         -------
         has_labels : bool
             Whether or not this FeatureSet has any finite labels.
+
         """
         # make sure that labels is not None or a list of Nones
         if self.labels is not None and not all(label is None for label in self.labels):
@@ -510,6 +518,7 @@ class FeatureSet(object):
         -------
         str:
             A string representation of ``FeatureSet``.
+
         """
         return str(self.__dict__)
 
@@ -521,6 +530,7 @@ class FeatureSet(object):
         -------
         str:
             A string representation of ``FeatureSet``.
+
         """
         return repr(self.__dict__)
 
@@ -542,6 +552,7 @@ class FeatureSet(object):
             If `value` is a slice, then return a new ``FeatureSet`` instance
             containing a subset of the data. If it's an index, return the
             specific example by row number.
+
         """
         # Check if we're slicing
         if isinstance(value, slice):
@@ -597,6 +608,7 @@ class FeatureSet(object):
         -------
         Tuple[:class:`skll.data.featureset.FeatureSet`, :class:`skll.data.featureset.FeatureSet`]
             A tuple containing the two featureset instances.
+
         """
         # Note: an alternative way to implement this is to make copies
         # of the given FeatureSet instance and then use the `filter()`
@@ -655,6 +667,7 @@ class FeatureSet(object):
         -------
         :class:`skll.data.featureset.FeatureSet`
             A ``FeatureSet`` instance generated from from the given data frame.
+
         """
         if labels_column:
             feature_columns = [column for column in df.columns if column != labels_column]

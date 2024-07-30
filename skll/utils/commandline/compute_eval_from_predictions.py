@@ -118,6 +118,7 @@ def compute_eval_from_predictions(
     ValueError
         If the requested prediction method is ``"expected_value"`` but
         the class names can't be converted to ints.
+
     """
     # convert the examples file and predictions file to a Path
     examples_file = Path(examples_file)
@@ -192,6 +193,7 @@ def main(argv: Optional[List[str]] = None) -> None:
     argv: Optional[List[str]], default=None
         List of arguments, as if specified on the command-line. If ``None``,
         then ``sys.argv[1:]`` is used instead.
+
     """
     # Get command line arguments
     parser = argparse.ArgumentParser(

@@ -33,6 +33,7 @@ class MatplotlibCategoryFilter(logging.Filter):
         ----------
         record : logging.LogRecord
             The log record to be filtered.
+
         """
         # Check if the log record is from matplotlib.category and contains the specific message
         if (
@@ -86,6 +87,7 @@ def get_skll_logger(
     -------
     logger: logging.Logger
         A ``Logger`` instance.
+
     """
     # first get the logger instance associated with the
     # given name if one already exists
@@ -121,6 +123,7 @@ def close_and_remove_logger_handlers(logger: logging.Logger) -> None:
     ----------
     logger : logging.Logger
         Logger instance
+
     """
     for handler in logger.handlers[:]:
         handler.close()

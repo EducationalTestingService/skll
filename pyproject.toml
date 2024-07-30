@@ -63,18 +63,17 @@ where = ["."]
 exclude = ["tests", "examples"]
 namespaces = false
 
-[tool.black]
-include = '\.pyi?$'
-line-length = 100
-target-version = ['py311']
-
 [tool.ruff]
-extend-exclude = ["setup.py"]
 lint.select = ["D", "E", "F", "I"]
 lint.ignore = ["D212"]
 line-length = 100
 target-version = "py311"
 fix = true
 
-[mypy]
-exclude = '^setup\.py$'
+[tool.ruff.lint.per-file-ignores]
+"tests/test*.py" = ["D"]
+"tests/test_input.py" = ["E501"]
+"skll/data/featureset.py" = ["E501"]
+"skll/learner/__init__.py" = ["E501"]
+"skll/learner/voting.py" = ["E501"]
+"skll/learner/utils.py" = ["E501"]

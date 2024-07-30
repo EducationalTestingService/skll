@@ -53,6 +53,7 @@ def unlink(file_path: PathOrStr):
     ----------
     file_path : :class:`skll.types.PathOrStr`
         File path to remove.
+
     """
     file_path = Path(file_path)
     if file_path.exists():
@@ -74,6 +75,7 @@ def fill_in_config_paths(config_template_path: PathOrStr) -> Path:
     -------
     Path
         The path to the filled configuration file.
+
     """
     # convert path to Path object
     config_template_path = Path(config_template_path)
@@ -154,6 +156,7 @@ def fill_in_config_paths_for_single_file(
     -------
     Path
         The path to the filled configuration file.
+
     """
     # convert path to Path object if it's a string
     config_template_path = Path(config_template_path)
@@ -231,6 +234,7 @@ def fill_in_config_options(
     -------
     Path
         The path to the filled configuration file.
+
     """
     # convert path to Path object if it's a string
     config_template_path = Path(config_template_path)
@@ -333,6 +337,7 @@ def fill_in_config_paths_for_fancy_output(config_template_path: PathOrStr) -> Pa
     -------
     Path
         The path to the filled configuration file.
+
     """
     # convert template path to a Path object if string
     config_template_path = Path(config_template_path)
@@ -392,6 +397,7 @@ def fill_in_config_options_for_voting_learners(
         - the custom seed value used for cross-validation, if any
         - the number of learning curve cross-validation folds (10 or 20)
         - the list of learning curve training sizes
+
     """
     # setup learner-type specific values based on configuration options
     custom_learner = ""
@@ -569,6 +575,7 @@ def create_jsonlines_feature_files(path: PathOrStr):
     ----------
     path : :class:`skll.types.PathOrStr`
         Full path under which to save the created feature files.
+
     """
     # convert to Path object
     path = Path(path)
@@ -629,6 +636,7 @@ def remove_jsonlines_feature_files(path: PathOrStr):
     ----------
     path : :class:`skll.types.PathOrStr`
         Path to directory in which jsonlines files reside.
+
     """
     for i in range(6):
         unlink(Path(path) / f"f{i}.jsonlines")
@@ -842,6 +850,7 @@ def make_regression_data(
         3-tuple containing the generated training featureset, the generated
         test featureset, and a dictionary containing the oracle feature
         weights
+
     """
     # if we are doing feature hashing and we have asked for more
     # feature bins than number of total features, we need to
@@ -944,6 +953,7 @@ def make_sparse_data(use_feature_hashing=False):
     Tuple
         Tuple containing the generated training featureset and
         the generated test featureset.
+
     """
     # Create training data
     X, y = make_classification(
@@ -1040,6 +1050,7 @@ def make_digits_data(num_examples=None, test_size=0.2, use_digit_names=False):
     ValueError
         If ``num_examples`` is greater than the number of available
         examples.
+
     """
     # load the digits data
     digits = load_digits(as_frame=True)
@@ -1150,6 +1161,7 @@ def make_california_housing_data(num_examples=None, test_size=0.2):
     ValueError
         If ``num_examples`` is greater than the number of available
         examples.
+
     """
     # load the housing data
     housing = fetch_california_housing(
@@ -1238,6 +1250,7 @@ def compute_expected_folds_for_cv_testing(featureset, num_folds=10, stratified=T
     expected_fold_ids : dict
         A dictionary mapping each ID in the featureset to a fold ID.
         Fold IDs range from 0 to ``num_folds``-1.
+
     """
     # initialize the return dictionary
     expected_fold_ids = {}

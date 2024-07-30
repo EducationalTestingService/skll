@@ -52,6 +52,7 @@ def _compute_ylimits_for_featureset(
     ylimits : Dict[str, Tuple[float, float]]
         A dictionary, with metric names as keys
         and a tuple of (lower_limit, upper_limit) as values.
+
     """
     # set the y-limits of the curves depending on what kind
     # of values the metric produces
@@ -119,6 +120,7 @@ def _generate_learning_curve_score_plots(
     -------
     List[str]
         A list of paths of the generated plots
+
     """
     # convert output dir to a path
     output_dir = Path(output_dir)
@@ -259,6 +261,7 @@ def _generate_learning_curve_time_plots(
     -------
      List[str]
         A list of paths of the generated plots
+
     """
     # convert output dir to a path
     output_dir = Path(output_dir)
@@ -346,6 +349,7 @@ def generate_learning_curve_plots(
     -------
     List[str]
         A list of paths of the generated plots
+
     """
     # convert output_dir to Path object
     output_dir = Path(output_dir)
@@ -462,6 +466,7 @@ def _print_fancy_output(
         List of result dictionaries.
     output_file : IO[str], default=sys.stdout
         The file buffer to print to.
+
     """
     if not learner_result_dicts:
         raise ValueError("Result dictionary list is empty!")
@@ -552,6 +557,7 @@ def _write_learning_curve_file(result_json_paths: List[str], output_file: IO[str
         list of paths to the individual result JSON files.
     output_file : IO[str]
         The file buffer to write to.
+
     """
     learner_result_dicts = []
 
@@ -646,6 +652,7 @@ def _write_skll_folds(skll_fold_ids: FoldMapping, skll_fold_ids_file: IO[str]) -
         Dictionary with ids as keys and test-fold-numbers as values.
     skll_fold_ids_file : IO[str]
         An open file handler to write to.
+
     """
     f = csv.writer(skll_fold_ids_file)
     f.writerow(["id", "cv_test_fold"])
@@ -670,6 +677,7 @@ def _write_summary_file(result_json_paths: List[str], output_file: IO[str], abla
         The file buffer to write to.
     ablation : int, default=0
         The number of features to remove when doing ablation experiment.
+
     """
     learner_result_dicts = []
     # Map from feature set names to all features in them

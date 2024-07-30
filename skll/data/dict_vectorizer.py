@@ -82,6 +82,7 @@ class DictVectorizer(OldDictVectorizer):
     FeatureHasher : performs vectorization using only a hash function.
     sklearn.preprocessing.OneHotEncoder : handles nominal/categorical features
       encoded as columns of integers.
+
     """
 
     def __eq__(self, other):
