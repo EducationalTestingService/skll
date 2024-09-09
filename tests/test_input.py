@@ -1849,14 +1849,15 @@ class TestInput(unittest.TestCase):
         self.assertEqual(wandb_credentials["wandb_project"], "wandb_project")
 
     def test_config_parsing_feature_scaling_none(self):
-        """Test that feature scaling value of None is acceptable and converted to a string"""
+        """Test that feature scaling value of None is converted to a string"""
         values_to_fill_dict = {
             "experiment_name": "config_parsing",
             "task": "evaluate",
             "train_directory": train_dir,
             "test_directory": test_dir,
             "featuresets": "[['f1', 'f2', 'f3']]",
-            "fixed_parameters": '[{"estimator_names": ["SVC", "LogisticRegression", "MultinomialNB"]}]',
+            "fixed_parameters": '[{"estimator_names": '
+                                '["SVC", "LogisticRegression", "MultinomialNB"]}]',
             "learners": "['VotingClassifier']",
             "objectives": "['accuracy']",
             "logs": output_dir,
