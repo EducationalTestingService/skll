@@ -720,8 +720,8 @@ def parse_config_file(
 
     # ensure that feature_scaling is specified only as one of the
     # four available choices
-    feature_scaling = config.get("Input", "feature_scaling")
-    if feature_scaling.lower() not in VALID_FEATURE_SCALING_OPTIONS:
+    feature_scaling = config.get("Input", "feature_scaling").lower()
+    if feature_scaling not in VALID_FEATURE_SCALING_OPTIONS:
         raise ValueError(f"Invalid value for feature_scaling parameter: {feature_scaling}")
 
     suffix = config.get("Input", "suffix")
