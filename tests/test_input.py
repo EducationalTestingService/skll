@@ -1848,6 +1848,32 @@ class TestInput(unittest.TestCase):
         self.assertEqual(wandb_credentials["wandb_entity"], "wandb_entity")
         self.assertEqual(wandb_credentials["wandb_project"], "wandb_project")
 
+    def test_config_parsing_feature_scaling_none(self):
+        """Test that feature scaling value of None is converted to a string"""
+        values_to_fill_dict = {
+            "experiment_name": "config_parsing",
+            "task": "evaluate",
+            "train_directory": train_dir,
+            "test_directory": test_dir,
+            "featuresets": "[['f1', 'f2', 'f3']]",
+            "fixed_parameters": '[{"estimator_names": '
+                                '["SVC", "LogisticRegression", "MultinomialNB"]}]',
+            "learners": "['VotingClassifier']",
+            "objectives": "['accuracy']",
+            "logs": output_dir,
+            "results": output_dir,
+        }
+
+        config_template_path = config_dir / "test_feature_scaling_none.template.cfg"
+
+        config_path = fill_in_config_options(
+            config_template_path, values_to_fill_dict, "default_value_save_votes"
+        )
+
+        configuration = parse_config_file(config_path)
+        feature_scaling = configuration[20]
+
+        self.assertEqual("none", feature_scaling)
     def test_config_parsing_set_wandb_missing_value(self):
         """Test that config parsing works as expected for when values are missing `wandb_credentials`."""
         values_to_fill_dict = {

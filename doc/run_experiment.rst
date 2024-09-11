@@ -530,19 +530,19 @@ Whether to scale features by their mean and/or their standard deviation. If you
 scale by mean, your data will automatically be converted to dense, so use
 caution when you have a very large dataset. Valid options are:
 
-none
+"none" or `None`
     Perform no feature scaling at all.
 
-with_std
+"with_std"
     Scale feature values by their standard deviation.
 
-with_mean
+"with_mean"
     Center features by subtracting their mean.
 
-both
+"both"
     Perform both centering and scaling.
 
-Defaults to none.
+The values are case insensitive. Defaults to "none".
 
 .. _featureset_names:
 
