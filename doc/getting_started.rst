@@ -6,7 +6,7 @@ SKLL can be installed via ``pip``::
 
     pip install skll
 
-or via `conda <https://conda.io/projects/conda/en/latest/user-guide/install/index.html>`__::
+or via `conda <https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html>`__::
 
     conda install -c conda-forge -c ets skll
 
