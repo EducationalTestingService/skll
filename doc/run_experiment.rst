@@ -77,7 +77,7 @@ SKLL supports the following feature file formats:
 
 arff
 ^^^^
-The same file format used by `Weka <https://www.cs.waikato.ac.nz/ml/weka/>`__
+The same file format used by `Weka <https://ml.cms.waikato.ac.nz//weka/>`__
 with the following added restrictions:
 
 *   Only simple numeric, string, and nomimal values are supported.
