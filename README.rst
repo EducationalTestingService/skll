@@ -1,8 +1,8 @@
 SciKit-Learn Laboratory
 -----------------------
 
-.. image:: https://gitlab.com/EducationalTestingService/skll/badges/main/pipeline.svg
-   :target: https://gitlab.com/EducationalTestingService/skll/-/pipelines
+.. image:: https://gitlab.com/ets-opensource/skll/badges/main/pipeline.svg
+   :target: https://gitlab.com/ets-opensource/skll/-/pipelines
    :alt: Gitlab CI status
 
 .. image:: https://dev.azure.com/EducationalTestingService/SKLL/_apis/build/status/EducationalTestingService.skll
