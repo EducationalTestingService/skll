@@ -5,11 +5,10 @@ Utility classes and functions for logging to Weights & Biases.
 """
 
 from pathlib import Path
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Optional
 
 import pandas as pd
 import wandb
-from wandb.sdk.lib import RunDisabled
 from wandb.sdk.wandb_run import Run
 
 from skll.config import _setup_config_parser
@@ -32,7 +31,7 @@ class WandbLogger:
             The path to this experiment's config file
 
         """
-        self.wandb_run: Optional[Union[Run, RunDisabled]] = None
+        self.wandb_run: Optional[Run] = None
         if wandb_credentials:
             self.wandb_run = wandb.init(
                 project=wandb_credentials["wandb_project"],
